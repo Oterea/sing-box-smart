@@ -50,8 +50,8 @@ func (c Config) Validate() error {
 		return err
 	}
 	ip := net.ParseIP(host)
-	if ip == nil || !ip.IsLoopback() {
-		return fmt.Errorf("listen address must be a loopback IP")
+	if ip == nil || (ip.IsUnspecified() == false && !ip.IsLoopback() && !ip.Equal(net.ParseIP("192.168.7.1"))) {
+		return fmt.Errorf("listen address must be loopback, unspecified, or an explicitly allowed LAN address")
 	}
 	if c.Mode != "demo" && c.Mode != "real" {
 		return fmt.Errorf("mode must be demo or real")

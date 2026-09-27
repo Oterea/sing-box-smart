@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -95,13 +96,23 @@ func (c *Client) Probe(ctx context.Context, node string) (domain.Probe, error) {
 			timeout = 100 * time.Millisecond
 		}
 	}
-	q := url.Values{"url": {c.testURL}, "timeout": {strconv.FormatInt(timeout.Milliseconds(), 10)}}
+	// Keep a small outer margin so sing-box can return its normal delay error.
+	// That response is a node failure; an outer context timeout is also treated
+	// as a node failure because the request was already sent to the API.
+	innerTimeout := timeout - 500*time.Millisecond
+	if innerTimeout < 500*time.Millisecond {
+		innerTimeout = 500 * time.Millisecond
+	}
+	q := url.Values{"url": {c.testURL}, "timeout": {strconv.FormatInt(innerTimeout.Milliseconds(), 10)}}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.base+"/proxies/"+url.PathEscape(node)+"/delay?"+q.Encode(), nil)
 	if err != nil {
 		return domain.Probe{}, err
 	}
 	resp, err := c.hc.Do(req)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return domain.Probe{At: time.Now(), Error: "探测超时"}, nil
+		}
 		return domain.Probe{}, fmt.Errorf("sing-box API unreachable: %w", err)
 	}
 	defer resp.Body.Close()
