@@ -12,7 +12,7 @@ function history(samples, kind, best) {
   const color=kind==='score'?tone(value,best):!s.success?'bad':value<=200?'good':value<=400?'medium':'bad';
   const height=!s.success?100:value==null?0:Math.max(10,Math.min(100,value/ceiling*100));
   const title=time(s.at)+' · '+(kind==='score'?'分数 '+num(value):s.success?'实际延迟 '+num(value)+' ms':'失败：'+s.error)+(kind==='score'&&!s.success?' · 本次探测失败':'');
-  cells.push(`<span class="sample tone-${color}" title="${esc(title)}"><i style="--bar-height:${height}%"></i></span>`);
+  cells.push(`<span class="sample tone-${color}" title="${esc(title)}"><i style="height:${Math.max(2, Math.round(height * 0.4))}px"></i></span>`);
  }
  return '<div class="history">'+cells.join('')+'</div>';
 }
