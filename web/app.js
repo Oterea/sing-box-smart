@@ -5,12 +5,12 @@ const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toF
 const time = value => new Date(value).toLocaleTimeString('zh-CN', {hour12:false});
 const tone = (value,best) => value == null ? 'none' : value <= best*1.4 ? 'good' : value <= best*2.5 ? 'medium' : 'bad';
 function history(samples, kind, best) {
- const historyLimit=20, tail=samples.slice(-historyLimit), cells=Array.from({length:historyLimit-tail.length},()=>'<span class="sample empty-sample"><i></i></span>');
+ const historyLimit=20, tail=samples.slice(-historyLimit), cells=[];
  const values=tail.map(s=>kind==='score'?s.score:s.delay_ms).filter(v=>v!=null), ceiling=kind==='score'?Math.max(best||1,...values):Math.max(400,...values);
  for (const s of tail) {
   const value=kind==='score'?s.score:s.delay_ms;
   const color=kind==='score'?tone(value,best):!s.success?'bad':value<=200?'good':value<=400?'medium':'bad';
-  const height=value==null?0:Math.max(8,Math.min(100,value/ceiling*100));
+  const height=!s.success?100:value==null?0:Math.max(10,Math.min(100,value/ceiling*100));
   const title=time(s.at)+' · '+(kind==='score'?'分数 '+num(value):s.success?'实际延迟 '+num(value)+' ms':'失败：'+s.error)+(kind==='score'&&!s.success?' · 本次探测失败':'');
   cells.push(`<span class="sample tone-${color}" title="${esc(title)}"><i style="height:${height}%"></i></span>`);
  }
