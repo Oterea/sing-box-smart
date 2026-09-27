@@ -9,3 +9,12 @@
 .demo-note.real-mode{background:#edf7f1;border-color:#d4eade}.real-mode .tag{background:#d7eddf;color:#267255}
 .history-pair{display:flex;flex-direction:column;gap:5px}.history-pair>div{display:flex;align-items:center;gap:6px}.history-pair em{width:13px;color:#89969d;font-size:9px;font-style:normal}.history{display:flex;gap:2px;align-items:flex-end;height:24px}.sample{position:relative;width:4px;height:22px;max-width:none;padding:0;border-radius:1px;background:transparent;overflow:hidden}.sample i{position:absolute;left:0;right:0;bottom:0;min-height:2px;border-radius:1px 1px 0 0;background:#426e61;opacity:.95}.sample.tone-good i{background:#238764}.sample.tone-medium i{background:#c38b1c}.sample.tone-bad i{background:#bf4d42}.sample.empty-sample{display:none}.sample.empty-sample i{display:none}.tone-good{color:#25765b;background:#dff2e8}.tone-medium{color:#936b16;background:#fff0c9}.tone-bad{color:#a7443a;background:#fbdedb}.current-row{background:#f5fbf8}.current-label{color:#3b896d}.table-footer{background:#f7faf9;color:#7f8e95}
 .history-pair .history .sample{min-width:4px;width:4px;max-width:4px;flex:0 0 4px;background:transparent}.history-pair .history .sample i{display:block}.history-pair .history .sample.tone-good,.history-pair .history .sample.tone-medium,.history-pair .history .sample.tone-bad{background:transparent}
+
+/* History is a real vertical bar chart: bars grow upward from the baseline. */
+.history-pair{gap:8px}
+.history-pair>div{gap:8px;align-items:flex-end}
+.history-pair em{align-self:center}
+.history{height:42px;align-items:flex-end;gap:3px}
+.history-pair .history .sample{height:40px;width:5px;min-width:5px;max-width:5px;flex:0 0 5px;border-radius:1px 1px 0 0;overflow:visible}
+.history-pair .history .sample i{position:absolute;left:0;right:0;bottom:0;height:var(--bar-height,2px);min-height:2px;border-radius:1px 1px 0 0}
+td{height:108px}
