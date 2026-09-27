@@ -131,7 +131,7 @@ func (a *App) Run(ctx context.Context) {
 	}
 }
 func (a *App) snapshot() domain.Snapshot {
-	return domain.Snapshot{Mode: "demo", Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
+	return domain.Snapshot{Mode: a.cfg.Mode, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
 }
 func (a *App) control(ctx context.Context, action, target string) error {
 	if action == "recheck" {

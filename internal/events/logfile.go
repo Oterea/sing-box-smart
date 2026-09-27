@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-// LogFile keeps the current log and one previous file, at most roughly 10 MiB.
+// LogFile keeps the current JSONL log and one previous file, at most roughly 10 MiB.
 type LogFile struct {
 	mu   sync.Mutex
 	file *os.File
@@ -18,7 +18,7 @@ func Open(dir string) (*LogFile, error) {
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return nil, err
 	}
-	p := filepath.Join(dir, "events.log")
+	p := filepath.Join(dir, "events.jsonl")
 	f, err := os.OpenFile(p, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		return nil, err
