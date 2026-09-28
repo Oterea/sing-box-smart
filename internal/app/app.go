@@ -12,6 +12,7 @@ import (
 	"sing-box-smart/internal/events"
 	"sing-box-smart/internal/gateway"
 	"sing-box-smart/internal/probe"
+	"sing-box-smart/internal/recovery"
 	"sing-box-smart/internal/score"
 	"sing-box-smart/internal/state"
 	"sing-box-smart/internal/switching"
@@ -136,6 +137,7 @@ func (a *App) snapshot() domain.Snapshot {
 func (a *App) control(ctx context.Context, action, target string) error {
 	if action == "recheck" {
 		for _, n := range a.store.Nodes {
+			n.Plan.ClearRecovery()
 			n.Plan.NormalDue = time.Now()
 		}
 		a.events.Record("manual", "已安排当前机场全部节点重新检查")
@@ -203,9 +205,11 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 		if !a.store.AnyAvailable() {
 			a.phase = "unavailable"
 		}
-		a.store.Reschedule(now, a.current, a.cfg.Current, a.cfg.Candidate)
+		a.store.Reclassify(a.current)
+		a.store.Reschedule(now, a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
 		if a.phase == "unavailable" {
 			for _, n := range a.store.Nodes {
+				n.Plan.ClearRecovery()
 				n.Plan.NormalDue = now.Add(a.cfg.Recovery)
 			}
 		}
@@ -257,15 +261,43 @@ func (a *App) observe(ctx context.Context, o observation) {
 	if o.probe.At.IsZero() {
 		o.probe.At = time.Now()
 	}
-	had, previous := n.Checks > 0, n.Last.Success
-	remaining := n.Plan.Remaining
-	a.store.Record(o.id, o.probe)
-	n.Plan.Complete(time.Now(), a.phase, o.id == a.current, had, previous, o.probe.Success, a.cfg.Current, a.cfg.Candidate, a.cfg.Recovery, a.cfg.RecoveryBudget)
-	if remaining == 0 && n.Plan.Remaining > 0 {
-		a.events.Record("recovery", n.Info.Name+"：出现恢复迹象，开始 3 秒复查")
+	reason := n.Plan.Reason
+	wasCurrent := o.id == a.current
+	signal := recovery.Signal{}
+	if a.phase != "startup" && reason == "normal" && !wasCurrent && n.Tier == domain.TierOrdinary && n.Checks > 0 {
+		signal = recovery.Detect(n.History, n.Last, o.probe, a.cfg.RecoveryDropRatio, a.cfg.RecoveryDropMinMS)
 	}
-	if remaining > 0 && n.Plan.Remaining == 0 {
-		a.events.Record("recovery", n.Info.Name+"：结束临时复查")
+	a.store.Record(o.id, o.probe)
+	changedTiers := a.store.Reclassify(a.current)
+	now := time.Now()
+	if reason == "recovery" {
+		next := a.cfg.Ordinary
+		if n.Tier == domain.TierCandidate {
+			next = a.cfg.Candidate
+		}
+		n.Plan.FinishRecovery(now, o.probe.Success, a.cfg.RecoverySteps, next)
+		if n.Plan.RecoveryStep == 0 {
+			a.events.Record("recovery", n.Info.Name+"：结束恢复复查")
+		}
+	} else if a.phase == "unavailable" {
+		n.Plan.ClearRecovery()
+		n.Plan.NormalDue = now.Add(a.cfg.Recovery)
+	} else if !wasCurrent && reason == "normal" && signal.Kind != recovery.None && n.Tier == domain.TierOrdinary {
+		if n.Plan.StartRecovery(now, a.cfg.RecoverySteps) {
+			a.events.Record("recovery", n.Info.Name+"：发现"+recoveryLabel(signal.Kind)+"，3 秒后开始恢复复查")
+		}
+	} else {
+		n.Plan.ClearRecovery()
+		a.store.RescheduleNode(now, n, a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
+	}
+	for _, id := range changedTiers {
+		if id == o.id {
+			continue
+		}
+		other := a.store.ByID[id]
+		if other != nil && !other.Plan.InFlight && other.Plan.RecoveryStep == 0 {
+			a.store.RescheduleNode(now, other, a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
+		}
 	}
 	value, overflow := score.Display(n.Metrics)
 	a.events.Trace("probe", "node", o.id, "reason", n.Plan.Reason, "success", o.probe.Success, "delay_ms", o.probe.DelayMS, "score", value, "score_overflow", overflow, "L", n.Metrics.L, "S", n.Metrics.S, "N", n.Metrics.N, "f", n.Metrics.F)
@@ -276,8 +308,8 @@ func (a *App) observe(ctx context.Context, o observation) {
 		if !a.store.AnyAvailable() && a.phase != "unavailable" {
 			a.phase = "unavailable"
 			for _, x := range a.store.Nodes {
-				x.Plan.Remaining = 0
-				x.Plan.NormalDue = time.Now().Add(a.cfg.Recovery)
+				x.Plan.ClearRecovery()
+				x.Plan.NormalDue = now.Add(a.cfg.Recovery)
 			}
 			a.events.Record("unavailable", "当前机场暂时全部不可用，保留原选择，每 3 秒重试")
 		}
@@ -294,6 +326,16 @@ func (a *App) observe(ctx context.Context, o observation) {
 	}
 	a.evaluate(ctx)
 }
+
+func recoveryLabel(kind recovery.Kind) string {
+	if kind == recovery.FailureToGood {
+		return "失败后的成功"
+	}
+	if kind == recovery.LatencyDrop {
+		return "延迟明显下降"
+	}
+	return "恢复迹象"
+}
 func (a *App) choose() string {
 	nodes := make([]decision.Candidate, 0, len(a.store.Nodes))
 	for _, n := range a.store.Nodes {
@@ -308,7 +350,8 @@ func (a *App) evaluate(ctx context.Context) {
 	}
 	if a.phase == "unavailable" && a.store.AnyAvailable() {
 		a.phase = "normal"
-		a.store.Reschedule(time.Now(), a.current, a.cfg.Current, a.cfg.Candidate)
+		a.store.Reclassify(a.current)
+		a.store.Reschedule(time.Now(), a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
 		a.events.Record("phase", "有节点检查成功，恢复正常检查频率")
 	}
 	target := a.choose()
@@ -342,7 +385,8 @@ func (a *App) switched(c changed) {
 	if !c.result.Verified {
 		if c.kind == "node" && a.store.ByID[c.result.Actual] != nil {
 			a.current = c.result.Actual
-			a.store.Reschedule(time.Now(), a.current, a.cfg.Current, a.cfg.Candidate)
+			a.store.Reclassify(a.current)
+			a.store.Reschedule(time.Now(), a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
 		}
 		a.events.Record("error", "切换未确认，等待后续重新判断")
 		return
@@ -357,6 +401,7 @@ func (a *App) switched(c changed) {
 		}
 	}
 	a.current = c.target
-	a.store.Reschedule(time.Now(), a.current, a.cfg.Current, a.cfg.Candidate)
+	a.store.Reclassify(a.current)
+	a.store.Reschedule(time.Now(), a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
 	a.events.Record("switch", "已确认选中："+a.store.ByID[c.target].Info.Name)
 }

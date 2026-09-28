@@ -7,6 +7,14 @@ type Node struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 }
+type Tier string
+
+const (
+	TierCurrent   Tier = "current"
+	TierCandidate Tier = "candidate"
+	TierOrdinary  Tier = "ordinary"
+)
+
 type Airport struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
@@ -44,6 +52,7 @@ type NodeView struct {
 	Probing           bool       `json:"probing"`
 	Frequency         string     `json:"frequency"`
 	RecoveryRemaining int        `json:"recovery_remaining"`
+	Tier              Tier       `json:"tier"`
 }
 type Event struct {
 	At      time.Time `json:"at"`

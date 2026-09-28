@@ -1,6 +1,9 @@
 package config
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestParsePins(t *testing.T) {
 	pins, err := ParsePins("Pei=pei PIN, ToLink=tolink PIN")
@@ -18,5 +21,12 @@ func TestRealConfigNeedsPins(t *testing.T) {
 	c.Mode = "real"
 	if err := c.Validate(); err == nil {
 		t.Fatal("real config without pins accepted")
+	}
+}
+
+func TestDefaultSchedulingPolicy(t *testing.T) {
+	c := Default()
+	if c.Ordinary != 5*time.Minute || len(c.RecoverySteps) != 4 {
+		t.Fatalf("unexpected policy: %+v", c)
 	}
 }

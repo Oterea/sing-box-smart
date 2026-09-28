@@ -1,11 +1,14 @@
-// Package schedule decides when each node is due. One owner calls these methods.
+// Package schedule owns only per-node due times and recovery review steps.
 package schedule
 
-import "time"
+import (
+	"sing-box-smart/internal/domain"
+	"time"
+)
 
 type Plan struct {
 	NormalDue, ExtraDue time.Time
-	Remaining           int
+	RecoveryStep        int
 	InFlight            bool
 	Reason              string
 }
@@ -17,44 +20,47 @@ func (p *Plan) Due(now time.Time, phase string, current bool) string {
 	if phase == "startup" {
 		return "startup"
 	}
+	if !current && p.RecoveryStep > 0 && !now.Before(p.ExtraDue) {
+		return "recovery"
+	}
 	if !now.Before(p.NormalDue) {
 		return "normal"
 	}
-	if !current && p.Remaining > 0 && !now.Before(p.ExtraDue) {
-		return "recovery"
-	}
 	return ""
 }
-func (p *Plan) Complete(now time.Time, phase string, current, hadPrevious, previousOK, ok bool, currentEvery, candidateEvery, recoveryEvery time.Duration, budget int) {
-	p.InFlight = false
-	if phase == "startup" {
-		p.NormalDue = now
+
+func (p *Plan) StartRecovery(now time.Time, steps []time.Duration) bool {
+	if len(steps) == 0 || p.RecoveryStep > 0 {
+		return false
+	}
+	p.RecoveryStep = 1
+	p.NormalDue = time.Time{}
+	p.ExtraDue = now.Add(steps[0])
+	return true
+}
+
+func (p *Plan) FinishRecovery(now time.Time, success bool, steps []time.Duration, next time.Duration) {
+	if p.RecoveryStep == 0 {
 		return
 	}
-	if phase == "unavailable" {
-		p.Remaining = 0
-		p.NormalDue = now.Add(recoveryEvery)
+	if success && p.RecoveryStep < len(steps) {
+		p.RecoveryStep++
+		p.ExtraDue = now.Add(steps[p.RecoveryStep-1])
 		return
 	}
-	if current {
-		p.Remaining = 0
-		p.NormalDue = now.Add(currentEvery)
-		return
+	p.RecoveryStep = 0
+	p.ExtraDue = time.Time{}
+	p.NormalDue = now.Add(next)
+}
+
+func (p *Plan) ClearRecovery() { p.RecoveryStep, p.ExtraDue = 0, time.Time{} }
+
+func DurationFor(t domain.Tier, current string, id string, currentEvery, candidateEvery, ordinaryEvery time.Duration) time.Duration {
+	if id == current {
+		return currentEvery
 	}
-	if p.Reason == "normal" {
-		p.NormalDue = now.Add(candidateEvery)
+	if t == domain.TierCandidate {
+		return candidateEvery
 	}
-	if !ok {
-		p.Remaining = 0
-		return
-	}
-	if p.Reason == "recovery" && p.Remaining > 0 {
-		p.Remaining--
-	}
-	if hadPrevious && !previousOK {
-		p.Remaining = budget
-	}
-	if p.Remaining > 0 {
-		p.ExtraDue = now.Add(recoveryEvery)
-	}
+	return ordinaryEvery
 }
