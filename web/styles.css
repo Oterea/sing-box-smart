@@ -26,3 +26,16 @@ th.rank,td.rank{width:54px;padding-left:24px}th:nth-child(2){width:27%}th:nth-ch
 th:nth-child(1){width:32%}th:nth-child(2){width:154px}th:nth-child(3){width:auto}td.node-cell{vertical-align:top}.pick,.current-label{display:flex;align-items:center;justify-content:center;width:150px;min-height:32px;margin-top:12px;padding:8px 12px;text-align:center}.current-label{background:#e5f3ed;color:#26795d;font-size:11px;font-weight:550}.node-cell .node-meta{min-height:18px}
 @media(max-width:1100px){.selected-card{gap:24px}.overview{grid-template-columns:1.25fr 1fr}table{min-width:820px}}
 @media(max-width:700px){.overview{grid-template-columns:1fr}.selected-card{grid-template-columns:1fr;gap:16px;padding:18px}.selected-metrics{gap:24px}.airport-options{grid-template-columns:repeat(2,minmax(0,1fr))}.selected-copy h2{font-size:18px}.pick,.current-label{width:140px}table{min-width:780px}}
+
+/* Five balanced cells: node, score, delay, score history, delay history. */
+.selected-card{display:block;padding:0 24px 18px;min-height:0}
+.selected-heading{display:flex;align-items:center;gap:12px;padding:17px 0 13px;font-size:12px;font-weight:600;color:#607486}
+.node-grid{display:grid;grid-template-columns:22% 14% 14% 25% 25%;align-items:center;min-width:0}
+.node-grid>div{min-width:0}
+.selected-node-grid{min-height:82px;padding-top:8px;background:#f8fafb}
+.selected-node-grid .node-cell{padding:10px 18px}
+.node-cell{min-width:0;padding:16px 18px;align-self:stretch;display:flex;flex-direction:column;justify-content:center}.node-selectable{cursor:pointer}.node-selectable:hover{background:#eef7f3}.node-name{font-size:14px;line-height:1.35}.node-meta{margin-top:5px;font-size:11px;color:#7b8b98}.metric-cell{display:flex;align-items:center;min-height:70px;padding:12px 18px;font-size:17px;line-height:1;font-weight:600;font-variant-numeric:tabular-nums}.history-cell{min-width:0;padding:8px 16px}.history-cell .history-chart{width:100%;height:44px;max-width:none}.chart-bar{fill:#73b79f}.chart-bar.bar-medium{fill:#e3c27a}.chart-bar.bar-bad{fill:#e8a7a0}.chart-failure{stroke:#e8a7a0;stroke-width:1.5}.chart-grid{stroke:#edf1f2}.chart-baseline{stroke:#e4ebea}
+table{table-layout:fixed}th:nth-child(1){width:22%}th:nth-child(2){width:14%}th:nth-child(3){width:14%}th:nth-child(4){width:25%}th:nth-child(5){width:25%}th[rowspan]{vertical-align:middle}th{padding:13px 18px}td{padding:0;vertical-align:middle}.current-row .node-cell{background:#f1f8f4}.current-row .node-name{color:#176e59}.table-scroll{overflow-x:auto}
+@media(max-width:1100px){table{min-width:900px}.selected-card{padding-left:20px;padding-right:20px}.node-grid{grid-template-columns:22% 14% 14% 25% 25%}}
+@media(max-width:700px){.selected-card{padding-left:16px;padding-right:16px}.selected-node-grid{min-width:860px}.selected-card{overflow-x:auto}.node-grid{min-width:860px}.node-cell{padding-left:14px;padding-right:14px}.metric-cell{padding-left:12px;padding-right:12px}.history-cell{padding-left:10px;padding-right:10px}}
+.node-name.node-selectable{display:inline-block;max-width:100%;cursor:pointer}.node-name.node-selectable:hover{color:#176e59;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
