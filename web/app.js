@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-let state, busy = false, toastTimer;
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 const time = value => new Date(value).toLocaleTimeString('zh-CN', {hour12:false});
@@ -32,11 +32,55 @@ function history(samples, kind, best) {
 function tableHeading() {
  return '<colgroup><col class="col-node"><col class="col-action"><col class="col-score"><col class="col-delay"><col class="col-history"><col class="col-history"></colgroup><thead><tr><th scope="col">节点</th><th scope="col">选择</th><th scope="col">分数</th><th scope="col">延迟（ms）</th><th scope="col">分数历史</th><th scope="col">延迟历史</th></tr></thead>';
 }
+function nodeKey(n,best,s,selected=false) {
+ return JSON.stringify({id:n.id,name:n.name,checks:n.checks,score:n.score,delay:n.delay_ms,overflow:n.score_overflow,last:n.last_success,current:selected||n.id===s.current_id,history:n.history,best,busy,pending:s.pending_id,phase:s.phase,api:s.api_healthy});
+}
 function nodeRow(n,best,s) {
  const current=Boolean(n.id)&&n.id===s.current_id;
  const disabled=busy||Boolean(s.pending_id)||s.phase==='startup'||!s.api_healthy||current||!n.id;
  const delayTone=n.checks&&!n.last_success?'bad':n.delay_ms==null?'none':n.delay_ms<=200?'good':n.delay_ms<=400?'medium':'bad';
- return `<tr class="${current?'current-row':''}"><td><div class="node-cell"><div class="node-name">${esc(n.name)}</div><div class="node-meta">${n.checks} 次检查</div></div></td><td><button class="pick${current?' current-pick':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''}>${current?'已选中':!n.id?'等待中':'选择'}</button></td><td><span class="metric-cell tone-${tone(n.score,best)}">${n.score_overflow?'∞':num(n.score)}</span></td><td><span class="metric-cell tone-${delayTone}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td></tr>`;
+ return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row':''}"><td><div class="node-cell"><div class="node-name">${esc(n.name)}</div><div class="node-meta">${n.checks} 次检查</div></div></td><td><button class="pick${current?' current-pick':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''}>${current?'已选中':!n.id?'等待中':'选择'}</button></td><td><span class="metric-cell tone-${tone(n.score,best)}">${n.score_overflow?'∞':num(n.score)}</span></td><td><span class="metric-cell tone-${delayTone}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td></tr>`;
+}
+function patchRow(row,n,best,s,selected=false) {
+ const current=Boolean(n.id)&&n.id===s.current_id;
+ row.className=current?'current-row':'';
+ row.querySelector('.node-name').textContent=n.name;
+ row.querySelector('.node-meta').textContent=`${n.checks} 次检查`;
+ const button=row.querySelector('button[data-node],button.pick');
+ const disabled=busy||Boolean(s.pending_id)||s.phase==='startup'||!s.api_healthy||current||!n.id;
+ button.textContent=current?'已选中':!n.id?'等待中':'选择';
+ button.disabled=disabled;
+ button.classList.toggle('current-pick',current);
+ if(n.id&&!current)button.dataset.node=n.id;else delete button.dataset.node;
+ row.cells[2].firstElementChild.textContent=n.score_overflow?'∞':num(n.score);
+ row.cells[2].firstElementChild.className=`metric-cell tone-${tone(n.score,best)}`;
+ const delayTone=n.checks&&!n.last_success?'bad':n.delay_ms==null?'none':n.delay_ms<=200?'good':n.delay_ms<=400?'medium':'bad';
+ row.cells[3].firstElementChild.textContent=n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—';
+ row.cells[3].firstElementChild.className=`metric-cell tone-${delayTone}`;
+ row.cells[4].innerHTML=history(n.history,'score',best);
+ row.cells[5].innerHTML=history(n.history,'delay',best);
+ row.dataset.renderKey=nodeKey(n,best,s,selected);
+}
+function syncRows(body,nodes,best,s,selected=false) {
+ if(typeof body.querySelectorAll!=='function') {
+  body.innerHTML=selected?nodeRow(nodes[0],best,s):nodes.map(n=>nodeRow(n,best,s)).join('');
+  return;
+ }
+ const seen=new Set();
+ for(const n of nodes) {
+  const id=n.id||'selected';
+  let row=[...body.querySelectorAll('tr[data-row-id]')].find(item=>item.dataset.rowId===id);
+  if(!row) {
+   const holder=document.createElement('tbody');
+   holder.innerHTML=nodeRow(n,best,s);
+   row=holder.firstElementChild;
+  }
+  const key=nodeKey(n,best,s,selected);
+  if(row.dataset.renderKey!==key)patchRow(row,n,best,s,selected);
+  body.appendChild(row);
+  seen.add(id);
+ }
+ for(const row of [...body.querySelectorAll('tr')]) if(!seen.has(row.dataset.rowId))row.remove();
 }
 function render(s){
  state=s;
@@ -44,7 +88,11 @@ function render(s){
  $('connection').textContent=s.api_healthy?'后端已连接':'管理接口异常';
  $('mode-note-text').textContent=s.mode==='real'?'真实模式 · 已连接 sing-box API':'模拟模式 · 切换仅作用于模拟接口';
  $('mode-note').classList.toggle('real-mode',s.mode==='real');
- $('airport-options').innerHTML=s.airports.map(a=>`<button class="airport-option ${a.id===s.airport_id?'selected':''}" data-airport="${esc(a.id)}" title="${esc(a.selector)}" ${busy||s.pending_id||a.id===s.airport_id?'disabled':''} aria-pressed="${a.id===s.airport_id}"><strong>${esc(a.selector)}</strong></button>`).join('');
+ const nextAirportKey=JSON.stringify({airports:s.airports,selected:s.airport_id,busy,pending:s.pending_id});
+ if(nextAirportKey!==airportKey){
+  $('airport-options').innerHTML=s.airports.map(a=>`<button class="airport-option ${a.id===s.airport_id?'selected':''}" data-airport="${esc(a.id)}" title="${esc(a.selector)}" ${busy||s.pending_id||a.id===s.airport_id?'disabled':''} aria-pressed="${a.id===s.airport_id}"><strong>${esc(a.selector)}</strong></button>`).join('');
+  airportKey=nextAirportKey;
+ }
  $('node-count').textContent=s.nodes.length;
  $('available').textContent=s.nodes.filter(n=>n.checks>0&&n.last_success).length;
  $('total').textContent=' / '+s.nodes.length+' 节点成功';
@@ -59,10 +107,14 @@ function render(s){
  const valid=s.nodes.filter(n=>n.score!=null), best=valid.length?Math.min(...valid.map(n=>n.score)):Infinity;
  const sorted=[...s.nodes].sort((a,b)=>(a.score??Infinity)-(b.score??Infinity)||a.id.localeCompare(b.id));
  const selected=current??{id:'',name:'等待首次选择',checks:0,history:[],score:null,delay_ms:null,last_success:false};
- $('selected-node').innerHTML=nodeRow(selected,best,s);
- $('nodes').innerHTML=sorted.length?sorted.map(n=>nodeRow(n,best,s)).join(''):'<tr><td colspan="6" class="empty">暂无节点</td></tr>';
+ syncRows($('selected-node'),[selected],best,s,true);
+ syncRows($('nodes'),sorted,best,s,false);
  const kinds={startup:'启动',phase:'状态',switch:'切换',recovery:'复查',manual:'手动',decision:'判断',api:'接口',error:'错误',unavailable:'故障'};
- $('events').innerHTML=[...s.events].reverse().slice(0,8).map(e=>`<div class="event"><time>${time(e.at)}</time><span class="event-kind">${kinds[e.kind]??'记录'}</span><span class="event-text" title="${esc(e.message)}">${esc(e.message)}</span></div>`).join('');
+ const nextEventsKey=JSON.stringify(s.events);
+ if(nextEventsKey!==eventsKey){
+  $('events').innerHTML=[...s.events].reverse().slice(0,8).map(e=>`<div class="event"><time>${time(e.at)}</time><span class="event-kind">${kinds[e.kind]??'记录'}</span><span class="event-text" title="${esc(e.message)}">${esc(e.message)}</span></div>`).join('');
+  eventsKey=nextEventsKey;
+ }
  $('updated').textContent='更新于 '+time(s.now);
 }
 function toast(message){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4500);}
