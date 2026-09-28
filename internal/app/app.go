@@ -53,6 +53,8 @@ type App struct {
 	results                                 chan observation
 	changes                                 chan changed
 	health                                  chan error
+	rootCtx, probeCtx                       context.Context
+	probeCancel                             context.CancelFunc
 }
 
 func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.Logger) (*App, error) {
@@ -63,11 +65,16 @@ func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.L
 	if err != nil {
 		return nil, err
 	}
-	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger}, healthy: true, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan error, 1)}
+	probeCtx, probeCancel := context.WithCancel(ctx)
+	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger}, healthy: true, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan error, 1), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel}
 	a.reset(airports[0])
 	return a, nil
 }
 func (a *App) reset(airport domain.Airport) {
+	if a.probeCancel != nil {
+		a.probeCancel()
+	}
+	a.probeCtx, a.probeCancel = context.WithCancel(a.rootCtx)
 	a.airport = airport
 	a.store = state.New(airport.Nodes, a.cfg.HistoryLimit)
 	a.generation++
@@ -229,11 +236,12 @@ func (a *App) startProbe(ctx context.Context, n *state.Node, reason string) {
 	n.Plan.InFlight = true
 	n.Plan.Reason = reason
 	id, generation := n.Info.ID, a.generation
+	probeCtx := a.probeCtx
 	go func() {
-		p, err := a.runner.Run(ctx, id)
+		p, err := a.runner.Run(probeCtx, id)
 		select {
 		case a.results <- observation{id, generation, p, err}:
-		case <-ctx.Done():
+		case <-probeCtx.Done():
 		}
 	}()
 }
@@ -300,7 +308,13 @@ func (a *App) observe(ctx context.Context, o observation) {
 		}
 	}
 	value, overflow := score.Display(n.Metrics)
-	a.events.Trace("probe", "node", o.id, "reason", n.Plan.Reason, "success", o.probe.Success, "delay_ms", o.probe.DelayMS, "score", value, "score_overflow", overflow, "L", n.Metrics.L, "S", n.Metrics.S, "N", n.Metrics.N, "f", n.Metrics.F)
+	var loggedScore any = "—"
+	if value != nil {
+		loggedScore = *value
+	} else if overflow {
+		loggedScore = "∞"
+	}
+	a.events.Trace("probe", "node", o.id, "reason", n.Plan.Reason, "success", o.probe.Success, "delay_ms", o.probe.DelayMS, "score", loggedScore, "score_overflow", overflow, "L", n.Metrics.L, "S", n.Metrics.S, "N", n.Metrics.N, "f", n.Metrics.F)
 	if !a.healthy {
 		return
 	}
