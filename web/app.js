@@ -30,7 +30,7 @@ function history(samples, kind, best) {
 }
 // Both sections share the same header, column definitions and row renderer.
 function tableHeading() {
- return '<colgroup><col class="col-node"><col class="col-action"><col class="col-score"><col class="col-delay"><col class="col-history"><col class="col-history"></colgroup><thead><tr><th scope="col">节点</th><th scope="col">选择</th><th scope="col">分数</th><th scope="col">延迟（ms）</th><th scope="col">分数历史</th><th scope="col">延迟历史</th></tr></thead>';
+ return '<colgroup><col class="col-node"><col class="col-action"><col class="col-score"><col class="col-delay"><col class="col-history"><col class="col-history"></colgroup><thead><tr><th scope="col">节点</th><th scope="col">检查次数</th><th scope="col">分数</th><th scope="col">延迟（ms）</th><th scope="col">分数历史</th><th scope="col">延迟历史</th></tr></thead>';
 }
 function nodeKey(n,best,s,selected=false) {
  return JSON.stringify({id:n.id,name:n.name,checks:n.checks,score:n.score,delay:n.delay_ms,overflow:n.score_overflow,last:n.last_success,current:selected||n.id===s.current_id,history:n.history,best,busy,pending:s.pending_id,phase:s.phase,api:s.api_healthy});
@@ -39,19 +39,20 @@ function nodeRow(n,best,s) {
  const current=Boolean(n.id)&&n.id===s.current_id;
  const disabled=busy||Boolean(s.pending_id)||s.phase==='startup'||!s.api_healthy||current||!n.id;
  const delayTone=n.checks&&!n.last_success?'bad':n.delay_ms==null?'none':n.delay_ms<=200?'good':n.delay_ms<=400?'medium':'bad';
- return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row':''}"><td><div class="node-cell"><div class="node-name">${esc(n.name)}</div><div class="node-meta">${n.checks} 次检查</div></div></td><td><button class="pick${current?' current-pick':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''}>${current?'已选中':!n.id?'等待中':'选择'}</button></td><td><span class="metric-cell tone-${tone(n.score,best)}">${n.score_overflow?'∞':num(n.score)}</span></td><td><span class="metric-cell tone-${delayTone}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td></tr>`;
+ const buttonText=n.id?n.name:'等待首次选择';
+ return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row':''}"><td><button class="node-choice${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}">${esc(buttonText)}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${n.score_overflow?'∞':num(n.score)}</span></td><td><span class="metric-cell tone-${delayTone}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td></tr>`;
 }
 function patchRow(row,n,best,s,selected=false) {
  const current=Boolean(n.id)&&n.id===s.current_id;
  row.className=current?'current-row':'';
- row.querySelector('.node-name').textContent=n.name;
- row.querySelector('.node-meta').textContent=`${n.checks} 次检查`;
- const button=row.querySelector('button[data-node],button.pick');
+ const button=row.querySelector('button.node-choice');
  const disabled=busy||Boolean(s.pending_id)||s.phase==='startup'||!s.api_healthy||current||!n.id;
- button.textContent=current?'已选中':!n.id?'等待中':'选择';
+ button.textContent=n.id?n.name:'等待首次选择';
+ button.title=n.name;
  button.disabled=disabled;
- button.classList.toggle('current-pick',current);
- if(n.id&&!current)button.dataset.node=n.id;else delete button.dataset.node;
+ button.classList.toggle('selected',current);
+ if(n.id)button.dataset.node=n.id;else delete button.dataset.node;
+ row.cells[1].firstElementChild.textContent=n.checks;
  row.cells[2].firstElementChild.textContent=n.score_overflow?'∞':num(n.score);
  row.cells[2].firstElementChild.className=`metric-cell tone-${tone(n.score,best)}`;
  const delayTone=n.checks&&!n.last_success?'bad':n.delay_ms==null?'none':n.delay_ms<=200?'good':n.delay_ms<=400?'medium':'bad';

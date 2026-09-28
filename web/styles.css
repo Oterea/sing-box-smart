@@ -239,3 +239,6 @@ select{border:0!important;box-shadow:0 1px 0 #dce5e7;background:transparent}
 @keyframes live-breathe{0%,100%{opacity:.55;box-shadow:0 0 0 0 rgba(23,132,107,.45)}50%{opacity:1;box-shadow:0 0 0 5px rgba(23,132,107,0)}}
 @keyframes live-breathe-error{0%,100%{opacity:.55;box-shadow:0 0 0 0 rgba(211,92,84,.45)}50%{opacity:1;box-shadow:0 0 0 5px rgba(211,92,84,0)}}
 @media(max-width:700px){.mode-inline{display:none}.top-card{margin-top:16px;gap:18px}.airport-options{justify-content:flex-start}.airport-option{flex-basis:140px;width:140px;max-width:140px}}
+
+/* Node names are the selection controls; the adjacent cell contains only the count. */
+.node-table .node-choice{display:block;width:100%;min-height:36px;margin:0;padding:8px 12px;border:0!important;background:#e6ebef;color:#536a7b;text-align:left;font-size:13px;font-weight:600;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:none!important;cursor:pointer}.node-table .node-choice:hover:not(:disabled){background:#dce5ea;color:#2d536f;box-shadow:none!important}.node-table .node-choice.selected,.node-table .node-choice:disabled.selected{background:#2f76c5;color:#fff;box-shadow:0 0 14px rgba(47,118,197,.35)!important}.node-table .check-count{display:block;text-align:center;color:#536a7b;font-size:14px;font-variant-numeric:tabular-nums}
