@@ -16,17 +16,27 @@ function history(samples, kind, best) {
   let shape;
   if(kind==='delay'&&!s.success){
    // Failure has no latency value; an outlined marker distinguishes it from a measured bar.
-   shape=`<rect class="chart-failure" x="${x}" y="3" width="5" height="47"/>`;
+   shape=`<rect class="chart-failure" x="${x}" y="2" width="4" height="32"/>`;
   } else if(!Number.isFinite(value)){
-   shape=`<path class="chart-missing" d="M${x} 49h9"/>`;
+   shape=`<path class="chart-missing" d="M${x} 33h5"/>`;
   } else {
-   const height=Math.max(1,value/ceiling*47);
+   const height=Math.max(1,value/ceiling*31);
    const color=kind==='score'?tone(value,best):value<=200?'good':value<=400?'medium':'bad';
-   shape=`<rect class="chart-bar bar-${color}" x="${x}" y="${50-height}" width="5" height="${height}"/>`;
+   shape=`<rect class="chart-bar bar-${color}" x="${x}" y="${33-height}" width="4" height="${height}"/>`;
   }
   return `<g><title>${esc(title)}</title>${shape}</g>`;
  }).join('');
- return `<svg class="history-chart" viewBox="0 0 320 52" preserveAspectRatio="none" role="img" aria-label="${kind==='score'?'分数':'延迟'}历史，最近${tail.length}次，旧到新，纵轴上限${Math.round(ceiling)}"><path class="chart-grid" d="M0 3H320M0 26.5H320"/><path class="chart-baseline" d="M0 50.5H320"/>${bars}${tail.length?'':'<text x="4" y="33" fill="#95a2ad" font-size="12">暂无记录</text>'}</svg>`;
+ return `<svg class="history-chart" viewBox="0 0 320 36" preserveAspectRatio="none" role="img" aria-label="${kind==='score'?'分数':'延迟'}历史，最近${tail.length}次，旧到新，纵轴上限${Math.round(ceiling)}"><path class="chart-grid" d="M0 2H320M0 18H320"/><path class="chart-baseline" d="M0 33.5H320"/>${bars}${tail.length?'':'<text x="4" y="23" fill="#95a2ad" font-size="12">暂无记录</text>'}</svg>`;
+}
+// Both sections share the same header, column definitions and row renderer.
+function tableHeading() {
+ return '<colgroup><col class="col-node"><col class="col-action"><col class="col-score"><col class="col-delay"><col class="col-history"><col class="col-history"></colgroup><thead><tr><th scope="col">节点</th><th scope="col">选择</th><th scope="col">分数</th><th scope="col">延迟（ms）</th><th scope="col">分数历史</th><th scope="col">延迟历史</th></tr></thead>';
+}
+function nodeRow(n,best,s) {
+ const current=Boolean(n.id)&&n.id===s.current_id;
+ const disabled=busy||Boolean(s.pending_id)||s.phase==='startup'||!s.api_healthy||current||!n.id;
+ const delayTone=n.checks&&!n.last_success?'bad':n.delay_ms==null?'none':n.delay_ms<=200?'good':n.delay_ms<=400?'medium':'bad';
+ return `<tr class="${current?'current-row':''}"><td><div class="node-cell"><div class="node-name">${esc(n.name)}</div><div class="node-meta">${n.checks} 次检查</div></div></td><td><button class="pick${current?' current-pick':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''}>${current?'已选中':!n.id?'等待中':'选择'}</button></td><td><span class="metric-cell tone-${tone(n.score,best)}">${n.score_overflow?'∞':num(n.score)}</span></td><td><span class="metric-cell tone-${delayTone}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td></tr>`;
 }
 function render(s){
  state=s;
@@ -38,7 +48,6 @@ function render(s){
  $('airport-options').innerHTML=s.airports.map(a=>`<button class="airport-option ${a.id===s.airport_id?'selected':''}" data-airport="${esc(a.id)}" ${busy||s.pending_id||a.id===s.airport_id?'disabled':''} aria-pressed="${a.id===s.airport_id}"><strong>${esc(a.name)}</strong><small>${esc(a.selector)}</small></button>`).join('');
  $('selector-name').textContent=active?'当前生效：'+active.selector:'暂无机场';
  $('node-count').textContent=s.nodes.length;
- $('scope').textContent=active?active.name+' · '+active.selector+' · 仅显示本机场节点':'暂无机场';
  $('available').textContent=s.nodes.filter(n=>n.checks>0&&n.last_success).length;
  $('total').textContent=' / '+s.nodes.length+' 节点成功';
  const failed=s.nodes.filter(n=>n.checks>0&&!n.last_success).length;
@@ -48,18 +57,12 @@ function render(s){
  const current=s.nodes.find(n=>n.id===s.current_id);
  $('phase').textContent=!s.api_healthy?'接口异常':s.phase==='startup'?'启动检查':s.phase==='unavailable'?'等待恢复':'自动选择';
  const elapsed=(new Date(s.now)-new Date(s.started_at))/1000;
- $('status-line').textContent=!s.api_healthy?'管理接口不可用：暂停选择，不将接口错误记为节点失败。':s.phase==='startup'?`启动检查 ${Math.min(elapsed,s.startup_seconds).toFixed(1)} / ${s.startup_seconds} 秒 · 各节点独立连续检查，观察结束后首次选择。`:s.pending_id?'正在确认切换目标，读取接口结果后更新当前选择。':s.phase==='unavailable'?'暂时全部不可用：每 3 秒重新检查，保留已有选择。':'自动选择已开启 · 当前分数超过最好候选的 1.4 倍时，先确认候选，再切换。';
+ $('status-line').textContent=!s.api_healthy?'管理接口不可用：暂停选择，不将接口错误记为节点失败。':s.phase==='startup'?`启动检查 ${Math.min(elapsed,s.startup_seconds).toFixed(1)} / ${s.startup_seconds} 秒 · 各节点独立连续检查，观察结束后首次选择。`:s.pending_id?'正在确认切换目标，读取接口结果后更新当前选择。':s.phase==='unavailable'?'暂时全部不可用：每 3 秒重新检查，保留已有选择。':'';
  const valid=s.nodes.filter(n=>n.score!=null), best=valid.length?Math.min(...valid.map(n=>n.score)):Infinity;
  const sorted=[...s.nodes].sort((a,b)=>(a.score??Infinity)-(b.score??Infinity)||a.id.localeCompare(b.id));
- const nodeCells=(n, selected=false)=>{
-  const delayTone=n.checks&&!n.last_success?'bad':n.delay_ms==null?'none':n.last_success?(n.delay_ms<=200?'good':n.delay_ms<=400?'medium':'bad'):'bad';
-  const nodeAttrs=selected?'':` data-node="${esc(n.id)}" role="button" tabindex="0" title="点击选择 ${esc(n.name)}"`;
-  const cells=[`<div class="node-cell"><div class="node-name${selected?'':' node-selectable'}"${nodeAttrs}>${esc(n.name)}</div><div class="node-meta"><span>${n.checks} 次检查</span></div></div>`,`<div class="metric-cell tone-${tone(n.score,best)}">${n.score_overflow?'∞':num(n.score)}</div>`,`<div class="metric-cell tone-${delayTone}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</div>`,`<div class="history-cell">${history(n.history,'score',best)}</div>`,`<div class="history-cell">${history(n.history,'delay',best)}</div>`];
-  return (selected?cells:cells.map(cell=>`<td>${cell}</td>`)).join('');
- };
  const selected=current??{id:'',name:'等待首次选择',checks:0,history:[],score:null,delay_ms:null,last_success:false};
- $('selected-node').innerHTML=nodeCells(selected,true);
- $('nodes').innerHTML=sorted.map(n=>`<tr class="${n.current?'current-row':''}">${nodeCells(n)}</tr>`).join('');
+ $('selected-node').innerHTML=nodeRow(selected,best,s);
+ $('nodes').innerHTML=sorted.length?sorted.map(n=>nodeRow(n,best,s)).join(''):'<tr><td colspan="6" class="empty">暂无节点</td></tr>';
  const kinds={startup:'启动',phase:'状态',switch:'切换',recovery:'复查',manual:'手动',decision:'判断',api:'接口',error:'错误',unavailable:'故障'};
  $('events').innerHTML=[...s.events].reverse().slice(0,8).map(e=>`<div class="event"><time>${time(e.at)}</time><span class="event-kind">${kinds[e.kind]??'记录'}</span><span class="event-text" title="${esc(e.message)}">${esc(e.message)}</span></div>`).join('');
  $('updated').textContent='更新于 '+time(s.now);
@@ -73,6 +76,12 @@ async function control(action,id=''){
 }
 $('airport-options').addEventListener('click',e=>{const button=e.target.closest('[data-airport]');if(button)control('airport',button.dataset.airport);});
 $('recheck').addEventListener('click',()=>control('recheck'));
-$('nodes').addEventListener('click',e=>{const node=e.target.closest('[data-node]');if(node)control('node',node.dataset.node);});
-$('nodes').addEventListener('keydown',e=>{const node=e.target.closest('[data-node]');if(node&&(e.key==='Enter'||e.key===' ')){e.preventDefault();control('node',node.dataset.node);}});
+for (const id of ['nodes','selected-node']) {
+ const body=$(id);
+ body.closest('table').insertAdjacentHTML('afterbegin',tableHeading());
+ body.addEventListener('click',e=>{
+  const button=e.target.closest('button[data-node]');
+  if(button&&!button.disabled)control('node',button.dataset.node);
+ });
+}
 async function poll(){await refresh();setTimeout(poll,1000);}poll();
