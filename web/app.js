@@ -44,7 +44,7 @@ function render(s){
  $('connection').textContent=s.api_healthy?'后端已连接':'管理接口异常';
  $('mode-note-text').textContent=s.mode==='real'?'真实模式 · 已连接 sing-box API':'模拟模式 · 切换仅作用于模拟接口';
  $('mode-note').classList.toggle('real-mode',s.mode==='real');
- $('airport-options').innerHTML=s.airports.map(a=>`<button class="airport-option ${a.id===s.airport_id?'selected':''}" data-airport="${esc(a.id)}" ${busy||s.pending_id||a.id===s.airport_id?'disabled':''} aria-pressed="${a.id===s.airport_id}"><strong>${esc(a.name)}</strong></button>`).join('');
+ $('airport-options').innerHTML=s.airports.map(a=>`<button class="airport-option ${a.id===s.airport_id?'selected':''}" data-airport="${esc(a.id)}" title="${esc(a.selector)}" ${busy||s.pending_id||a.id===s.airport_id?'disabled':''} aria-pressed="${a.id===s.airport_id}"><strong>${esc(a.selector)}</strong></button>`).join('');
  $('node-count').textContent=s.nodes.length;
  $('available').textContent=s.nodes.filter(n=>n.checks>0&&n.last_success).length;
  $('total').textContent=' / '+s.nodes.length+' 节点成功';
