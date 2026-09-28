@@ -227,3 +227,8 @@ select{border:0!important;box-shadow:0 1px 0 #dce5e7;background:transparent}
 
 @media(max-width:700px){.node-table{min-width:880px}
 }
+
+/* Compact top bar: airport selection and health share one horizontal card. */
+.toolbar{display:flex;justify-content:flex-end;min-height:0;margin:22px 0 12px}.top-card{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(250px,1fr);gap:44px;align-items:center;margin-bottom:24px;padding:20px 24px}.top-airports{min-width:0}.top-airports .card-label{margin-bottom:10px}.top-health{min-width:0}.airport-options{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0}.airport-option{min-height:48px;padding:9px 12px;background:transparent;color:#40576a;box-shadow:none!important}.airport-option:hover:not(:disabled){background:#edf2f5;color:#2d536f;box-shadow:none!important}.airport-option.selected,.airport-option:disabled.selected{background:#2f76c5;color:#fff;box-shadow:0 0 14px rgba(47,118,197,.35)!important}.airport-option.selected small{color:#fff}.top-health .health-number{padding:0}.top-health .health-track{margin:10px 0 8px}.top-health .health-caption{font-size:11px}
+@media(max-width:900px){.top-card{grid-template-columns:1fr;gap:18px}.top-health{max-width:360px}}
+@media(max-width:700px){.toolbar{margin-top:16px}.top-card{padding:18px 16px}.airport-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
