@@ -3,3 +3,18 @@
 @media(min-width:1300px){th:nth-child(2){width:30%}}
 @media(max-width:1100px){.shell{padding:0 24px}.overview{gap:12px}.card{padding:20px}.panel-heading{align-items:flex-start;flex-wrap:wrap}.note-end{display:none}table{min-width:950px}.events-list{grid-template-columns:1fr}.health-caption{flex-wrap:wrap}.legend{gap:12px}}
 @media(max-width:700px){.shell{padding:0 16px}header{height:84px}.brand{font-size:20px}.brand-mark{width:34px;height:38px}.brand small{font-size:9px}.version{display:none}.header-right{font-size:10px}.heading{margin:25px 0 20px;gap:12px}h1{font-size:27px}.heading p{max-width:230px}.heading .button{white-space:nowrap;padding:9px 12px}.overview{grid-template-columns:1fr 1fr}.active-card{grid-column:1/-1}.card{padding:18px}.active-bottom b{font-size:25px}.card-label{font-size:11px}.health-number b{font-size:33px}.health-number span{font-size:10px}.health-caption{font-size:10px}.panel-heading{padding:20px 18px;gap:14px}.legend{font-size:10px}.status-line{padding:11px 18px;font-size:11px}.table-footer{padding:14px 18px}.events-list{padding:0 18px 14px}.events-panel .subtle{display:none}footer{font-size:10px}footer>span:last-child{text-align:right}#updated{display:block;margin:3px 0 0}}
+
+/* Flat dashboard treatment: separation comes from space, fill, and zero-offset shadow. */
+*,*::before,*::after{border-radius:0!important;border-width:0!important}
+.card,.nodes-panel,.events-panel{border:0!important;box-shadow:0 0 18px rgba(31,53,70,.09)}
+.demo-note{border:0!important;box-shadow:0 0 14px rgba(31,53,70,.06)}
+.button,.pick,.compact{border:0!important;border-radius:0!important;box-shadow:0 0 12px rgba(23,72,59,.16);transition:background-color .15s,box-shadow .15s,transform .15s}
+.button{background:#17846b;color:#fff}.button:hover{background:#116d58;box-shadow:0 0 16px rgba(23,72,59,.22)}
+.button.secondary{background:#e9eff2;color:#314b5d;box-shadow:0 0 12px rgba(36,57,72,.12)}.button.secondary:hover{background:#dfe9ec;box-shadow:0 0 16px rgba(36,57,72,.18)}
+.compact{background:#17846b;color:#fff}.compact:hover{background:#116d58}
+.pick{background:#e9eff2;color:#405c6d;box-shadow:0 0 10px rgba(36,57,72,.1)}.pick:hover{background:#dce8e8;color:#176e59;box-shadow:0 0 14px rgba(23,72,59,.16)}
+select{border:0!important;box-shadow:0 1px 0 #dce5e7;background:transparent}
+th,td{border:0!important}
+th{padding:15px 22px;text-align:left;background:#f8fafb}td{padding:18px 22px;vertical-align:middle}tbody tr:nth-child(even){background:#fbfcfc}tbody tr.current-row{background:#f1f8f4}.current-row td:first-child{box-shadow:inset 3px 0 #17846b}
+th.rank,td.rank{width:54px;padding-left:24px}th:nth-child(2){width:27%}th:nth-child(3){width:154px}th:nth-child(4){width:auto}th:nth-child(5){width:100px}.node-name{line-height:1.45}.node-meta{margin-top:6px}.metric-pair,.history-pair{grid-template-rows:48px 48px;gap:7px}.metric-pair{justify-items:start}.history-chart{height:48px;max-width:360px}.table-footer{border:0!important}.status-line{border:0!important}.event{border:0!important;padding:11px 0}.events-list{row-gap:2px}
+@media(max-width:1100px){table{min-width:980px}}
