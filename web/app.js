@@ -33,7 +33,10 @@ function tableHeading() {
  return '<colgroup><col class="col-node"><col class="col-action"><col class="col-score"><col class="col-delay"><col class="col-history"><col class="col-history"></colgroup><thead><tr><th scope="col">节点</th><th scope="col">检查次数</th><th scope="col">分数</th><th scope="col">延迟（ms）</th><th scope="col">分数历史</th><th scope="col">延迟历史</th></tr></thead>';
 }
 function nodeKey(n,best,s,selected=false) {
- return JSON.stringify({id:n.id,name:n.name,checks:n.checks,score:n.score,delay:n.delay_ms,overflow:n.score_overflow,last:n.last_success,current:selected||n.id===s.current_id,history:n.history,best,busy,pending:s.pending_id,phase:s.phase,api:s.api_healthy});
+ // A changing best score matters only when it changes a visible color.
+ // Including the raw best value would redraw every node's SVG on each update.
+ const colors=(n.history??[]).slice(-20).map(sample=>tone(sample.score,best)).join(',');
+ return JSON.stringify({id:n.id,name:n.name,checks:n.checks,score:n.score,delay:n.delay_ms,overflow:n.score_overflow,last:n.last_success,current:selected||n.id===s.current_id,history:n.history,colors,rowColor:tone(n.score,best),busy,pending:s.pending_id,phase:s.phase,api:s.api_healthy});
 }
 function nodeRow(n,best,s) {
  const current=Boolean(n.id)&&n.id===s.current_id;
@@ -67,21 +70,26 @@ function syncRows(body,nodes,best,s,selected=false) {
   body.innerHTML=selected?nodeRow(nodes[0],best,s):nodes.map(n=>nodeRow(n,best,s)).join('');
   return;
  }
+ const rows=new Map([...body.querySelectorAll('tr[data-row-id]')].map(row=>[row.dataset.rowId,row]));
  const seen=new Set();
+ let position=body.firstElementChild;
  for(const n of nodes) {
   const id=n.id||'selected';
-  let row=[...body.querySelectorAll('tr[data-row-id]')].find(item=>item.dataset.rowId===id);
+  let row=rows.get(id);
+  const key=nodeKey(n,best,s,selected);
   if(!row) {
    const holder=document.createElement('tbody');
    holder.innerHTML=nodeRow(n,best,s);
    row=holder.firstElementChild;
+   row.dataset.renderKey=key;
   }
-  const key=nodeKey(n,best,s,selected);
   if(row.dataset.renderKey!==key)patchRow(row,n,best,s,selected);
-  body.appendChild(row);
+  if(row!==position)body.insertBefore(row,position);
+  position=row.nextElementSibling;
   seen.add(id);
  }
- for(const row of [...body.querySelectorAll('tr')]) if(!seen.has(row.dataset.rowId))row.remove();
+ for(const [id,row] of rows)if(!seen.has(id))row.remove();
+ for(const row of [...body.children])if(!row.dataset.rowId)row.remove();
 }
 function render(s){
  state=s;
@@ -135,4 +143,6 @@ for (const id of ['nodes','selected-node']) {
   if(button&&!button.disabled)control('node',button.dataset.node);
  });
 }
-async function poll(){await refresh();setTimeout(poll,1000);}poll();
+// Background tabs do not need a full 78-node snapshot every second.
+async function poll(){await refresh();setTimeout(poll,document.hidden?5000:1000);}poll();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});

@@ -247,3 +247,7 @@ select{border:0!important;box-shadow:0 1px 0 #dce5e7;background:transparent}
 .brand strong{color:var(--blue-text)}
 .airport-option:hover:not(:disabled),.node-table .node-choice:hover:not(:disabled){background:#E3F6FF;color:var(--blue-text)}
 progress,progress::-webkit-progress-bar{background:#E6FCF1}
+
+/* Keep the policy group and health summary in one column on narrow screens.
+   This must follow the later desktop .top-card declaration above. */
+@media(max-width:700px){.top-card{grid-template-columns:minmax(0,1fr);gap:18px}.top-health{max-width:none}}
