@@ -252,3 +252,8 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .top-health #recheck{background:var(--blue);color:var(--blue-text);box-shadow:0 0 6px rgba(66,211,242,.18)!important}
 .top-health #recheck:hover{background:#32C4E4;box-shadow:0 0 8px rgba(66,211,242,.22)!important}
 @media(max-width:700px){.health-number b{font-size:32px}.health-number span{font-size:15px}}
+
+/* Match the table's visual axis and the section heading hierarchy. */
+.node-table th,.node-table td{text-align:center}
+.top-airports .card-label{font-size:17px;font-weight:650;letter-spacing:-.3px;color:var(--ink)}
+@media(max-width:700px){.top-airports .card-label{font-size:17px}}

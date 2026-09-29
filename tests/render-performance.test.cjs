@@ -82,3 +82,9 @@ test('active controls use the cyan palette and balanced health text', () => {
  assert.match(css,/\.top-health #recheck\{[^}]*background:var\(--blue\)[^}]*box-shadow:0 0 6px/);
  assert.match(css,/\.health-number span\{font-size:16px/);
 });
+
+test('table cells and policy-group heading share the intended alignment and scale', () => {
+ const css=fs.readFileSync('web/styles.css','utf8');
+ assert.match(css,/\.node-table th,\.node-table td\{text-align:center\}/);
+ assert.match(css,/\.top-airports \.card-label\{font-size:17px;font-weight:650/);
+});
