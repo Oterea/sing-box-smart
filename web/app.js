@@ -14,9 +14,11 @@ function history(samples, kind, best) {
   const x=6+index*15;
   const title=time(s.at)+' · '+(kind==='score'?'分数 '+num(value):s.success?'实际延迟 '+num(value)+' ms':'失败：'+s.error)+(kind==='score'&&!s.success?' · 本次探测失败':'');
   let shape;
-  if(kind==='delay'&&!s.success){
-   // Failure has no latency value; an outlined marker distinguishes it from a measured bar.
-   shape=`<rect class="chart-failure" x="${x}" y="2" width="4" height="32"/>`;
+  if(!s.success){
+   // A failed probe has no delay value. Use the same quiet solid marker for
+   // both charts instead of inventing a latency or drawing a dashed outline.
+   const height=kind==='score'&&Number.isFinite(value)?Math.max(1,value/ceiling*31):31;
+   shape=`<rect class="chart-failure" x="${x}" y="${33-height}" width="4" height="${height}"/>`;
   } else if(!Number.isFinite(value)){
    shape=`<path class="chart-missing" d="M${x} 33h5"/>`;
   } else {
@@ -26,7 +28,7 @@ function history(samples, kind, best) {
   }
   return `<g><title>${esc(title)}</title>${shape}</g>`;
  }).join('');
- return `<svg class="history-chart" viewBox="0 0 320 36" preserveAspectRatio="none" role="img" aria-label="${kind==='score'?'分数':'延迟'}历史，最近${tail.length}次，旧到新，纵轴上限${Math.round(ceiling)}"><path class="chart-grid" d="M0 2H320M0 18H320"/><path class="chart-baseline" d="M0 33.5H320"/>${bars}${tail.length?'':'<text x="4" y="23" fill="#95a2ad" font-size="12">暂无记录</text>'}</svg>`;
+ return `<svg class="history-chart" viewBox="0 0 320 36" preserveAspectRatio="none" role="img" aria-label="${kind==='score'?'分数':'延迟'}历史，最近${tail.length}次，旧到新，纵轴上限${Math.round(ceiling)}">${bars}${tail.length?'':'<text x="4" y="23" fill="#95a2ad" font-size="12">暂无记录</text>'}</svg>`;
 }
 // Both sections share the same header, column definitions and row renderer.
 function tableHeading() {

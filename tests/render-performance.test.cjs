@@ -63,7 +63,14 @@ test('small best-score changes without color changes keep row keys stable', () =
 
 test('mobile top card ends with a single-column override', () => {
  const css=fs.readFileSync('web/styles.css','utf8');
- const desktop=css.lastIndexOf('.top-card{grid-template-columns:minmax(0,1.7fr)');
+ const desktop=css.lastIndexOf('.top-card{grid-template-columns:minmax(0,1fr) minmax(0,1fr)');
  const mobile=css.lastIndexOf('@media(max-width:700px){.top-card{grid-template-columns:minmax(0,1fr)');
  assert.ok(desktop>=0 && mobile>desktop);
+});
+
+test('header stays informational and the manual check sits in the health card', () => {
+ const html=fs.readFileSync('web/index.html','utf8');
+ const header=html.slice(html.indexOf('<header>'),html.indexOf('</header>'));
+ assert.doesNotMatch(header,/brand-mark|recheck/);
+ assert.match(html.slice(html.indexOf('<section class="top-card'),html.indexOf('</section>')),/id="recheck"/);
 });
