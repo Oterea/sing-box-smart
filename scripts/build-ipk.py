@@ -12,17 +12,18 @@ def archive(files):
    info=tarfile.TarInfo('./'+name);info.size=len(v);info.mode=mode;info.mtime=int(time.time());t.addfile(info,io.BytesIO(v))
  return b.getvalue()
 def package(name,arch,files,depends,conffiles=None):
- control=f'Package: {name}\nVersion: {VERSION}\nArchitecture: {arch}\nMaintainer: Oterea\nSection: net\nPriority: optional\nDepends: {depends}\nDescription: sing-box-smart monitoring and service management\n'
- controls=[('control',control,0o644)]
- if conffiles:controls.append(('conffiles','\n'.join(conffiles)+'\n',0o644))
- if name.startswith('luci-app-'):
-  controls.append(('postinst','#!/bin/sh\n[ -n "$IPKG_INSTROOT" ] && exit 0\n/etc/init.d/rpcd restart\nrm -f /tmp/luci-indexcache /tmp/luci-modulecache/*\nexit 0\n',0o755))
- members=[('debian-binary',b'2.0\n'),('control.tar.gz',archive(controls)),('data.tar.gz',archive(files))]
- b=bytearray(b'!<arch>\n')
- for key,v in members:
-  header=f'{key:<16}{int(time.time()):<12}{0:<6}{0:<6}{"100644":<8}{len(v):<10}`\n'.encode();b.extend(header);b.extend(v)
-  if len(v)%2:b.extend(b'\n')
- path=OUT/f'{name}_{VERSION}_{arch}.ipk';path.write_bytes(b);print(path)
+ import tempfile, shutil
+ with tempfile.TemporaryDirectory() as td:
+  root=pathlib.Path(td); control=root/'control'; data=root/'data'; control.mkdir(); data.mkdir()
+  (control/'control').write_text(f'Package: {name}\nVersion: {VERSION}\nArchitecture: {arch}\nMaintainer: Oterea\nSection: net\nPriority: optional\nDepends: {depends}\nDescription: sing-box-smart monitoring and service management\n')
+  if conffiles:(control/'conffiles').write_text('\n'.join(conffiles)+'\n')
+  if name.startswith('luci-app-'):(control/'postinst').write_text('#!/bin/sh\n[ -n "$IPKG_INSTROOT" ] && exit 0\n/etc/init.d/rpcd restart\nrm -f /tmp/luci-indexcache /tmp/luci-modulecache/*\nexit 0\n');(control/'postinst').chmod(0o755)
+  for n,v,m in files:
+   q=data/n;q.parent.mkdir(parents=True,exist_ok=True);q.write_bytes(v if isinstance(v,bytes) else v.encode());q.chmod(m)
+  subprocess.run(['tar','czf',str(root/'control.tar.gz'),'-C',str(control),'.'],check=True)
+  subprocess.run(['tar','czf',str(root/'data.tar.gz'),'-C',str(data),'.'],check=True)
+  (root/'debian-binary').write_text('2.0\n')
+  path=OUT/f'{name}_{VERSION}_{arch}.ipk';subprocess.run(['ar','r',str(path),str(root/'debian-binary'),str(root/'control.tar.gz'),str(root/'data.tar.gz')],check=True,stdout=subprocess.DEVNULL);print(path)
 def collect(folder,prefix=''):
  return [(prefix+str(p.relative_to(folder)),p.read_bytes(),0o644) for p in folder.rglob('*') if p.is_file()]
 subprocess.run(['go','build','-trimpath','-ldflags=-s -w','-o',str(OUT/'sing-box-smart'),'./cmd/sing-box-smart'],cwd=ROOT,check=True,env={**__import__('os').environ,'CGO_ENABLED':'0','GOOS':'linux','GOARCH':'arm64'})
