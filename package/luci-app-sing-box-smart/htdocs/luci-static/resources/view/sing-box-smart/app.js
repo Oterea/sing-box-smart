@@ -16,7 +16,8 @@ return view.extend({
   const dot = E('i', {class:'sbs-status-dot'});
   const statusLine = E('div',{class:'sbs-status'},[dot,status]);
   const auto = E('input',{type:'checkbox',checked:data[1].code === 0});
-  const autoLabel = E('label',{class:'sbs-switch'},[auto,E('span',{class:'sbs-switch-track'}),E('span',{},['开机自动启动'])]);
+  const autoTrack = E('button',{type:'button',class:'sbs-switch-track',ariaLabel:'开机自动启动'});
+  const autoLabel = E('div',{class:'sbs-switch'},[auto,autoTrack,E('span',{class:'sbs-switch-text'},['开机自动启动'])]);
   const actions = [];
   const update = function(result) {
    const instances = (result[serviceName] || {}).instances || {};
@@ -43,6 +44,7 @@ return view.extend({
     if(r.code!==0)throw new Error(r.stderr || '保存失败');
    }).catch(function(e){auto.checked=!auto.checked;ui.addNotification(null,E('p',{},[e.message]));}).finally(function(){auto.disabled=false;});
   });
+  autoTrack.addEventListener('click', function() { if (!auto.disabled) { auto.checked = !auto.checked; auto.dispatchEvent(new Event('change')); } });
   update(data[0]);
   poll.add(function(){return list(serviceName).then(update);},3);
   return E('div',{class:'sbs-page'},[
