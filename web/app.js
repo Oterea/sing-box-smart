@@ -108,7 +108,6 @@ function render(s){
  const available=s.nodes.filter(n=>n.checks>0&&n.last_success).length;
  $('success-summary').textContent=available+' / '+s.nodes.length+' 节点成功';
  $('sample-count').textContent=s.nodes.reduce((v,n)=>v+n.checks,0)+' 次检查';
- $('health-progress').value=100*available/(s.nodes.length||1);
  const current=s.nodes.find(n=>n.id===s.current_id);
  $('phase').textContent=!s.api_healthy?'接口异常':s.phase==='startup'?'启动检查':s.phase==='unavailable'?'等待恢复':'自动选择';
  const elapsed=(new Date(s.now)-new Date(s.started_at))/1000;

@@ -279,3 +279,15 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
  .health-progress-row{gap:12px}
  .top-health .health-caption{font-size:12px}
 }
+
+/* The manual check belongs to the brand row; the node summary belongs to its table. */
+.header-actions{display:flex;align-items:center;gap:22px}
+.node-summary{display:flex;align-items:center;gap:16px;color:#617486;font-size:13px;font-weight:550;white-space:nowrap}
+.top-card{grid-template-columns:1fr}
+@media(max-width:700px){
+ .header-actions{gap:10px}
+ .header-right{gap:5px}
+ .header-actions #recheck{padding:8px 10px;font-size:11px}
+ .node-summary{order:2;width:100%;justify-content:flex-start;font-size:12px}
+ .nodes-panel .panel-heading{align-items:center}
+}

@@ -71,8 +71,9 @@ test('mobile top card ends with a single-column override', () => {
 test('header stays informational and the manual check sits in the health card', () => {
  const html=fs.readFileSync('web/index.html','utf8');
  const header=html.slice(html.indexOf('<header>'),html.indexOf('</header>'));
- assert.doesNotMatch(header,/brand-mark|recheck/);
- assert.match(html.slice(html.indexOf('<section class="top-card'),html.indexOf('</section>')),/id="recheck"/);
+ assert.doesNotMatch(header,/brand-mark/);
+ assert.match(header,/id="recheck"/);
+ assert.match(html,/id="success-summary"/);
 });
 
 test('active controls use the cyan palette and balanced health text', () => {
