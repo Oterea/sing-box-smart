@@ -23,6 +23,7 @@ import (
 
 type request struct {
 	action, target string
+	root, pattern  string
 	client         gateway.Client
 	airports       []domain.Airport
 	reply          chan response
@@ -161,7 +162,7 @@ func (a *App) ConfigureFilters(ctx context.Context, root, pattern string) error 
 	if err != nil {
 		return err
 	}
-	_, err = a.request(ctx, request{action: "api", target: a.apiAddress, client: client, airports: airports})
+	_, err = a.request(ctx, request{action: "api", target: a.apiAddress, root: root, pattern: pattern, client: client, airports: airports})
 	if err == nil {
 		a.groupRoot = root
 		a.groupPattern = pattern
@@ -204,10 +205,15 @@ func (a *App) configureAPI(r request) error {
 	if a.switchBusy || a.pending != "" || a.healthBusy {
 		return fmt.Errorf("切换正在进行，请稍后重试")
 	}
-	if err := settings.Save(a.cfg.SettingsPath, settings.Connection{API: r.target, Root: a.groupRoot, Pattern: a.groupPattern}); err != nil {
+	root, pattern := a.groupRoot, a.groupPattern
+	if r.root != "" {
+		root, pattern = r.root, r.pattern
+	}
+	if err := settings.Save(a.cfg.SettingsPath, settings.Connection{API: r.target, Root: root, Pattern: pattern}); err != nil {
 		return fmt.Errorf("保存配置失败: %w", err)
 	}
 	a.apiAddress = r.target
+	a.groupRoot, a.groupPattern = root, pattern
 	selected := a.airport.ID
 	a.client = r.client
 	a.runner.Client = r.client
