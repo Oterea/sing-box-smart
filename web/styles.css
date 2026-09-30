@@ -279,6 +279,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
  .health-progress-row{gap:12px}
  .top-health .health-caption{font-size:12px}
 }
+.api-settings{margin:0 0 24px;padding:14px 18px;background:#fff;box-shadow:0 0 14px rgba(31,53,70,.07);color:#617486}.api-settings summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--ink)}.api-settings form{display:flex;gap:10px;margin-top:12px}.api-settings input{flex:1;min-width:0;padding:9px 10px;background:#f3f6f7;color:var(--ink);font:13px inherit}.api-settings p{margin:9px 0 0;font-size:11px}.api-settings button{flex-shrink:0}
 
 /* The manual check belongs to the brand row; the node summary belongs to its table. */
 .header-actions{display:flex;align-items:center;gap:22px}

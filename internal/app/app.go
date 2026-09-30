@@ -108,6 +108,13 @@ func (a *App) Control(ctx context.Context, action, target string) error {
 	_, err := a.request(ctx, request{action: action, target: target})
 	return err
 }
+func (a *App) ConfigureAPI(ctx context.Context, api string) error {
+	r, e := a.request(ctx, request{action: "api", target: api})
+	if e != nil {
+		return e
+	}
+	return r.err
+}
 func (a *App) Run(ctx context.Context) {
 	ticker := time.NewTicker(25 * time.Millisecond)
 	defer ticker.Stop()
@@ -118,6 +125,8 @@ func (a *App) Run(ctx context.Context) {
 		case r := <-a.requests:
 			if r.action == "snapshot" {
 				r.reply <- response{snapshot: a.snapshot()}
+			} else if r.action == "api" {
+				r.reply <- response{err: a.configureAPI(ctx, r.target)}
 			} else {
 				r.reply <- response{err: a.control(ctx, r.action, r.target)}
 			}
@@ -137,6 +146,29 @@ func (a *App) Run(ctx context.Context) {
 			a.tick(ctx, now)
 		}
 	}
+}
+func (a *App) configureAPI(ctx context.Context, api string) error {
+	c, ok := a.client.(gateway.APIConfigurable)
+	if !ok {
+		return fmt.Errorf("当前模式不支持运行时修改 API")
+	}
+	if err := c.SetAPI(api); err != nil {
+		return err
+	}
+	airports, err := discovery.Load(ctx, a.client)
+	if err != nil {
+		return err
+	}
+	selected := a.airport.ID
+	a.airports = airports
+	for _, airport := range airports {
+		if airport.ID == selected {
+			a.reset(airport)
+			return nil
+		}
+	}
+	a.reset(airports[0])
+	return nil
 }
 func (a *App) snapshot() domain.Snapshot {
 	return domain.Snapshot{Mode: a.cfg.Mode, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}

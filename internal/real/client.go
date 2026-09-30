@@ -14,14 +14,33 @@ import (
 	"sing-box-smart/internal/domain"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 type Client struct {
+	mu                  sync.RWMutex
 	base, root, testURL string
 	pins                []config.Pin
 	hc                  *http.Client
 }
+
+func (c *Client) SetAPI(api string) error {
+	u, err := url.Parse(strings.TrimRight(api, "/"))
+	if err != nil || u.Scheme == "" || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
+		return fmt.Errorf("API 地址无效")
+	}
+	c.mu.Lock()
+	c.base = strings.TrimRight(api, "/")
+	c.mu.Unlock()
+	return nil
+}
+func (c *Client) endpoint(path string) string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.base + path
+}
+
 type proxyInfo struct {
 	Type string   `json:"type"`
 	Name string   `json:"name"`
@@ -36,7 +55,7 @@ func New(c config.Config) *Client {
 	return &Client{base: strings.TrimRight(c.API, "/"), root: c.Root, testURL: c.TestURL, pins: c.Pins, hc: &http.Client{Transport: &http.Transport{MaxIdleConns: 64, MaxIdleConnsPerHost: 64, IdleConnTimeout: 90 * time.Second, DialContext: (&net.Dialer{Timeout: 3 * time.Second}).DialContext}}}
 }
 func (c *Client) get(ctx context.Context, path string, dst any) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.base+path, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint(path), nil)
 	if err != nil {
 		return err
 	}
@@ -104,7 +123,7 @@ func (c *Client) Probe(ctx context.Context, node string) (domain.Probe, error) {
 		innerTimeout = 500 * time.Millisecond
 	}
 	q := url.Values{"url": {c.testURL}, "timeout": {strconv.FormatInt(innerTimeout.Milliseconds(), 10)}}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.base+"/proxies/"+url.PathEscape(node)+"/delay?"+q.Encode(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint("/proxies/")+url.PathEscape(node)+"/delay?"+q.Encode(), nil)
 	if err != nil {
 		return domain.Probe{}, err
 	}
@@ -132,7 +151,7 @@ func (c *Client) Probe(ctx context.Context, node string) (domain.Probe, error) {
 }
 func (c *Client) Select(ctx context.Context, group, target string) error {
 	body, _ := json.Marshal(map[string]string{"name": target})
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, c.base+"/proxies/"+url.PathEscape(group), bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, c.endpoint("/proxies/"+url.PathEscape(group)), bytes.NewReader(body))
 	if err != nil {
 		return err
 	}

@@ -14,6 +14,7 @@ import (
 type Service interface {
 	Snapshot(context.Context) (domain.Snapshot, error)
 	Control(context.Context, string, string) error
+	ConfigureAPI(context.Context, string) error
 }
 
 func Handler(service Service) http.Handler {
@@ -27,6 +28,22 @@ func Handler(service Service) http.Handler {
 			return
 		}
 		write(w, 200, s)
+	})
+	mux.HandleFunc("POST /api/config/api", func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			API string `json:"api"`
+		}
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 2048)).Decode(&body); err != nil || body.API == "" {
+			write(w, 400, map[string]string{"error": "需要 api 地址"})
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+		defer cancel()
+		if err := service.ConfigureAPI(ctx, body.API); err != nil {
+			write(w, 409, map[string]string{"error": err.Error()})
+			return
+		}
+		write(w, 202, map[string]string{"status": "reloaded"})
 	})
 	for _, action := range []string{"airport", "node", "recheck"} {
 		action := action
