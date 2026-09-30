@@ -46,14 +46,14 @@ return view.extend({
   update(data[0]);
   poll.add(function(){return list(serviceName).then(update);},3);
   return E('div',{class:'sbs-page'},[
-   E('div',{class:'sbs-heading'},[E('div',{},[E('div',{class:'sbs-kicker'},['SERVICE CONTROL']),E('h2',{},['sing-box-smart']),E('p',{},['节点监测与自动选择'])]),statusLine]),
+   E('div',{class:'sbs-heading'},[E('h2',{},['sing-box-smart']),statusLine]),
    E('div',{class:'sbs-grid'},[
     E('section',{class:'sbs-card sbs-main-card'},[
-     E('div',{class:'sbs-card-title'},[E('span',{},['服务控制']),E('span',{class:'sbs-live-label'},['OpenWrt procd'])]),
+     E('div',{class:'sbs-card-title'},[E('span',{},['服务控制'])]),
      E('div',{class:'sbs-actions'},actions),
      E('div',{class:'sbs-divider'}),
      autoLabel,
-     E('p',{class:'sbs-hint'},['开机后自动启动 sing-box-smart，并由系统监控进程。'])
+     E('p',{class:'sbs-hint'},['开机后自动启动并监控服务。'])
     ]),
     E('section',{class:'sbs-card sbs-link-card'},[
      E('div',{class:'sbs-card-title'},[E('span',{},['监控面板']),E('span',{class:'sbs-arrow'},['↗'])]),
@@ -61,7 +61,7 @@ return view.extend({
      E('a',{class:'sbs-open',href:window.location.protocol+'//'+window.location.hostname+':9797/',target:'_blank',rel:'noopener'},['打开 smart 面板',' ↗'])
     ])
    ]),
-   E('div',{class:'sbs-note'},[E('b',{},['配置说明']),E('span',{},['sing-box API 地址和节点检测设置在 smart 面板中修改。'])])
+   E('div',{class:'sbs-note'},['API 地址和节点检测设置在 smart 面板中修改。'])
   ]);
  },
  handleSave:null, handleSaveApply:null, handleReset:null
