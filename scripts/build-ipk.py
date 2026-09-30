@@ -20,7 +20,7 @@ def package(name,arch,files,depends,conffiles=None):
  members=[('debian-binary',b'2.0\n'),('control.tar.gz',archive(controls)),('data.tar.gz',archive(files))]
  b=bytearray(b'!<arch>\n')
  for key,v in members:
-  header=f'{key+"/":<16}{int(time.time()):<12}{0:<6}{0:<6}{"100644":<8}{len(v):<10}`\n'.encode();b.extend(header);b.extend(v)
+  header=f'{key:<16}{int(time.time()):<12}{0:<6}{0:<6}{"100644":<8}{len(v):<10}`\n'.encode();b.extend(header);b.extend(v)
   if len(v)%2:b.extend(b'\n')
  path=OUT/f'{name}_{VERSION}_{arch}.ipk';path.write_bytes(b);print(path)
 def collect(folder,prefix=''):
