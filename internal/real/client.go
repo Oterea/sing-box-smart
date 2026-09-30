@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"sing-box-smart/internal/config"
 	"sing-box-smart/internal/domain"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -88,8 +89,32 @@ func (c *Client) members(ctx context.Context, group string) ([]string, string, e
 	return info.All, info.Now, err
 }
 func (c *Client) Airports(ctx context.Context) ([]domain.Airport, error) {
-	out := make([]domain.Airport, 0, len(c.pins))
-	for _, pin := range c.pins {
+	pins := c.pins
+	// Discover selectable PIN groups from the live API instead of keeping stale
+	// airport names after a sing-box configuration change.
+	var catalog struct {
+		Proxies map[string]proxyInfo `json:"proxies"`
+	}
+	if err := c.get(ctx, "/proxies", &catalog); err == nil && len(catalog.Proxies) > 0 {
+		pins = nil
+		root := catalog.Proxies[c.root]
+		for _, name := range root.All {
+			info := catalog.Proxies[name]
+			if strings.EqualFold(info.Type, "Selector") && strings.HasSuffix(name, " PIN") {
+				pins = append(pins, config.Pin{ID: name, Name: name, Selector: name})
+			}
+		}
+		if len(root.All) == 0 {
+			for name, info := range catalog.Proxies {
+				if strings.EqualFold(info.Type, "Selector") && strings.HasSuffix(name, " PIN") {
+					pins = append(pins, config.Pin{ID: name, Name: name, Selector: name})
+				}
+			}
+			sort.Slice(pins, func(i, j int) bool { return pins[i].ID < pins[j].ID })
+		}
+	}
+	out := make([]domain.Airport, 0, len(pins))
+	for _, pin := range pins {
 		members, _, err := c.members(ctx, pin.Selector)
 		if err != nil {
 			if strings.HasPrefix(err.Error(), "HTTP 404") {
