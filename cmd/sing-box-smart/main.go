@@ -39,10 +39,10 @@ func run() error {
 	flag.StringVar(&cfg.LogDir, "log-dir", cfg.LogDir, "log directory")
 	flag.StringVar(&cfg.SettingsPath, "settings", "connection.json", "persistent connection settings file")
 	flag.Parse()
-	if api, err := settings.Load(cfg.SettingsPath); err != nil {
+	if saved, err := settings.Load(cfg.SettingsPath); err != nil {
 		return err
-	} else if api != "" {
-		cfg.API = api
+	} else if saved.API != "" {
+		cfg.API, cfg.Root, cfg.Pattern = saved.API, saved.Root, saved.Pattern
 	}
 	if pins != "" {
 		parsed, err := config.ParsePins(pins)
