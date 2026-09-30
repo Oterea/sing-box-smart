@@ -77,7 +77,7 @@ func Handler(service Service) http.Handler {
 		}
 		write(w, 202, map[string]string{"status": "reloaded"})
 	})
-	for _, action := range []string{"airport", "node", "recheck"} {
+	for _, action := range []string{"airport", "node", "recheck", "pause", "resume"} {
 		action := action
 		mux.HandleFunc("POST /api/control/"+action, func(w http.ResponseWriter, r *http.Request) {
 			if origin := r.Header.Get("Origin"); origin != "" {

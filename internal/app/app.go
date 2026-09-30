@@ -52,6 +52,8 @@ type App struct {
 	events                                  events.Recorder
 	phase, current, pending, pendingKind    string
 	manual, switchBusy, healthy, healthBusy bool
+	paused                                  bool
+	pausedAt                                time.Time
 	started, lastHealth                     time.Time
 	generation                              int
 	requests                                chan request
@@ -221,9 +223,20 @@ func (a *App) configureAPI(r request) error {
 	return nil
 }
 func (a *App) snapshot() domain.Snapshot {
-	return domain.Snapshot{APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
+	return domain.Snapshot{Paused: a.paused, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
 }
 func (a *App) control(ctx context.Context, action, target string) error {
+	if action == "pause" {
+		a.pauseDetection()
+		return nil
+	}
+	if action == "resume" {
+		a.resumeDetection()
+		return nil
+	}
+	if a.paused {
+		return fmt.Errorf("检测已暂停，请先继续检测")
+	}
 	if action == "recheck" {
 		for _, n := range a.store.Nodes {
 			n.Plan.ClearRecovery()
@@ -273,6 +286,9 @@ func (a *App) control(ctx context.Context, action, target string) error {
 	return nil
 }
 func (a *App) tick(ctx context.Context, now time.Time) {
+	if a.paused {
+		return
+	}
 	if !a.healthy {
 		if !a.healthBusy && now.Sub(a.lastHealth) >= a.cfg.Recovery {
 			a.healthBusy = true
@@ -312,15 +328,16 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 	}
 }
 func (a *App) startProbe(ctx context.Context, n *state.Node, reason string) {
-	if n.Plan.InFlight {
+	if a.paused || n.Plan.InFlight {
 		return
 	}
 	n.Plan.InFlight = true
 	n.Plan.Reason = reason
 	id, generation := n.Info.ID, a.generation
 	probeCtx := a.probeCtx
+	runner := a.runner
 	go func() {
-		p, err := a.runner.Run(probeCtx, id)
+		p, err := runner.Run(probeCtx, id)
 		select {
 		case a.results <- observation{id, generation, p, err}:
 		case <-probeCtx.Done():
@@ -328,7 +345,7 @@ func (a *App) startProbe(ctx context.Context, n *state.Node, reason string) {
 	}()
 }
 func (a *App) observe(ctx context.Context, o observation) {
-	if o.generation != a.generation {
+	if a.paused || o.generation != a.generation {
 		return
 	}
 	n := a.store.ByID[o.id]
@@ -441,7 +458,7 @@ func (a *App) choose() string {
 	return decision.Choose(nodes, a.current, a.cfg.SwitchRatio)
 }
 func (a *App) evaluate(ctx context.Context) {
-	if a.phase == "startup" || !a.healthy || a.pending != "" || a.switchBusy {
+	if a.paused || a.phase == "startup" || !a.healthy || a.pending != "" || a.switchBusy {
 		return
 	}
 	if a.phase == "unavailable" && a.store.AnyAvailable() {
@@ -463,6 +480,9 @@ func (a *App) evaluate(ctx context.Context) {
 	a.startProbe(ctx, candidate, "confirm")
 }
 func (a *App) apply(ctx context.Context, kind, target, group, value string) {
+	if a.paused {
+		return
+	}
 	a.switchBusy = true
 	go func() {
 		c, cancel := context.WithTimeout(ctx, 2*a.cfg.Timeout)
