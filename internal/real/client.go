@@ -92,9 +92,10 @@ func (c *Client) Airports(ctx context.Context) ([]domain.Airport, error) {
 	for _, pin := range c.pins {
 		members, _, err := c.members(ctx, pin.Selector)
 		if err != nil {
-			// A configured PIN may be absent while momo/sing-box is reloading.
-			// Keep the other selectors usable and let the UI show the available set.
-			continue
+			if strings.HasPrefix(err.Error(), "HTTP 404") {
+				continue
+			}
+			return nil, fmt.Errorf("read selector %q: %w", pin.Selector, err)
 		}
 		a := domain.Airport{ID: pin.ID, Name: pin.Name, Selector: pin.Selector}
 		for _, name := range members {

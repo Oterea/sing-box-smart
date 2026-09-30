@@ -95,6 +95,8 @@ function syncRows(body,nodes,best,s,selected=false) {
 }
 function render(s){
  state=s;
+ const apiInput=$('api-address');
+ if(apiInput && apiInput.dataset && !apiInput.dataset.loaded){apiInput.value=s.api_address||'';apiInput.dataset.loaded='yes';}
  $('connection').parentElement.dataset.health=s.api_healthy?'ok':'error';
  $('connection').textContent=s.api_healthy?'后端已连接':'管理接口异常';
  $('mode-note-text').textContent=s.mode==='real'?'真实模式 · 已连接 sing-box API':'模拟模式 · 切换仅作用于模拟接口';
@@ -146,3 +148,5 @@ for (const id of ['nodes','selected-node']) {
 // Background tabs do not need a full 78-node snapshot every second.
 async function poll(){await refresh();setTimeout(poll,document.hidden?5000:1000);}poll();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
+
+$('api-test').addEventListener('click',async()=>{const button=$('api-test');button.disabled=true;try{const r=await fetch('/api/config/api/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api:$('api-address').value.trim()})});const data=await r.json();if(!r.ok)throw new Error(data.error);toast('连接正常，策略组可读取');}catch(e){toast(e.message);}finally{button.disabled=false;}});

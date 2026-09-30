@@ -35,3 +35,25 @@ gateway -> discovery -> app 调度 -> probe -> state -> score
 5. 管理接口健康错误与节点探测失败必须分开返回；不能把 API 中断批量记成节点失败。
 
 认证、地址和 selector 映射放进配置，不进入评分模块，也不写入日志。
+
+## OpenWrt service management and connection settings
+
+`internal/settings` validates URLs and writes the connection file by atomic rename.
+The `-settings` file overrides the API startup flag when present. OpenWrt uses
+`/etc/sing-box-smart/connection.json`. The existing service configuration remains
+`/etc/sing-box-smart.conf`; both paths are preserved by the upgrade keep list.
+
+Connection testing creates a separate client. Network discovery runs outside the
+app event loop. Applying a connection saves it first, then installs the prepared
+client through the event loop, cancels old probes and resets startup observation.
+An invalid or unreachable endpoint never replaces the active client.
+
+The LuCI JavaScript view calls the existing init script through rpcd file.exec,
+with ACL entries restricted to fixed service commands. procd service.list supplies
+status every three seconds. LuCI is available when the smart process is stopped.
+No custom rpcd daemon is needed for these operations.
+
+`python3 scripts/build-ipk.py` builds ARM64 opkg packages into `dist/` for this
+router. These artifacts are for OpenWrt/ImmortalWrt 24.10 aarch64_generic; they
+must not be used as APK packages or on another CPU architecture. The LuCI source
+is separately packaged as `luci-app-sing-box-smart` (architecture `all`).

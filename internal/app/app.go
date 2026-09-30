@@ -12,8 +12,10 @@ import (
 	"sing-box-smart/internal/events"
 	"sing-box-smart/internal/gateway"
 	"sing-box-smart/internal/probe"
+	"sing-box-smart/internal/real"
 	"sing-box-smart/internal/recovery"
 	"sing-box-smart/internal/score"
+	"sing-box-smart/internal/settings"
 	"sing-box-smart/internal/state"
 	"sing-box-smart/internal/switching"
 	"time"
@@ -21,6 +23,8 @@ import (
 
 type request struct {
 	action, target string
+	client         gateway.Client
+	airports       []domain.Airport
 	reply          chan response
 }
 type response struct {
@@ -39,6 +43,7 @@ type changed struct {
 }
 type App struct {
 	cfg                                     config.Config
+	apiAddress                              string
 	client                                  gateway.Client
 	runner                                  probe.Runner
 	airports                                []domain.Airport
@@ -67,6 +72,7 @@ func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.L
 	}
 	probeCtx, probeCancel := context.WithCancel(ctx)
 	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger}, healthy: true, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan error, 1), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel}
+	a.apiAddress = cfg.API
 	a.reset(airports[0])
 	return a, nil
 }
@@ -108,12 +114,34 @@ func (a *App) Control(ctx context.Context, action, target string) error {
 	_, err := a.request(ctx, request{action: action, target: target})
 	return err
 }
-func (a *App) ConfigureAPI(ctx context.Context, api string) error {
-	r, e := a.request(ctx, request{action: "api", target: api})
-	if e != nil {
-		return e
+func (a *App) prepareAPI(ctx context.Context, api string) (gateway.Client, []domain.Airport, string, error) {
+	if a.cfg.Mode != "real" {
+		return nil, nil, "", fmt.Errorf("模拟模式不支持修改真实 API")
 	}
-	return r.err
+	api, err := settings.NormalizeAPI(api)
+	if err != nil {
+		return nil, nil, "", err
+	}
+	cfg := a.cfg
+	cfg.API = api
+	client := real.New(cfg)
+	airports, err := discovery.Load(ctx, client)
+	if err != nil {
+		return nil, nil, "", err
+	}
+	return client, airports, api, nil
+}
+func (a *App) TestAPI(ctx context.Context, api string) error {
+	_, _, _, err := a.prepareAPI(ctx, api)
+	return err
+}
+func (a *App) ConfigureAPI(ctx context.Context, api string) error {
+	client, airports, api, err := a.prepareAPI(ctx, api)
+	if err != nil {
+		return err
+	}
+	_, err = a.request(ctx, request{action: "api", target: api, client: client, airports: airports})
+	return err
 }
 func (a *App) Run(ctx context.Context) {
 	ticker := time.NewTicker(25 * time.Millisecond)
@@ -126,7 +154,7 @@ func (a *App) Run(ctx context.Context) {
 			if r.action == "snapshot" {
 				r.reply <- response{snapshot: a.snapshot()}
 			} else if r.action == "api" {
-				r.reply <- response{err: a.configureAPI(ctx, r.target)}
+				r.reply <- response{err: a.configureAPI(r)}
 			} else {
 				r.reply <- response{err: a.control(ctx, r.action, r.target)}
 			}
@@ -147,31 +175,30 @@ func (a *App) Run(ctx context.Context) {
 		}
 	}
 }
-func (a *App) configureAPI(ctx context.Context, api string) error {
-	c, ok := a.client.(gateway.APIConfigurable)
-	if !ok {
-		return fmt.Errorf("当前模式不支持运行时修改 API")
+func (a *App) configureAPI(r request) error {
+	if a.switchBusy || a.pending != "" || a.healthBusy {
+		return fmt.Errorf("切换正在进行，请稍后重试")
 	}
-	if err := c.SetAPI(api); err != nil {
-		return err
+	if err := settings.Save(a.cfg.SettingsPath, r.target); err != nil {
+		return fmt.Errorf("保存配置失败: %w", err)
 	}
-	airports, err := discovery.Load(ctx, a.client)
-	if err != nil {
-		return err
-	}
+	a.apiAddress = r.target
 	selected := a.airport.ID
-	a.airports = airports
-	for _, airport := range airports {
+	a.client = r.client
+	a.runner.Client = r.client
+	a.airports = r.airports
+	a.healthy = true
+	for _, airport := range a.airports {
 		if airport.ID == selected {
 			a.reset(airport)
 			return nil
 		}
 	}
-	a.reset(airports[0])
+	a.reset(a.airports[0])
 	return nil
 }
 func (a *App) snapshot() domain.Snapshot {
-	return domain.Snapshot{Mode: a.cfg.Mode, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
+	return domain.Snapshot{APIAddress: a.apiAddress, Mode: a.cfg.Mode, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
 }
 func (a *App) control(ctx context.Context, action, target string) error {
 	if action == "recheck" {

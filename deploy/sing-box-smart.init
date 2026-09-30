@@ -13,6 +13,7 @@ start_service() {
     procd_open_instance
     procd_set_param command /usr/bin/sing-box-smart \
         -mode real \
+        -settings /etc/sing-box-smart/connection.json \
         -api "$API" \
         -root "$ROOT" \
         -pins "$PINS" \

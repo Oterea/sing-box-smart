@@ -15,6 +15,7 @@ type Service interface {
 	Snapshot(context.Context) (domain.Snapshot, error)
 	Control(context.Context, string, string) error
 	ConfigureAPI(context.Context, string) error
+	TestAPI(context.Context, string) error
 }
 
 func Handler(service Service) http.Handler {
@@ -28,6 +29,22 @@ func Handler(service Service) http.Handler {
 			return
 		}
 		write(w, 200, s)
+	})
+	mux.HandleFunc("POST /api/config/api/test", func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			API string `json:"api"`
+		}
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 2048)).Decode(&body); err != nil {
+			write(w, 400, map[string]string{"error": "请求无效"})
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer cancel()
+		if err := service.TestAPI(ctx, body.API); err != nil {
+			write(w, 409, map[string]string{"error": err.Error()})
+			return
+		}
+		write(w, 200, map[string]string{"status": "ok"})
 	})
 	mux.HandleFunc("POST /api/config/api", func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
@@ -79,6 +96,15 @@ func Handler(service Service) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'")
+		if r.Method == "POST" {
+			if origin := r.Header.Get("Origin"); origin != "" {
+				u, err := url.Parse(origin)
+				if err != nil || u.Host != r.Host || (u.Scheme != "http" && u.Scheme != "https") {
+					write(w, 403, map[string]string{"error": "不允许跨站操作"})
+					return
+				}
+			}
+		}
 		mux.ServeHTTP(w, r)
 	})
 }

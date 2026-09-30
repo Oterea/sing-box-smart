@@ -47,7 +47,7 @@ test('无记录和无分数正确显示，最多保留20条，没有占位假数
 
 test('当前两个数值共享相同字号，移除旧柱子的层叠样式', () => {
  const css = fs.readFileSync('web/styles.css', 'utf8');
- assert.match(css, /\.node-table \.metric-cell\{[^}]*font-size:16px/);
+ assert.match(css, /\.node-table \.metric-cell\{[^}]*font-size:15px/);
  assert.doesNotMatch(css, /\.sample\b/);
 });
 

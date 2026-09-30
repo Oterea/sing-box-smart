@@ -16,6 +16,7 @@ import (
 	"sing-box-smart/internal/gateway"
 	"sing-box-smart/internal/httpapi"
 	"sing-box-smart/internal/real"
+	"sing-box-smart/internal/settings"
 	"syscall"
 	"time"
 )
@@ -36,7 +37,13 @@ func run() error {
 	flag.StringVar(&pins, "pins", "", "airport PINs: Name=selector,Name=selector")
 	flag.StringVar(&cfg.Listen, "listen", cfg.Listen, "loopback HTTP listen address")
 	flag.StringVar(&cfg.LogDir, "log-dir", cfg.LogDir, "log directory")
+	flag.StringVar(&cfg.SettingsPath, "settings", "connection.json", "persistent connection settings file")
 	flag.Parse()
+	if api, err := settings.Load(cfg.SettingsPath); err != nil {
+		return err
+	} else if api != "" {
+		cfg.API = api
+	}
 	if pins != "" {
 		parsed, err := config.ParsePins(pins)
 		if err != nil {

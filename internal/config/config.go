@@ -9,7 +9,7 @@ import (
 
 type Pin struct{ ID, Name, Selector string }
 type Config struct {
-	Mode, API, Root, TestURL, Listen, LogDir                 string
+	Mode, API, Root, TestURL, Listen, LogDir, SettingsPath   string
 	Pins                                                     []Pin
 	Startup, Current, Candidate, Ordinary, Recovery, Timeout time.Duration
 	RecoverySteps                                            []time.Duration

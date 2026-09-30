@@ -66,6 +66,7 @@ type Snapshot struct {
 	Airports       []Airport  `json:"airports"`
 	CurrentID      string     `json:"current_id"`
 	PendingID      string     `json:"pending_id"`
+	APIAddress     string     `json:"api_address"`
 	APIHealthy     bool       `json:"api_healthy"`
 	StartedAt      time.Time  `json:"started_at"`
 	Now            time.Time  `json:"now"`

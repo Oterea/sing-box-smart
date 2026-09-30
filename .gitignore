@@ -2,3 +2,6 @@
 /logs/
 *.log
 .DS_Store
+
+/dist/
+/connection.json
