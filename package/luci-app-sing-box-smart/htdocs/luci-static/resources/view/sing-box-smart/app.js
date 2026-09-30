@@ -46,10 +46,10 @@ return view.extend({
   update(data[0]);
   poll.add(function(){return list(serviceName).then(update);},3);
   return E('div',{class:'sbs-page'},[
-   E('div',{class:'sbs-heading'},[E('h2',{},['sing-box-smart']),statusLine]),
+   E('div',{class:'sbs-heading'},[E('h2',{},['sing-box-smart'])]),
    E('div',{class:'sbs-grid'},[
     E('section',{class:'sbs-card sbs-main-card'},[
-     E('div',{class:'sbs-card-title'},[E('span',{},['服务控制'])]),
+     E('div',{class:'sbs-card-title'},[E('span',{},['服务控制']),statusLine]),
      E('div',{class:'sbs-actions'},actions),
      E('div',{class:'sbs-divider'}),
      autoLabel,
