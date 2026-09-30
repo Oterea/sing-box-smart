@@ -15,6 +15,7 @@ type Service interface {
 	Snapshot(context.Context) (domain.Snapshot, error)
 	Control(context.Context, string, string) error
 	ConfigureAPI(context.Context, string) error
+	ConfigureFilters(context.Context, string, string) error
 	TestAPI(context.Context, string) error
 }
 
@@ -29,6 +30,20 @@ func Handler(service Service) http.Handler {
 			return
 		}
 		write(w, 200, s)
+	})
+	mux.HandleFunc("POST /api/config/filters", func(w http.ResponseWriter, r *http.Request) {
+		var b struct{ Root, Pattern string }
+		if json.NewDecoder(http.MaxBytesReader(w, r.Body, 2048)).Decode(&b) != nil {
+			write(w, 400, map[string]string{"error": "请求无效"})
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+		defer cancel()
+		if err := service.ConfigureFilters(ctx, b.Root, b.Pattern); err != nil {
+			write(w, 409, map[string]string{"error": err.Error()})
+			return
+		}
+		write(w, 202, map[string]string{"status": "reloaded"})
 	})
 	mux.HandleFunc("POST /api/config/api/test", func(w http.ResponseWriter, r *http.Request) {
 		var body struct {

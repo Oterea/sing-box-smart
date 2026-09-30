@@ -9,13 +9,13 @@ import (
 
 type Pin struct{ ID, Name, Selector string }
 type Config struct {
-	Mode, API, Root, TestURL, Listen, LogDir, SettingsPath   string
-	Pins                                                     []Pin
-	Startup, Current, Candidate, Ordinary, Recovery, Timeout time.Duration
-	RecoverySteps                                            []time.Duration
-	RecoveryDropRatio, RecoveryDropMinMS                     float64
-	SwitchRatio                                              float64
-	HistoryLimit                                             int
+	Mode, API, Root, Pattern, TestURL, Listen, LogDir, SettingsPath string
+	Pins                                                            []Pin
+	Startup, Current, Candidate, Ordinary, Recovery, Timeout        time.Duration
+	RecoverySteps                                                   []time.Duration
+	RecoveryDropRatio, RecoveryDropMinMS                            float64
+	SwitchRatio                                                     float64
+	HistoryLimit                                                    int
 }
 
 func Default() Config {

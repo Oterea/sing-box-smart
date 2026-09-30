@@ -7,11 +7,24 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
 type Connection struct {
-	API string `json:"api"`
+	API     string `json:"api"`
+	Root    string `json:"root"`
+	Pattern string `json:"pattern"`
+}
+
+func NormalizePattern(raw string) (string, error) {
+	if strings.TrimSpace(raw) == "" {
+		return "", fmt.Errorf("策略组正则不能为空")
+	}
+	if _, e := regexp.Compile(raw); e != nil {
+		return "", fmt.Errorf("策略组正则无效: %w", e)
+	}
+	return raw, nil
 }
 
 func NormalizeAPI(raw string) (string, error) {
@@ -21,21 +34,33 @@ func NormalizeAPI(raw string) (string, error) {
 	}
 	return strings.TrimRight(u.String(), "/"), nil
 }
-func Load(path string) (string, error) {
+func Load(path string) (Connection, error) {
 	b, e := os.ReadFile(path)
 	if os.IsNotExist(e) {
-		return "", nil
+		return Connection{}, nil
 	}
 	if e != nil {
-		return "", e
+		return Connection{}, e
 	}
 	var c Connection
 	if e = json.Unmarshal(b, &c); e != nil {
-		return "", e
+		return Connection{}, e
 	}
-	return NormalizeAPI(c.API)
+	var err error
+	c.API, err = NormalizeAPI(c.API)
+	if err != nil {
+		return Connection{}, err
+	}
+	if c.Root == "" {
+		c.Root = "proxy"
+	}
+	if c.Pattern == "" {
+		c.Pattern = "PIN$"
+	}
+	c.Pattern, err = NormalizePattern(c.Pattern)
+	return c, err
 }
-func Save(path, api string) error {
+func Save(path string, c Connection) error {
 	if path == "" {
 		return fmt.Errorf("未配置设置文件路径")
 	}
@@ -47,7 +72,7 @@ func Save(path, api string) error {
 		return e
 	}
 	defer os.Remove(f.Name())
-	if e = json.NewEncoder(f).Encode(Connection{api}); e != nil {
+	if e = json.NewEncoder(f).Encode(c); e != nil {
 		f.Close()
 		return e
 	}

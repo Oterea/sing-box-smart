@@ -8,11 +8,11 @@ import (
 
 func TestConnectionPersistence(t *testing.T) {
 	p := filepath.Join(t.TempDir(), "config", "connection.json")
-	if e := Save(p, "http://127.0.0.1:9695"); e != nil {
+	if e := Save(p, Connection{API: "http://127.0.0.1:9695", Root: "proxy", Pattern: "PIN$"}); e != nil {
 		t.Fatal(e)
 	}
 	api, e := Load(p)
-	if e != nil || api != "http://127.0.0.1:9695" {
+	if e != nil || api.API != "http://127.0.0.1:9695" || api.Pattern != "PIN$" {
 		t.Fatal(api, e)
 	}
 	b, e := os.ReadFile(p)

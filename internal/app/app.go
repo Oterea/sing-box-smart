@@ -43,7 +43,7 @@ type changed struct {
 }
 type App struct {
 	cfg                                     config.Config
-	apiAddress                              string
+	apiAddress, groupRoot, groupPattern     string
 	client                                  gateway.Client
 	runner                                  probe.Runner
 	airports                                []domain.Airport
@@ -72,7 +72,7 @@ func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.L
 	}
 	probeCtx, probeCancel := context.WithCancel(ctx)
 	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger}, healthy: true, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan error, 1), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel}
-	a.apiAddress = cfg.API
+	a.apiAddress, a.groupRoot, a.groupPattern = cfg.API, cfg.Root, cfg.Pattern
 	a.reset(airports[0])
 	return a, nil
 }
@@ -123,7 +123,7 @@ func (a *App) prepareAPI(ctx context.Context, api string) (gateway.Client, []dom
 		return nil, nil, "", err
 	}
 	cfg := a.cfg
-	cfg.API = api
+	cfg.API, cfg.Root, cfg.Pattern = api, a.groupRoot, a.groupPattern
 	client := real.New(cfg)
 	airports, err := discovery.Load(ctx, client)
 	if err != nil {
@@ -141,6 +141,29 @@ func (a *App) ConfigureAPI(ctx context.Context, api string) error {
 		return err
 	}
 	_, err = a.request(ctx, request{action: "api", target: api, client: client, airports: airports})
+	return err
+}
+func (a *App) ConfigureFilters(ctx context.Context, root, pattern string) error {
+	if root == "" {
+		root = "proxy"
+	}
+	if _, err := settings.NormalizePattern(pattern); err != nil {
+		return err
+	}
+	cfg := a.cfg
+	cfg.Root = root
+	cfg.Pattern = pattern
+	cfg.API = a.apiAddress
+	client := real.New(cfg)
+	airports, err := discovery.Load(ctx, client)
+	if err != nil {
+		return err
+	}
+	_, err = a.request(ctx, request{action: "api", target: a.apiAddress, client: client, airports: airports})
+	if err == nil {
+		a.groupRoot = root
+		a.groupPattern = pattern
+	}
 	return err
 }
 func (a *App) Run(ctx context.Context) {
@@ -179,7 +202,7 @@ func (a *App) configureAPI(r request) error {
 	if a.switchBusy || a.pending != "" || a.healthBusy {
 		return fmt.Errorf("切换正在进行，请稍后重试")
 	}
-	if err := settings.Save(a.cfg.SettingsPath, r.target); err != nil {
+	if err := settings.Save(a.cfg.SettingsPath, settings.Connection{API: r.target, Root: a.groupRoot, Pattern: a.groupPattern}); err != nil {
 		return fmt.Errorf("保存配置失败: %w", err)
 	}
 	a.apiAddress = r.target
@@ -198,7 +221,7 @@ func (a *App) configureAPI(r request) error {
 	return nil
 }
 func (a *App) snapshot() domain.Snapshot {
-	return domain.Snapshot{APIAddress: a.apiAddress, Mode: a.cfg.Mode, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
+	return domain.Snapshot{APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
 }
 func (a *App) control(ctx context.Context, action, target string) error {
 	if action == "recheck" {

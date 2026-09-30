@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sing-box-smart/internal/config"
 	"sing-box-smart/internal/domain"
 	"sort"
@@ -20,10 +21,10 @@ import (
 )
 
 type Client struct {
-	mu                  sync.RWMutex
-	base, root, testURL string
-	pins                []config.Pin
-	hc                  *http.Client
+	mu                           sync.RWMutex
+	base, root, pattern, testURL string
+	pins                         []config.Pin
+	hc                           *http.Client
 }
 
 func (c *Client) SetAPI(api string) error {
@@ -53,7 +54,11 @@ type apiError struct {
 }
 
 func New(c config.Config) *Client {
-	return &Client{base: strings.TrimRight(c.API, "/"), root: c.Root, testURL: c.TestURL, pins: c.Pins, hc: &http.Client{Transport: &http.Transport{MaxIdleConns: 64, MaxIdleConnsPerHost: 64, IdleConnTimeout: 90 * time.Second, DialContext: (&net.Dialer{Timeout: 3 * time.Second}).DialContext}}}
+	pattern := c.Pattern
+	if pattern == "" {
+		pattern = "PIN$"
+	}
+	return &Client{base: strings.TrimRight(c.API, "/"), root: c.Root, pattern: pattern, testURL: c.TestURL, pins: c.Pins, hc: &http.Client{Transport: &http.Transport{MaxIdleConns: 64, MaxIdleConnsPerHost: 64, IdleConnTimeout: 90 * time.Second, DialContext: (&net.Dialer{Timeout: 3 * time.Second}).DialContext}}}
 }
 func (c *Client) get(ctx context.Context, path string, dst any) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint(path), nil)
@@ -100,13 +105,15 @@ func (c *Client) Airports(ctx context.Context) ([]domain.Airport, error) {
 		root := catalog.Proxies[c.root]
 		for _, name := range root.All {
 			info := catalog.Proxies[name]
-			if strings.EqualFold(info.Type, "Selector") && strings.HasSuffix(name, " PIN") {
+			matched, _ := regexp.MatchString(c.pattern, name)
+			if strings.EqualFold(info.Type, "Selector") && matched {
 				pins = append(pins, config.Pin{ID: name, Name: name, Selector: name})
 			}
 		}
 		if len(root.All) == 0 {
 			for name, info := range catalog.Proxies {
-				if strings.EqualFold(info.Type, "Selector") && strings.HasSuffix(name, " PIN") {
+				matched, _ := regexp.MatchString(c.pattern, name)
+				if strings.EqualFold(info.Type, "Selector") && matched {
 					pins = append(pins, config.Pin{ID: name, Name: name, Selector: name})
 				}
 			}

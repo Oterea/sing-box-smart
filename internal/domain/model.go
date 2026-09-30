@@ -67,6 +67,8 @@ type Snapshot struct {
 	CurrentID      string     `json:"current_id"`
 	PendingID      string     `json:"pending_id"`
 	APIAddress     string     `json:"api_address"`
+	GroupRoot      string     `json:"group_root"`
+	GroupPattern   string     `json:"group_pattern"`
 	APIHealthy     bool       `json:"api_healthy"`
 	StartedAt      time.Time  `json:"started_at"`
 	Now            time.Time  `json:"now"`

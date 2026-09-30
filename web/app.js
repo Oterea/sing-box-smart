@@ -97,6 +97,7 @@ function render(s){
  state=s;
  const apiInput=$('api-address');
  if(apiInput && apiInput.dataset && !apiInput.dataset.loaded){apiInput.value=s.api_address||'';apiInput.dataset.loaded='yes';}
+ if($('group-root') && $('group-root').dataset && !$('group-root').dataset.loaded){$('group-root').value=s.group_root||'proxy';$('group-pattern').value=s.group_pattern||'PIN$';$('group-root').dataset.loaded='yes';}
  $('connection').parentElement.dataset.health=s.api_healthy?'ok':'error';
  $('connection').textContent=s.api_healthy?'后端已连接':'管理接口异常';
  $('mode-note-text').textContent=s.mode==='real'?'真实模式 · 已连接 sing-box API':'模拟模式 · 切换仅作用于模拟接口';
