@@ -92,7 +92,9 @@ func (c *Client) Airports(ctx context.Context) ([]domain.Airport, error) {
 	for _, pin := range c.pins {
 		members, _, err := c.members(ctx, pin.Selector)
 		if err != nil {
-			return nil, fmt.Errorf("read selector %q: %w", pin.Selector, err)
+			// A configured PIN may be absent while momo/sing-box is reloading.
+			// Keep the other selectors usable and let the UI show the available set.
+			continue
 		}
 		a := domain.Airport{ID: pin.ID, Name: pin.Name, Selector: pin.Selector}
 		for _, name := range members {
@@ -104,6 +106,9 @@ func (c *Client) Airports(ctx context.Context) ([]domain.Airport, error) {
 			return nil, fmt.Errorf("selector %q has no nodes", pin.Selector)
 		}
 		out = append(out, a)
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("no configured selectors available")
 	}
 	return out, nil
 }
