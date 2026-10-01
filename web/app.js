@@ -14,6 +14,39 @@ function animateNumber(el, value, formatter=num) {
 }
 const time = value => new Date(value).toLocaleTimeString('zh-CN', {hour12:false});
 const tone = (value,best) => value == null ? 'none' : value <= best*1.4 ? 'good' : value <= best*2.5 ? 'medium' : 'bad';
+const sampleKey = sample => JSON.stringify([sample.at,sample.success,sample.score,sample.delay_ms,sample.error]);
+function historyFrames(previous, next) {
+ const oldList=previous??[], newList=next??[];
+ if(!oldList.length||!newList.length)return [newList];
+ let overlap=0;
+ const limit=Math.min(oldList.length,newList.length);
+ for(let size=limit;size>0;size--){
+  const matches=oldList.slice(-size).every((sample,index)=>sampleKey(sample)===sampleKey(newList[index]));
+  if(matches){overlap=size;break;}
+ }
+ if(!overlap)return [newList];
+ const frames=[];
+ let frame=oldList.slice();
+ for(let index=overlap;index<newList.length;index++){
+  frame=[...frame,newList[index]].slice(-20);
+  frames.push(frame);
+ }
+ return frames.length?frames:[newList];
+}
+function playHistoryFrame(row,best) {
+ const frame=row._historyQueue?.shift();
+ if(!frame){row._historyPlaying=false;return;}
+ row._paintedHistory=frame;
+ row.cells[4].innerHTML=history(frame,'score',best,true);
+ row.cells[5].innerHTML=history(frame,'delay',best,true);
+ row._historyPlaying=true;
+ setTimeout(()=>playHistoryFrame(row,best),300);
+}
+function queueHistory(row,samples,best) {
+ const frames=historyFrames(row._paintedHistory,samples);
+ row._historyQueue=frames;
+ if(!row._historyPlaying)playHistoryFrame(row,best);
+}
 function history(samples, kind, best, motion=false) {
  const tail=(samples ?? []).slice(-20);
  const ceiling=kind==='delay'?1000:2000;
@@ -81,8 +114,11 @@ function patchRow(row,n,best,s,selected=false) {
  row.cells[3].firstElementChild.className=`metric-cell tone-${delayTone}`;
  const nextHistoryKey=historyKey(n);
  const historyChanged=row.dataset.historyKey!==nextHistoryKey;
- row.cells[4].innerHTML=history(n.history,'score',best,historyChanged);
- row.cells[5].innerHTML=history(n.history,'delay',best,historyChanged);
+ if(historyChanged)queueHistory(row,n.history,best);
+ else if(!row._historyPlaying){
+  row.cells[4].innerHTML=history(n.history,'score',best,false);
+  row.cells[5].innerHTML=history(n.history,'delay',best,false);
+ }
  row.dataset.historyKey=nextHistoryKey;
  row.dataset.renderKey=nodeKey(n,best,s,selected);
 }
@@ -104,6 +140,7 @@ function syncRows(body,nodes,best,s,selected=false) {
    row=holder.firstElementChild;
    row.dataset.renderKey=key;
    row.dataset.historyKey=historyKey(n);
+   row._paintedHistory=n.history??[];
   }
   if(row.dataset.renderKey!==key)patchRow(row,n,best,s,selected);
   if(row!==position)body.insertBefore(row,position);
