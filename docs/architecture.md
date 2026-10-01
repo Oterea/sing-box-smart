@@ -34,11 +34,11 @@ app → snapshot → httpapi（HTTP / SSE） → web
 
 每个节点最多一个在途探测，不同节点可并发。探测捕获 runner、上下文和 generation；旧机场或暂停前的结果会丢弃。切换请求使用根上下文，暂停不会撤销已发出的写入。
 
-HTTP 快照通过请求通道从事件循环取得。SSE 每连接每 250ms 获取完整快照，版本变化时计算节点差量并发送；没有 app 订阅总线或持久重放队列。浏览器合并 ID，历史通过前端队列播放。当前全组重置、旧节点移除的协议限制见 [接口文档](api.md)。
+HTTP 快照通过请求通道从事件循环取得。SSE 连接共享一个快照采集器，每 250ms 最多向事件循环读取一次；各连接根据自己最后收到的快照计算节点差量，慢连接只保留最新版本。没有持久重放队列；浏览器合并 ID，历史通过前端队列播放。当前全组重置、旧节点移除的协议限制见 [接口文档](api.md)。
 
 ## OpenWrt 服务和连接设置
 
-`internal/settings` 验证地址/正则并通过临时文件、Sync、rename 保存连接 JSON。`-settings` 内容优先覆盖 API/root/pattern；OpenWrt 使用 `/etc/sing-box-smart/connection.json`。服务启动配置是 `/etc/sing-box-smart.conf`。
+`internal/settings` 验证地址/正则并通过临时文件、Sync、rename 保存连接 JSON。完整连接设置通过一次 discovery 成功后再安装客户端和保存；`-settings` 内容优先覆盖 API/root/pattern；OpenWrt 使用 `/etc/sing-box-smart/connection.json`。服务启动配置是 `/etc/sing-box-smart.conf`。
 
 LuCI JavaScript 通过 rpcd `file.exec` 调固定 init 命令；`service.list` 每 3 秒读取服务状态。开机自动启动状态在页面加载时读取，页面停止服务后仍可用。监控面板只支持修改连接和策略组过滤，不支持编辑探测间隔等全部检测参数。
 

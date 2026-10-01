@@ -138,6 +138,35 @@ func (a *App) prepareAPI(ctx context.Context, api string) (gateway.Client, []dom
 	}
 	return client, airports, api, nil
 }
+
+// ConfigureConnection validates and discovers the complete connection in one
+// step, so an API/root/pattern change cannot leave a half-applied configuration.
+func (a *App) ConfigureConnection(ctx context.Context, api, root, pattern string) error {
+	if a.cfg.Mode != "real" {
+		return fmt.Errorf("模拟模式不支持修改真实 API")
+	}
+	api, err := settings.NormalizeAPI(api)
+	if err != nil {
+		return err
+	}
+	if root == "" {
+		root = "proxy"
+	}
+	pattern, err = settings.NormalizePattern(pattern)
+	if err != nil {
+		return err
+	}
+	cfg := a.cfg
+	cfg.API, cfg.Root, cfg.Pattern = api, root, pattern
+	client := real.New(cfg)
+	airports, err := discovery.Load(ctx, client)
+	if err != nil {
+		return err
+	}
+	_, err = a.request(ctx, request{action: "api", target: api, root: root, pattern: pattern, client: client, airports: airports})
+	return err
+}
+
 func (a *App) TestAPI(ctx context.Context, api string) error {
 	_, _, _, err := a.prepareAPI(ctx, api)
 	return err

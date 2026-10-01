@@ -46,6 +46,9 @@ func (s *sequenceService) ConfigureAPI(context.Context, string) error    { retur
 func (s *sequenceService) ConfigureFilters(context.Context, string, string) error {
 	return nil
 }
+func (s *sequenceService) ConfigureConnection(context.Context, string, string, string) error {
+	return nil
+}
 func (s *sequenceService) TestAPI(context.Context, string) error { return nil }
 
 func TestEventsSendRemovedNodesAndFullSnapshotOnAirportChange(t *testing.T) {
@@ -72,10 +75,26 @@ func TestEventsSendRemovedNodesAndFullSnapshotOnAirportChange(t *testing.T) {
 		t.Fatal("SSE handler did not stop after request cancellation")
 	}
 	body := rec.Body.String()
+	if !strings.Contains(body, "retry: 3000") || !strings.Contains(body, "id: 1") {
+		t.Fatalf("missing SSE reconnect metadata: %s", body)
+	}
 	if !strings.Contains(body, `"full":false`) || !strings.Contains(body, `"removed":["b"]`) {
 		t.Fatalf("missing delta removal event: %s", body)
 	}
 	if !strings.Contains(body, `"full":true`) || !strings.Contains(body, `"airport_id":"airport-b"`) {
 		t.Fatalf("missing full event after airport change: %s", body)
+	}
+}
+
+func TestControlRejectsNonSingleJSONObject(t *testing.T) {
+	service := &sequenceService{done: make(chan struct{})}
+	for _, body := range []string{`{} {}`, `{"unexpected":true}`} {
+		req := httptest.NewRequest("POST", "/api/control/pause", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		Handler(service).ServeHTTP(rec, req)
+		if rec.Code != 400 {
+			t.Fatalf("body %q returned %d, want 400", body, rec.Code)
+		}
 	}
 }

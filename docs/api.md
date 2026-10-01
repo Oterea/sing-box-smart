@@ -3,9 +3,9 @@
 ## 状态与推送
 
 - `GET /api/state`：完整快照，包括 `revision`、策略组、节点、阶段、连接设置及最近事件。响应包含 ETag；匹配 `If-None-Match` 时返回 304。
-- `GET /api/events`：`text/event-stream`，事件名为 `state`，`data` 为 JSON。每条连接每 250ms 获取快照，仅在版本变化时发送。
+- `GET /api/events`：`text/event-stream`，事件名为 `state`，`data` 为 JSON。服务端在所有 SSE 连接之间共享一次每 250ms 的快照采集；版本没有变化就不发送状态事件。
 
-SSE 首条消息包含 `full:true` 和全部节点，后续 `full:false` 的 `nodes` 只含与该连接上次快照相比发生变化的节点，`removed` 列出消失的节点 ID。策略组变化会重新发送完整状态。其他全局字段仍完整发送，没有心跳、持久事件 ID 或断点重放。重新连接会重新发送完整状态。
+SSE 首条消息包含 `full:true` 和全部节点，后续 `full:false` 的 `nodes` 只含与该连接上次收到的快照相比发生变化的节点，`removed` 列出消失的节点 ID。慢客户端只保留最新快照，可能跳过中间版本，但不会丢失最终状态。策略组变化会重新发送完整状态。状态事件带 `id`，值为 `revision`；另有 15 秒注释心跳用于保持连接，没有断点重放，重新连接会重新发送完整状态。服务端发送 `retry: 3000` 的重连建议由浏览器 EventSource 使用。
 
 ETag 只有计数，未带进程身份；重启后计数可能重复，但 SSE 重连或策略组变化会发送完整状态。
 
@@ -27,11 +27,12 @@ ETag 只有计数，未带进程身份；重启后计数可能重复，但 SSE �
 
 | 接口 | JSON 请求体 | 行为 |
 | --- | --- | --- |
+| `POST /api/config` | `{ "api": "http://127.0.0.1:9695", "root": "proxy", "pattern": "PIN$" }` | 一次验证、发现并应用完整连接设置；推荐面板使用此接口 |
 | `POST /api/config/api/test` | `{ "api": "http://127.0.0.1:9695" }` | 用独立客户端读取策略组，成功返回 200，不替换活动连接 |
 | `POST /api/config/api` | `{ "api": "http://127.0.0.1:9695" }` | 验证可读取、保存连接、替换客户端、重置启动观察 |
 | `POST /api/config/filters` | `{ "root": "proxy", "pattern": "PIN$" }` | 验证正则、读取匹配策略组、保存并重置启动观察 |
 
-面板保存动作目前依次调用 filters 和 api 两个接口，不是原子事务；只要两次都成功，就会重置两次。若同时更换地址及正则，filters 先在旧地址上验证。
+`/api/config/api` 和 `/api/config/filters` 保留用于兼容分步调用；面板使用 `/api/config`，避免地址和策略组设置分两次生效。完整接口只有在新客户端发现成功后才替换当前连接。
 
 ## 访问范围
 

@@ -198,7 +198,7 @@ async function control(action,id=''){
 $('airport-options').addEventListener('click',e=>{const button=e.target.closest('[data-airport]');if(button)control('airport',button.dataset.airport);});
 $('recheck').addEventListener('click',()=>control('recheck'));
 $('detection-toggle').addEventListener('click',()=>{if(state)control(state.paused?'resume':'pause');});
-if($('api-form'))$('api-form').addEventListener('submit',async e=>{e.preventDefault();const api=$('api-address').value.trim();if(!api)return toast('请输入 API 地址');try{const f=await fetch('/api/config/filters',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({root:$('group-root').value.trim(),pattern:$('group-pattern').value.trim()})});const fd=await f.json();if(!f.ok)throw new Error(fd.error||'策略组设置失败');const r=await fetch('/api/config/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api})});const data=await r.json();if(!r.ok)throw new Error(data.error||'API 重载失败');toast('设置已应用，正在重新读取节点');await refresh();}catch(err){toast(err.message);}});
+if($('api-form'))$('api-form').addEventListener('submit',async e=>{e.preventDefault();const api=$('api-address').value.trim();if(!api)return toast('请输入 API 地址');try{const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api,root:$('group-root').value.trim(),pattern:$('group-pattern').value.trim()})});const data=await r.json();if(!r.ok)throw new Error(data.error||'设置应用失败');toast('设置已应用，正在重新读取节点');await refresh();}catch(err){toast(err.message);}});
 for (const id of ['nodes','selected-node']) {
  const body=$(id);
  body.closest('table').insertAdjacentHTML('afterbegin',tableHeading());
