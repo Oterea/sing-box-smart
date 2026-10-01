@@ -214,7 +214,17 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();
 function connectStream(){
  if(!window.EventSource)return;
  stream=new EventSource('/api/events');
- stream.addEventListener('state',event=>{try{stateEtag='';render(JSON.parse(event.data));streamOpen=true;}catch(_){}});
+ stream.addEventListener('state',event=>{try{
+  stateEtag='';
+  const message=JSON.parse(event.data);
+  if(message.full||!state){render(message);}
+  else {
+   const byId=new Map(state.nodes.map(node=>[node.id,node]));
+   for(const node of message.nodes??[])byId.set(node.id,node);
+   render({...state,...message,nodes:[...byId.values()]});
+  }
+  streamOpen=true;
+ }catch(_){}});
  stream.onopen=()=>{streamOpen=true;refresh();};
  stream.onerror=()=>{streamOpen=false;stream.close();setTimeout(connectStream,3000);};
 }

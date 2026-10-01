@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"sing-box-smart/internal/domain"
 	assets "sing-box-smart/web"
 	"time"
@@ -49,6 +50,7 @@ func Handler(service Service) http.Handler {
 		w.Header().Set("Connection", "keep-alive")
 		ctx := r.Context()
 		last := uint64(^uint64(0))
+		var previous *domain.Snapshot
 		ticker := time.NewTicker(250 * time.Millisecond)
 		defer ticker.Stop()
 		for {
@@ -63,13 +65,32 @@ func Handler(service Service) http.Handler {
 				if s.Revision == last {
 					continue
 				}
-				body, err := json.Marshal(s)
+				payload := struct {
+					Full bool `json:"full"`
+					domain.Snapshot
+				}{Full: previous == nil, Snapshot: s}
+				if previous != nil {
+					changed := make([]domain.NodeView, 0)
+					old := make(map[string]domain.NodeView, len(previous.Nodes))
+					for _, node := range previous.Nodes {
+						old[node.ID] = node
+					}
+					for _, node := range s.Nodes {
+						if prior, ok := old[node.ID]; !ok || !reflect.DeepEqual(prior, node) {
+							changed = append(changed, node)
+						}
+					}
+					payload.Nodes = changed
+				}
+				body, err := json.Marshal(payload)
 				if err != nil {
 					return
 				}
 				fmt.Fprintf(w, "event: state\\ndata: %s\\n\\n", body)
 				flusher.Flush()
 				last = s.Revision
+				copy := s
+				previous = &copy
 			}
 		}
 	})
