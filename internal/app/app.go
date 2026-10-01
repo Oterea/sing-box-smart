@@ -125,8 +125,12 @@ func (a *App) prepareAPI(ctx context.Context, api string) (gateway.Client, []dom
 	if err != nil {
 		return nil, nil, "", err
 	}
+	snapshot, err := a.Snapshot(ctx)
+	if err != nil {
+		return nil, nil, "", err
+	}
 	cfg := a.cfg
-	cfg.API, cfg.Root, cfg.Pattern = api, a.groupRoot, a.groupPattern
+	cfg.API, cfg.Root, cfg.Pattern = api, snapshot.GroupRoot, snapshot.GroupPattern
 	client := real.New(cfg)
 	airports, err := discovery.Load(ctx, client)
 	if err != nil {
@@ -153,20 +157,20 @@ func (a *App) ConfigureFilters(ctx context.Context, root, pattern string) error 
 	if _, err := settings.NormalizePattern(pattern); err != nil {
 		return err
 	}
+	snapshot, err := a.Snapshot(ctx)
+	if err != nil {
+		return err
+	}
 	cfg := a.cfg
 	cfg.Root = root
 	cfg.Pattern = pattern
-	cfg.API = a.apiAddress
+	cfg.API = snapshot.APIAddress
 	client := real.New(cfg)
 	airports, err := discovery.Load(ctx, client)
 	if err != nil {
 		return err
 	}
-	_, err = a.request(ctx, request{action: "api", target: a.apiAddress, root: root, pattern: pattern, client: client, airports: airports})
-	if err == nil {
-		a.groupRoot = root
-		a.groupPattern = pattern
-	}
+	_, err = a.request(ctx, request{action: "api", target: snapshot.APIAddress, root: root, pattern: pattern, client: client, airports: airports})
 	return err
 }
 

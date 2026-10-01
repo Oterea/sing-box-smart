@@ -64,6 +64,7 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 		return
 	}
 	if a.phase == "startup" && now.Sub(a.started) >= a.cfg.Startup && a.store.AllChecked() {
+		a.revision++
 		a.phase = "normal"
 		if !a.store.AnyAvailable() {
 			a.phase = "unavailable"
@@ -118,6 +119,7 @@ func (a *App) observe(ctx context.Context, o observation) {
 			a.events.Record("api", "检查接口异常，暂停切换；不计入节点失败")
 		}
 		a.healthy = false
+		a.revision++
 		a.lastHealth = time.Now()
 		if !a.switchBusy {
 			a.pending = ""
@@ -184,6 +186,7 @@ func (a *App) observe(ctx context.Context, o observation) {
 	}
 	if a.phase != "startup" {
 		if !a.store.AnyAvailable() && a.phase != "unavailable" {
+			a.revision++
 			a.phase = "unavailable"
 			for _, x := range a.store.Nodes {
 				x.Plan.ClearRecovery()

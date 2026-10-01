@@ -22,6 +22,7 @@ func (a *App) evaluate(ctx context.Context) {
 		return
 	}
 	if a.phase == "unavailable" && a.store.AnyAvailable() {
+		a.revision++
 		a.phase = "normal"
 		a.store.Reclassify(a.current)
 		a.store.Reschedule(time.Now(), a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
