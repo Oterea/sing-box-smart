@@ -381,7 +381,7 @@ func (a *App) observe(ctx context.Context, o observation) {
 	wasCurrent := o.id == a.current
 	signal := recovery.Signal{}
 	if a.phase != "startup" && reason == "normal" && !wasCurrent && n.Tier == domain.TierOrdinary && n.Checks > 0 {
-		signal = recovery.Detect(n.History, n.Last, o.probe, a.cfg.RecoveryDropRatio, a.cfg.RecoveryDropMinMS)
+		signal = recovery.Detect(n.History, n.Last, o.probe, a.cfg.RecoveryDropRatio, a.cfg.RecoveryDropMinMS, a.cfg.RecoveryGoodMaxMS)
 	}
 	a.store.Record(o.id, o.probe)
 	a.revision++

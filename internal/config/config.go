@@ -13,13 +13,13 @@ type Config struct {
 	Pins                                                            []Pin
 	Startup, Current, Candidate, Ordinary, Recovery, Timeout        time.Duration
 	RecoverySteps                                                   []time.Duration
-	RecoveryDropRatio, RecoveryDropMinMS                            float64
+	RecoveryDropRatio, RecoveryDropMinMS, RecoveryGoodMaxMS         float64
 	SwitchRatio                                                     float64
 	HistoryLimit                                                    int
 }
 
 func Default() Config {
-	return Config{Mode: "demo", API: "http://127.0.0.1:9695", Root: "proxy", TestURL: "https://www.gstatic.com/generate_204", Listen: "127.0.0.1:8787", LogDir: "logs", Startup: 10 * time.Second, Current: 3 * time.Second, Candidate: 30 * time.Second, Ordinary: 5 * time.Minute, Recovery: 3 * time.Second, Timeout: 4 * time.Second, RecoverySteps: []time.Duration{3 * time.Second, 6 * time.Second, 12 * time.Second, 20 * time.Second}, RecoveryDropRatio: .75, RecoveryDropMinMS: 100, SwitchRatio: 1.4, HistoryLimit: 24}
+	return Config{Mode: "demo", API: "http://127.0.0.1:9695", Root: "proxy", TestURL: "https://www.gstatic.com/generate_204", Listen: "127.0.0.1:8787", LogDir: "logs", Startup: 10 * time.Second, Current: 3 * time.Second, Candidate: 30 * time.Second, Ordinary: 5 * time.Minute, Recovery: 3 * time.Second, Timeout: 4 * time.Second, RecoverySteps: []time.Duration{3 * time.Second, 6 * time.Second, 12 * time.Second, 20 * time.Second}, RecoveryDropRatio: .75, RecoveryDropMinMS: 100, RecoveryGoodMaxMS: 400, SwitchRatio: 1.4, HistoryLimit: 24}
 }
 func ParsePins(raw string) ([]Pin, error) {
 	var out []Pin
@@ -60,7 +60,7 @@ func (c Config) Validate() error {
 	if c.Mode == "real" && (c.API == "" || c.TestURL == "" || len(c.Pins) == 0) {
 		return fmt.Errorf("real mode requires api, test-url, and pins")
 	}
-	if c.Startup <= 0 || c.Current <= 0 || c.Candidate <= 0 || c.Ordinary <= 0 || c.Recovery <= 0 || c.Timeout <= 0 || len(c.RecoverySteps) == 0 || c.RecoveryDropRatio <= 0 || c.RecoveryDropRatio >= 1 || c.RecoveryDropMinMS <= 0 || c.SwitchRatio <= 1 || c.HistoryLimit < 1 {
+	if c.Startup <= 0 || c.Current <= 0 || c.Candidate <= 0 || c.Ordinary <= 0 || c.Recovery <= 0 || c.Timeout <= 0 || len(c.RecoverySteps) == 0 || c.RecoveryDropRatio <= 0 || c.RecoveryDropRatio >= 1 || c.RecoveryDropMinMS <= 0 || c.RecoveryGoodMaxMS <= 0 || c.SwitchRatio <= 1 || c.HistoryLimit < 1 {
 		return fmt.Errorf("invalid timing, ratio, or history settings")
 	}
 	return nil

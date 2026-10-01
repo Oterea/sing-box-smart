@@ -22,11 +22,11 @@ type Signal struct {
 
 // Detect uses history before current. A large drop needs both a relative and
 // an absolute improvement so ordinary jitter does not start a fast review.
-func Detect(history []domain.Sample, previous domain.Probe, current domain.Probe, ratio, minDrop float64) Signal {
+func Detect(history []domain.Sample, previous domain.Probe, current domain.Probe, ratio, minDrop, goodMax float64) Signal {
 	if !current.Success {
 		return Signal{}
 	}
-	if previousError(previous) {
+	if previousError(previous) && current.DelayMS <= goodMax {
 		return Signal{Kind: FailureToGood}
 	}
 	values := make([]float64, 0, 5)

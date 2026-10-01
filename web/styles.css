@@ -320,12 +320,12 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .node-table .metric-cell,
 .node-table .history-chart{height:40px;min-height:40px}
 .node-table .check-count,
-.node-table .metric-cell{display:flex;align-items:center;justify-content:center;padding:0 8px;background:#f1f6f8;box-shadow:none}
+.node-table .metric-cell{display:flex;align-items:center;justify-content:center;padding:0 8px;background:#edf3f5;box-shadow:none}
 .node-table .check-count{color:#536a7b}
-.node-table .metric-cell.tone-good{background:#e8f8ef}
-.node-table .metric-cell.tone-medium{background:#fff7df}
-.node-table .metric-cell.tone-bad{background:#ffeded}
-.node-table .metric-cell.tone-none{background:#f1f6f8}
+.node-table .metric-cell.tone-good{background:#e1f4eb}
+.node-table .metric-cell.tone-medium{background:#fff3d1}
+.node-table .metric-cell.tone-bad{background:#ffe6e7}
+.node-table .metric-cell.tone-none{background:#edf3f5}
 .node-table .history-chart{box-sizing:border-box}
 
 /* Values remain truthful while the newest history enters from the right and
