@@ -131,7 +131,7 @@ footer>span:last-child{text-align:right}
 #updated{display:block;margin:3px 0 0}
 }
 *,*::before,*::after{border-radius:0!important;border-width:0!important}
-.card,.nodes-panel,.events-panel{border:0!important;box-shadow:0 0 18px rgba(31,53,70,.09)}
+.card,.nodes-panel,.events-panel{border:0!important;background:#f6f8f9;box-shadow:0 0 18px rgba(31,53,70,.09)}
 .demo-note{border:0!important;box-shadow:0 0 14px rgba(31,53,70,.06)}
 .button,.pick,.compact{border:0!important;border-radius:0!important;box-shadow:0 0 12px rgba(23,72,59,.16);transition:background-color .15s,box-shadow .15s,transform .15s}
 .button{background:var(--green);color:#fff}
@@ -179,7 +179,7 @@ select{border:0!important;box-shadow:0 1px 0 #dce5e7;background:transparent}
 .status-line:empty{display:none}
 .switch-rule{color:#627888;font-weight:550}
 /* Shared six-column table. Fixed leading columns prevent names from creating empty space. */
-.selected-card{margin-bottom:24px;background:#fff;box-shadow:0 0 18px rgba(31,53,70,.09);padding:0;overflow:hidden}
+.selected-card{margin-bottom:24px;background:#f6f8f9;box-shadow:0 0 18px rgba(31,53,70,.09);padding:0;overflow:hidden}
 
 .node-table{width:100%;min-width:880px;border-collapse:collapse;table-layout:fixed;text-align:left}
 
@@ -279,7 +279,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
  .health-progress-row{gap:12px}
  .top-health .health-caption{font-size:12px}
 }
-.api-settings{margin:0 0 24px;padding:14px 18px;background:#fff;box-shadow:0 0 14px rgba(31,53,70,.07);color:#617486}.api-settings summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--ink)}.api-settings form{display:flex;gap:10px;margin-top:12px}.api-settings input{flex:1;min-width:0;padding:9px 10px;background:#f3f6f7;color:var(--ink);font:13px inherit}.api-settings p{margin:9px 0 0;font-size:11px}.api-settings button{flex-shrink:0}
+.api-settings{margin:0 0 24px;padding:14px 18px;background:#f6f8f9;box-shadow:0 0 14px rgba(31,53,70,.07);color:#617486}.api-settings summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--ink)}.api-settings form{display:flex;gap:10px;margin-top:12px}.api-settings input{flex:1;min-width:0;padding:9px 10px;background:#f3f6f7;color:var(--ink);font:13px inherit}.api-settings p{margin:9px 0 0;font-size:11px}.api-settings button{flex-shrink:0}
 
 /* The manual check belongs to the brand row; the node summary belongs to its table. */
 .header-actions{display:flex;align-items:center;gap:22px}
