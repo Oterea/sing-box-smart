@@ -14,7 +14,7 @@ function animateNumber(el, value, formatter=num) {
 }
 const time = value => new Date(value).toLocaleTimeString('zh-CN', {hour12:false});
 const tone = (value,best) => value == null ? 'none' : value <= best*1.4 ? 'good' : value <= best*2.5 ? 'medium' : 'bad';
-function history(samples, kind, best) {
+function history(samples, kind, best, motion=false) {
  const tail=(samples ?? []).slice(-20);
  const values=tail.map(s=>kind==='score'?s.score:s.delay_ms).filter(v=>Number.isFinite(v)&&v>=0);
  const ceiling=kind==='delay'?1000:2000;
@@ -38,7 +38,7 @@ function history(samples, kind, best) {
   }
   return `<g><title>${esc(title)}</title>${shape}</g>`;
  }).join('');
- return `<svg class="history-chart history-shift" viewBox="0 0 320 36" preserveAspectRatio="none" role="img" aria-label="${kind==='score'?'分数':'延迟'}历史，最近${tail.length}次，旧到新，纵轴上限${Math.round(ceiling)}">${bars}${tail.length?'':'<text x="4" y="23" fill="#95a2ad" font-size="12">暂无记录</text>'}</svg>`;
+ return `<svg class="history-chart${motion?' history-shift':''}" viewBox="0 0 320 36" preserveAspectRatio="none" role="img" aria-label="${kind==='score'?'分数':'延迟'}历史，最近${tail.length}次，旧到新，纵轴上限${Math.round(ceiling)}">${bars}${tail.length?'':'<text x="4" y="23" fill="#95a2ad" font-size="12">暂无记录</text>'}</svg>`;
 }
 // Both sections share the same header, column definitions and row renderer.
 function tableHeading() {
@@ -52,6 +52,9 @@ function nodeKey(n,best,s,selected=false) {
  // Including the raw best value would redraw every node's SVG on each update.
  const colors=(n.history??[]).slice(-20).map(sample=>tone(sample.score,best)).join(',');
  return JSON.stringify({id:n.id,name:n.name,tier:nodeTier(n,s),checks:n.checks,score:n.score,delay:n.delay_ms,overflow:n.score_overflow,last:n.last_success,current:selected||n.id===s.current_id,history:n.history,colors,rowColor:tone(n.score,best),busy,pending:s.pending_id,phase:s.phase,paused:s.paused,api:s.api_healthy});
+}
+function historyKey(n) {
+ return JSON.stringify((n.history??[]).slice(-20).map(sample=>[sample.at,sample.success,sample.score,sample.delay_ms,sample.error]));
 }
 function nodeRow(n,best,s) {
  const current=Boolean(n.id)&&n.id===s.current_id;
@@ -76,8 +79,11 @@ function patchRow(row,n,best,s,selected=false) {
  const delayTone=n.checks&&!n.last_success?'bad':n.delay_ms==null?'none':n.delay_ms<=200?'good':n.delay_ms<=400?'medium':'bad';
  if(n.delay_ms!=null)animateNumber(row.cells[3].firstElementChild,n.delay_ms);else{row.cells[3].firstElementChild.textContent=n.checks?'失败':'—';delete row.cells[3].firstElementChild.dataset.value;}
  row.cells[3].firstElementChild.className=`metric-cell tone-${delayTone}`;
- row.cells[4].innerHTML=history(n.history,'score',best);
- row.cells[5].innerHTML=history(n.history,'delay',best);
+ const nextHistoryKey=historyKey(n);
+ const historyChanged=row.dataset.historyKey!==nextHistoryKey;
+ row.cells[4].innerHTML=history(n.history,'score',best,historyChanged);
+ row.cells[5].innerHTML=history(n.history,'delay',best,historyChanged);
+ row.dataset.historyKey=nextHistoryKey;
  row.dataset.renderKey=nodeKey(n,best,s,selected);
 }
 function syncRows(body,nodes,best,s,selected=false) {
@@ -97,6 +103,7 @@ function syncRows(body,nodes,best,s,selected=false) {
    holder.innerHTML=nodeRow(n,best,s);
    row=holder.firstElementChild;
    row.dataset.renderKey=key;
+   row.dataset.historyKey=historyKey(n);
   }
   if(row.dataset.renderKey!==key)patchRow(row,n,best,s,selected);
   if(row!==position)body.insertBefore(row,position);
