@@ -12,6 +12,7 @@ func (a *App) pauseDetection() {
 		return
 	}
 	a.paused = true
+	a.revision++
 	a.pausedAt = time.Now()
 	a.generation++
 	a.probeCancel()
@@ -34,6 +35,7 @@ func (a *App) resumeDetection() {
 		a.started = a.started.Add(time.Since(a.pausedAt))
 	}
 	a.paused = false
+	a.revision++
 	// Refresh every node once rather than choosing from stale pre-pause scores.
 	for _, n := range a.store.Nodes {
 		n.Plan.NormalDue = time.Now()

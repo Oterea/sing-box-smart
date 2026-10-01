@@ -57,6 +57,7 @@ type App struct {
 	pausedAt                                time.Time
 	started, lastHealth                     time.Time
 	generation                              int
+	revision                                uint64
 	requests                                chan request
 	results                                 chan observation
 	changes                                 chan changed
@@ -87,6 +88,7 @@ func (a *App) reset(airport domain.Airport) {
 	a.airport = airport
 	a.store = state.New(airport.Nodes, a.cfg.HistoryLimit)
 	a.generation++
+	a.revision++
 	a.started = time.Now()
 	a.phase = "startup"
 	a.current = ""
@@ -229,7 +231,7 @@ func (a *App) configureAPI(r request) error {
 	return nil
 }
 func (a *App) snapshot() domain.Snapshot {
-	return domain.Snapshot{Paused: a.paused, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
+	return domain.Snapshot{Revision: a.revision, Paused: a.paused, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
 }
 func (a *App) control(ctx context.Context, action, target string) error {
 	if action == "pause" {
@@ -244,6 +246,7 @@ func (a *App) control(ctx context.Context, action, target string) error {
 		return fmt.Errorf("检测已暂停，请先继续检测")
 	}
 	if action == "recheck" {
+		a.revision++
 		for _, n := range a.store.Nodes {
 			n.Plan.ClearRecovery()
 			n.Plan.NormalDue = time.Now()
@@ -381,6 +384,7 @@ func (a *App) observe(ctx context.Context, o observation) {
 		signal = recovery.Detect(n.History, n.Last, o.probe, a.cfg.RecoveryDropRatio, a.cfg.RecoveryDropMinMS)
 	}
 	a.store.Record(o.id, o.probe)
+	a.revision++
 	changedTiers := a.store.Reclassify(a.current)
 	now := time.Now()
 	if signal.Kind == recovery.None && a.phase != "startup" && reason == "normal" && !wasCurrent && n.Tier == domain.TierOrdinary && a.store.NearCandidate(o.id, 0.15) {

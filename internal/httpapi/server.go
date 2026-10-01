@@ -4,6 +4,7 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"sing-box-smart/internal/domain"
@@ -27,6 +28,12 @@ func Handler(service Service) http.Handler {
 		s, err := service.Snapshot(ctx)
 		if err != nil {
 			write(w, 503, map[string]string{"error": "状态读取超时"})
+			return
+		}
+		etag := fmt.Sprintf(`"%d"`, s.Revision)
+		w.Header().Set("ETag", etag)
+		if r.Header.Get("If-None-Match") == etag {
+			w.WriteHeader(http.StatusNotModified)
 			return
 		}
 		write(w, 200, s)
