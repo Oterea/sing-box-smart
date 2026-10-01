@@ -19,7 +19,7 @@ type Config struct {
 }
 
 func Default() Config {
-	return Config{Mode: "demo", API: "http://127.0.0.1:9695", Root: "proxy", TestURL: "https://www.gstatic.com/generate_204", Listen: "127.0.0.1:8787", LogDir: "logs", Startup: 10 * time.Second, Current: 2 * time.Second, Candidate: 30 * time.Second, Ordinary: 5 * time.Minute, Recovery: 3 * time.Second, Timeout: 4 * time.Second, RecoverySteps: []time.Duration{3 * time.Second, 6 * time.Second, 12 * time.Second, 20 * time.Second}, RecoveryDropRatio: .75, RecoveryDropMinMS: 100, SwitchRatio: 1.4, HistoryLimit: 24}
+	return Config{Mode: "demo", API: "http://127.0.0.1:9695", Root: "proxy", TestURL: "https://www.gstatic.com/generate_204", Listen: "127.0.0.1:8787", LogDir: "logs", Startup: 10 * time.Second, Current: 3 * time.Second, Candidate: 30 * time.Second, Ordinary: 5 * time.Minute, Recovery: 3 * time.Second, Timeout: 4 * time.Second, RecoverySteps: []time.Duration{3 * time.Second, 6 * time.Second, 12 * time.Second, 20 * time.Second}, RecoveryDropRatio: .75, RecoveryDropMinMS: 100, SwitchRatio: 1.4, HistoryLimit: 24}
 }
 func ParsePins(raw string) ([]Pin, error) {
 	var out []Pin

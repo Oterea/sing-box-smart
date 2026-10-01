@@ -57,7 +57,7 @@ func (s *Store) Views(current, phase string) []domain.NodeView {
 		v, overflow := score.Display(n.Metrics)
 		frequency := "5 分钟"
 		if n.Info.ID == current {
-			frequency = "2 秒"
+			frequency = "3 秒"
 		} else if n.Plan.RecoveryStep > 0 {
 			frequency = "恢复复查"
 		} else if n.Tier == domain.TierCandidate {

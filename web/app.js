@@ -20,21 +20,22 @@ function history(samples, kind, best, motion=false) {
  const ceiling=kind==='delay'?1000:2000;
  // SVG geometry attributes work with the server's strict CSP (no inline styles).
  const bars=tail.map((s,index)=>{
-  const value=kind==='score'?s.score:s.delay_ms;
-  const x=6+index*15;
+ const value=kind==='score'?s.score:s.delay_ms;
+ const x=6+index*15;
+  const newest=motion&&index===tail.length-1;
   const title=time(s.at)+' · '+(kind==='score'?'分数 '+num(value):s.success?'实际延迟 '+num(value)+' ms':'失败：'+s.error)+(kind==='score'&&!s.success?' · 本次探测失败':'');
   let shape;
   if(!s.success){
    // A failed probe has no delay value. Use the same quiet solid marker for
    // both charts instead of inventing a latency or drawing a dashed outline.
    const height=kind==='score'&&Number.isFinite(value)?Math.max(1,value/ceiling*31):31;
-   shape=`<rect class="chart-failure" x="${x}" y="${33-height}" width="4" height="${height}"/>`;
+   shape=`<rect class="chart-failure${newest?' chart-newest':''}" x="${x}" y="${33-height}" width="4" height="${height}"/>`;
   } else if(!Number.isFinite(value)){
    shape=`<path class="chart-missing" d="M${x} 33h5"/>`;
   } else {
    const height=Math.max(1,value/ceiling*31);
    const color=kind==='score'?tone(value,best):value<=200?'good':value<=400?'medium':'bad';
-   shape=`<rect class="chart-bar bar-${color}" x="${x}" y="${33-height}" width="4" height="${height}"/>`;
+   shape=`<rect class="chart-bar bar-${color}${newest?' chart-newest':''}" x="${x}" y="${33-height}" width="4" height="${height}"/>`;
   }
   return `<g><title>${esc(title)}</title>${shape}</g>`;
  }).join('');
