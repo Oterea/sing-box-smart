@@ -86,7 +86,7 @@ func Handler(service Service) http.Handler {
 				if err != nil {
 					return
 				}
-				fmt.Fprintf(w, "event: state\\ndata: %s\\n\\n", body)
+				fmt.Fprintf(w, "event: state\ndata: %s\n\n", body)
 				flusher.Flush()
 				last = s.Revision
 				copy := s

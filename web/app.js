@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-let state, busy = false, toastTimer, airportKey = '', eventsKey = '', stateEtag = '', streamOpen = false, stream;
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 function animateNumber(el, value, formatter=num) {
@@ -208,14 +208,14 @@ for (const id of ['nodes','selected-node']) {
  });
 }
 // Background tabs do not need a full 78-node snapshot every second.
-async function poll(){if(!streamOpen)await refresh();setTimeout(poll,document.hidden?5000:1000);}poll();
+async function poll(){if(!streamOpen||Date.now()-lastStreamEvent>3000)await refresh();setTimeout(poll,document.hidden?5000:1000);}poll();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
 
 function connectStream(){
  if(!window.EventSource)return;
  stream=new EventSource('/api/events');
  stream.addEventListener('state',event=>{try{
-  stateEtag='';
+  stateEtag='';lastStreamEvent=Date.now();
   const message=JSON.parse(event.data);
   if(message.full||!state){render(message);}
   else {
