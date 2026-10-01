@@ -320,7 +320,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .node-table .metric-cell,
 .node-table .history-chart{height:36px;min-height:36px}
 .node-table .check-count,
-.node-table .metric-cell{display:flex;align-items:center;justify-content:center;padding:0 8px;background:#f1f6f8;box-shadow:0 0 7px rgba(31,53,70,.055)}
+.node-table .metric-cell{display:flex;align-items:center;justify-content:center;padding:0 8px;background:#f1f6f8;box-shadow:none}
 .node-table .check-count{color:#536a7b}
 .node-table .metric-cell.tone-good{background:#e8f8ef}
 .node-table .metric-cell.tone-medium{background:#fff7df}
@@ -332,8 +332,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
    the visible strip settles toward the left like a sliding timeline. */
 .metric-cell,.check-count{transition:color .22s ease,background-color .22s ease}
 .history-chart.history-shift{animation:history-shift-in .28s ease both}
-.history-chart rect.chart-bar,.history-chart rect.chart-failure{transform-box:fill-box;transform-origin:center bottom;animation:history-bar-in .28s ease both}
+.history-chart rect.chart-bar,.history-chart rect.chart-failure{transform-box:fill-box;transform-origin:center center}
 .history-chart{overflow:visible}
-@keyframes history-bar-in{from{transform:scaleY(.18);opacity:.55}to{transform:scaleY(1);opacity:1}}
 @keyframes history-shift-in{from{transform:translateX(10px);opacity:.78}to{transform:translateX(0);opacity:1}}
-@media(prefers-reduced-motion:reduce){.history-chart.history-shift,.history-chart rect.chart-bar,.history-chart rect.chart-failure{animation:none}.metric-cell,.check-count{transition:none}}
+@media(prefers-reduced-motion:reduce){.history-chart.history-shift{animation:none}.metric-cell,.check-count{transition:none}}
