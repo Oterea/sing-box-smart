@@ -28,14 +28,14 @@ function history(samples, kind, best, motion=false) {
   if(!s.success){
    // A failed probe has no delay value. Use the same quiet solid marker for
    // both charts instead of inventing a latency or drawing a dashed outline.
-   const height=kind==='score'&&Number.isFinite(value)?Math.max(1,value/ceiling*31):31;
-   shape=`<rect class="chart-failure${newest?' chart-newest':''}" x="${x}" y="${33-height}" width="4" height="${height}"/>`;
+   const height=kind==='score'&&Number.isFinite(value)?Math.max(1,value/ceiling*36):36;
+   shape=`<rect class="chart-failure${newest?' chart-newest':''}" x="${x}" y="${36-height}" width="4" height="${height}"/>`;
   } else if(!Number.isFinite(value)){
    shape=`<path class="chart-missing" d="M${x} 33h5"/>`;
   } else {
-   const height=Math.max(1,value/ceiling*31);
+   const height=Math.max(1,value/ceiling*36);
    const color=kind==='score'?tone(value,best):value<=200?'good':value<=400?'medium':'bad';
-   shape=`<rect class="chart-bar bar-${color}${newest?' chart-newest':''}" x="${x}" y="${33-height}" width="4" height="${height}"/>`;
+   shape=`<rect class="chart-bar bar-${color}${newest?' chart-newest':''}" x="${x}" y="${36-height}" width="4" height="${height}"/>`;
   }
   return `<g><title>${esc(title)}</title>${shape}</g>`;
  }).join('');
