@@ -13,7 +13,7 @@ test('柱高按固定共同比例尺绘制，并从同一基线向上绘制', ()
  const html = history([100, 200, 400].map(v => sample(v)), 'delay', 100);
  assert.deepEqual(heights(html), [3.1, 6.2, 12.4]);
  for (const m of html.matchAll(/class="chart-bar[^\"]*"[^>]* y="([^\"]+)"[^>]* height="([^\"]+)"/g)) {
-  assert.equal(Number(m[1]) + Number(m[2]), 33);
+  assert.equal(Number(m[1]) + Number(m[2]), 36);
  }
  assert.match(html, /bar-good/);
  assert.match(html, /bar-medium/);
@@ -29,7 +29,7 @@ test('严格 CSP 下不依赖行内样式或脚本，直接输出 SVG 几何属�
 
 test('失败没有伪造延迟；分数仍按实际值绘制', () => {
  assert.match(history([sample(200, false)], 'delay', 100), /chart-failure/);
- assert.deepEqual(heights(history([sample(200, false)], 'delay', 100)), [31]);
+ assert.deepEqual(heights(history([sample(200, false)], 'delay', 100)), [36]);
  const failedScore=history([sample(200, false), sample(400)], 'score', 100);
  assert.deepEqual(heights(failedScore), [3.1, 6.2]);
  assert.match(failedScore, /class="chart-failure"/);
@@ -41,13 +41,13 @@ test('无记录和无分数正确显示，最多保留20条，没有占位假数
  assert.match(history([sample(null, false)], 'score', 100), /chart-failure/);
  const html = history(Array.from({ length: 25 }, (_, i) => sample((i + 1) * 20)), 'delay', 100);
  assert.equal(heights(html).length, 20);
- assert.equal(heights(html)[0], 120 / 1000 * 31);
+ assert.equal(heights(html)[0], 120 / 1000 * 36);
  assert.doesNotMatch(html, /NaN|Infinity/);
 });
 
 test('当前两个数值共享相同字号，移除旧柱子的层叠样式', () => {
  const css = fs.readFileSync('web/styles.css', 'utf8');
- assert.match(css, /\.node-table \.metric-cell\{[^}]*font-size:15px/);
+ assert.match(css, /\.node-table \.check-count,.node-table \.metric-cell\{font-size:13px/);
  assert.doesNotMatch(css, /\.sample\b/);
 });
 

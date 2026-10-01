@@ -16,7 +16,6 @@ const time = value => new Date(value).toLocaleTimeString('zh-CN', {hour12:false}
 const tone = (value,best) => value == null ? 'none' : value <= best*1.4 ? 'good' : value <= best*2.5 ? 'medium' : 'bad';
 function history(samples, kind, best, motion=false) {
  const tail=(samples ?? []).slice(-20);
- const values=tail.map(s=>kind==='score'?s.score:s.delay_ms).filter(v=>Number.isFinite(v)&&v>=0);
  const ceiling=kind==='delay'?1000:2000;
  // SVG geometry attributes work with the server's strict CSP (no inline styles).
  const bars=tail.map((s,index)=>{
@@ -31,7 +30,7 @@ function history(samples, kind, best, motion=false) {
    const height=kind==='score'&&Number.isFinite(value)?Math.min(36,Math.max(1,value/ceiling*36)):36;
    shape=`<rect class="chart-failure${newest?' chart-newest':''}" x="${x}" y="${36-height}" width="4" height="${height}"/>`;
   } else if(!Number.isFinite(value)){
-   shape=`<path class="chart-missing" d="M${x} 33h5"/>`;
+   shape=`<path class="chart-missing" d="M${x} 36h5"/>`;
   } else {
    const height=Math.min(36,Math.max(1,value/ceiling*36));
    const color=kind==='score'?tone(value,best):value<=200?'good':value<=400?'medium':'bad';
