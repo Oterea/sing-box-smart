@@ -20,7 +20,11 @@ type Result struct {
 	Tiers       map[string]domain.Tier
 	Boundary    int
 	HasBoundary bool
+	Cutoff      float64
+	HasCutoff   bool
 }
+
+const maxCandidates = 20
 
 type scored struct {
 	Node
@@ -92,8 +96,24 @@ func Classify(nodes []Node) Result {
 			}
 		}
 	}
+	if frontier == len(valid) && len(valid) > maxCandidates {
+		// A smooth distribution has no trustworthy statistical split. Keep a
+		// bounded competitive band instead of turning every usable node into a
+		// 30-second candidate. The quarter-sized fallback adapts to the pool;
+		// the hard ceiling is only a traffic guard.
+		frontier = len(valid) / 4
+		if frontier < 10 {
+			frontier = 10
+		}
+	}
+	if frontier > maxCandidates {
+		frontier = maxCandidates
+	}
+	if frontier > 0 {
+		r.Cutoff, r.HasCutoff = valid[frontier-1].Score, true
+	}
 	for i, n := range valid {
-		if i < frontier || (r.HasBoundary && n.Previous == domain.TierCandidate && n.Score <= valid[frontier].Score*1.10) {
+		if i < frontier {
 			r.Tiers[n.ID] = domain.TierCandidate
 		}
 	}

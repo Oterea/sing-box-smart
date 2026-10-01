@@ -12,6 +12,7 @@ const (
 	None          Kind = ""
 	FailureToGood Kind = "failure_to_success"
 	LatencyDrop   Kind = "latency_drop"
+	CandidateNear Kind = "candidate_near"
 )
 
 type Signal struct {

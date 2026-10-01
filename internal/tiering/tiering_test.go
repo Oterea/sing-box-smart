@@ -38,3 +38,20 @@ func TestPreviousCandidateHasExitBuffer(t *testing.T) {
 		t.Fatalf("candidate left too easily: %+v", r)
 	}
 }
+
+func TestSmoothLargePoolIsBounded(t *testing.T) {
+	nodes := make([]Node, 0, 70)
+	for i := 0; i < 70; i++ {
+		nodes = append(nodes, Node{ID: string(rune('a' + i)), Score: float64(100 + i*3), HasScore: true, Available: true})
+	}
+	r := Classify(nodes)
+	count := 0
+	for _, tier := range r.Tiers {
+		if tier == domain.TierCandidate {
+			count++
+		}
+	}
+	if count != 17 || !r.HasCutoff {
+		t.Fatalf("candidate count=%d result=%+v", count, r)
+	}
+}

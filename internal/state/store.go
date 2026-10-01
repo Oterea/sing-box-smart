@@ -19,9 +19,11 @@ type Node struct {
 	Tier    domain.Tier
 }
 type Store struct {
-	Nodes []*Node
-	ByID  map[string]*Node
-	Limit int
+	Nodes              []*Node
+	ByID               map[string]*Node
+	Limit              int
+	candidateCutoff    float64
+	hasCandidateCutoff bool
 }
 
 func New(nodes []domain.Node, limit int) *Store {
@@ -105,6 +107,7 @@ func (s *Store) Reclassify(current string) []string {
 		inputs = append(inputs, tiering.Node{ID: n.Info.ID, Score: v, HasScore: ok, Available: n.Checks > 0 && n.Last.Success, Previous: n.Tier})
 	}
 	result := tiering.Classify(inputs)
+	s.candidateCutoff, s.hasCandidateCutoff = result.Cutoff, result.HasCutoff
 	changed := make([]string, 0)
 	for _, n := range s.Nodes {
 		t := result.Tiers[n.Info.ID]
@@ -120,6 +123,20 @@ func (s *Store) Reclassify(current string) []string {
 		}
 	}
 	return changed
+}
+
+// NearCandidate reports whether an ordinary node is close enough to the
+// current candidate boundary to deserve a short recovery confirmation.
+func (s *Store) NearCandidate(id string, margin float64) bool {
+	if !s.hasCandidateCutoff || margin <= 0 {
+		return false
+	}
+	n := s.ByID[id]
+	if n == nil || n.Tier != domain.TierOrdinary {
+		return false
+	}
+	v, ok := score.Value(n.Metrics)
+	return ok && v <= s.candidateCutoff*(1+margin)
 }
 
 func (s *Store) Reschedule(now time.Time, current string, currentEvery, candidateEvery, ordinaryEvery time.Duration) {

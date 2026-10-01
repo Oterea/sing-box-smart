@@ -383,6 +383,9 @@ func (a *App) observe(ctx context.Context, o observation) {
 	a.store.Record(o.id, o.probe)
 	changedTiers := a.store.Reclassify(a.current)
 	now := time.Now()
+	if signal.Kind == recovery.None && a.phase != "startup" && reason == "normal" && !wasCurrent && n.Tier == domain.TierOrdinary && a.store.NearCandidate(o.id, 0.15) {
+		signal = recovery.Signal{Kind: recovery.CandidateNear}
+	}
 	if reason == "recovery" {
 		next := a.cfg.Ordinary
 		if n.Tier == domain.TierCandidate {
@@ -452,6 +455,9 @@ func recoveryLabel(kind recovery.Kind) string {
 	}
 	if kind == recovery.LatencyDrop {
 		return "延迟明显下降"
+	}
+	if kind == recovery.CandidateNear {
+		return "分数接近候选边界"
 	}
 	return "恢复迹象"
 }
