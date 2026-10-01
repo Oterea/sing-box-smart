@@ -334,7 +334,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .history-chart.history-shift{animation:history-shift-in .28s ease both}
 .history-chart.history-shift rect.chart-newest{transform-box:fill-box;transform-origin:center bottom;animation:history-bar-in .28s ease both}
 .history-chart rect.chart-bar,.history-chart rect.chart-failure{transform-box:fill-box;transform-origin:center center}
-.history-chart{overflow:visible}
+.history-chart{overflow:hidden}
 @keyframes history-shift-in{from{transform:translateX(10px);opacity:.78}to{transform:translateX(0);opacity:1}}
 @keyframes history-bar-in{from{transform:scaleY(.12);opacity:.45}to{transform:scaleY(1);opacity:1}}
 @media(prefers-reduced-motion:reduce){.history-chart.history-shift{animation:none}.metric-cell,.check-count{transition:none}}
