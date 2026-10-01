@@ -63,7 +63,7 @@ return view.extend({
      E('a',{class:'sbs-open',href:window.location.protocol+'//'+window.location.hostname+':9797/',target:'_blank',rel:'noopener'},['打开 smart 面板',' ↗'])
     ])
    ]),
-   E('div',{class:'sbs-note'},['API 地址和节点检测设置在 smart 面板中修改。'])
+   E('div',{class:'sbs-note'},['API 地址、根策略组和匹配正则在 smart 面板中修改。'])
   ]);
  },
  handleSave:null, handleSaveApply:null, handleReset:null

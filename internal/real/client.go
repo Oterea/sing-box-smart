@@ -95,8 +95,8 @@ func (c *Client) members(ctx context.Context, group string) ([]string, string, e
 }
 func (c *Client) Airports(ctx context.Context) ([]domain.Airport, error) {
 	pins := c.pins
-	// Discover selectable PIN groups from the live API instead of keeping stale
-	// airport names after a sing-box configuration change.
+	// Discover matching Selector groups during startup or connection reload.
+	// This does not refresh the running catalog after external config changes.
 	var catalog struct {
 		Proxies map[string]proxyInfo `json:"proxies"`
 	}

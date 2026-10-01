@@ -1,4 +1,4 @@
-// Package demo supplies deterministic synthetic network behavior through the same gateway interface.
+// Package demo supplies count- and elapsed-time-based synthetic network behavior through the same gateway interface.
 package demo
 
 import (

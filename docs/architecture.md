@@ -1,59 +1,45 @@
 # 架构说明
 
-## 数据流
+## 数据流与模块依赖
 
 ```text
-gateway -> discovery -> app 调度 -> probe -> state -> score
-                                      -> decision -> switching -> gateway
-                                                        -> snapshot -> httpapi -> web
+real/demo（gateway.Client） → discovery → app
+app → probe → gateway.Client → 探测结果通道 → app
+app → state.Record → score
+app → state.Reclassify → tiering
+app → recovery / state.NearCandidate → schedule
+app → decision → 确认探测 → switching → selector 写入与回读
+app → snapshot → httpapi（HTTP / SSE） → web
 ```
 
-`app` 是唯一能同时看见调度、状态和切换状态的编排层。各基础模块不互相调用，便于单独测试和替换。
+`app` 通过单写入事件循环编排探测、控制、快照、连接替换和切换结果。基础模块并非完全互相独立：`state` 使用 `score`、`tiering`、`schedule`；`probe` 和 `switching` 使用 `gateway`。真实 API 实现在 `internal/real`，不是 `gateway` 包。
 
-## 小模块的边界
+## app 文件边界
 
-每个模块只有一个原因需要修改：探测改动在 `probe`，公式改动在 `score`，分层改动在 `tiering`，恢复迹象判断在 `recovery`，检查时间改动在 `schedule`，sing-box API 改动在 `gateway`。模块小，但不为了“一个函数一个包”而过度拆分。
+- `app.go`：类型、初始化、重置、请求/快照、公共 API 配置入口及恢复提示文字。
+- `runtime.go`：事件循环、25ms 调度扫描、启动阶段、异步探测、结果处理。
+- `control.go`：配置应用、手动节点/策略组选择、重新检查、暂停/继续入口。
+- `detection.go`：取消探测及恢复检测计划。
+- `switching.go`：选择比较、候选确认安排、异步写入和回读结果。
 
-`decision` 只返回“建议切换到谁”；`switching` 只执行并确认接口动作。候选确认由 `app` 调用一次 `probe` 完成，确认结果先进入同一个 `state`，随后再次比较。
+这是同一个 Go package 内的函数拆分，不是多个独立服务。公共配置入口的网络发现发生在事件循环之外；运行状态通过快照读取，准备好的客户端通过请求安装。设置文件保存目前发生在事件循环内，磁盘等待仍可能阻塞该循环。
 
-`tiering` 每次节点结果完成后按当前可用节点的分数分布寻找明显断层，动态得到优秀候选和普通节点；它不使用固定前 N。没有可信断层时保留相近的可用节点为候选。`state` 将当前节点强制标记为当前层，但当前节点的 1.4 倍切换判断仍由 `decision` 独立完成。
+## 小模块边界
 
-`recovery` 只为低频普通节点寻找两类恢复迹象：失败后的成功、相对近期成功延迟基线明显下降。它不改分数，只让该节点获得 3、6、12、20 秒的额外观测机会；每次观测仍经过 `state` 和 `score` 的正常路径。
+`score` 只计分；`tiering` 只划分候选；`recovery` 检测两类改善，接近候选边界由 `state` 判断；`schedule` 管到期时间；`decision` 返回切换目标；`switching` 执行并回读。候选确认结果先经过正常计分，再由 `app` 比较。
 
-## 并发
+各模块实际阈值、调度行为和限制详见 [设计说明](design.md)。不将目标行为或单元测试结论当作已验证的运行保证。
 
-每个节点最多一个进行中的探测。探测可以并发；结果通过事件通道回到 `app` 的单写入循环。旧机场或旧一代探测返回后会被丢弃，避免切换机场后污染新状态。
+## 并发和推送
 
-## 真实接口接入
+每个节点最多一个在途探测，不同节点可并发。探测捕获 runner、上下文和 generation；旧机场或暂停前的结果会丢弃。切换请求使用根上下文，暂停不会撤销已发出的写入。
 
-替换 `internal/demo`，实现 `gateway.Client`：
+HTTP 快照通过请求通道从事件循环取得。SSE 每连接每 250ms 获取完整快照，版本变化时计算节点差量并发送；没有 app 订阅总线或持久重放队列。浏览器合并 ID，历史通过前端队列播放。当前全组重置、旧节点移除的协议限制见 [接口文档](api.md)。
 
-1. 从 sing-box 的 selector 读取 `proxy` 与各机场 PIN 的成员。
-2. 对单个成员执行 delay 探测。
-3. 选择前确认 selector 归属。
-4. PUT 选择请求后 GET 读取实际选择。
-5. 管理接口健康错误与节点探测失败必须分开返回；不能把 API 中断批量记成节点失败。
+## OpenWrt 服务和连接设置
 
-认证、地址和 selector 映射放进配置，不进入评分模块，也不写入日志。
+`internal/settings` 验证地址/正则并通过临时文件、Sync、rename 保存连接 JSON。`-settings` 内容优先覆盖 API/root/pattern；OpenWrt 使用 `/etc/sing-box-smart/connection.json`。服务启动配置是 `/etc/sing-box-smart.conf`。
 
-## OpenWrt service management and connection settings
+LuCI JavaScript 通过 rpcd `file.exec` 调固定 init 命令；`service.list` 每 3 秒读取服务状态。开机自动启动状态在页面加载时读取，页面停止服务后仍可用。监控面板只支持修改连接和策略组过滤，不支持编辑探测间隔等全部检测参数。
 
-`internal/settings` validates URLs and writes the connection file by atomic rename.
-The `-settings` file overrides the API startup flag when present. OpenWrt uses
-`/etc/sing-box-smart/connection.json`. The existing service configuration remains
-`/etc/sing-box-smart.conf`; both paths are preserved by the upgrade keep list.
-
-Connection testing creates a separate client. Network discovery runs outside the
-app event loop. Applying a connection saves it first, then installs the prepared
-client through the event loop, cancels old probes and resets startup observation.
-An invalid or unreachable endpoint never replaces the active client.
-
-The LuCI JavaScript view calls the existing init script through rpcd file.exec,
-with ACL entries restricted to fixed service commands. procd service.list supplies
-status every three seconds. LuCI is available when the smart process is stopped.
-No custom rpcd daemon is needed for these operations.
-
-`python3 scripts/build-ipk.py` builds ARM64 opkg packages into `dist/` for this
-router. These artifacts are for OpenWrt/ImmortalWrt 24.10 aarch64_generic; they
-must not be used as APK packages or on another CPU architecture. The LuCI source
-is separately packaged as `luci-app-sing-box-smart` (architecture `all`).
+`python3 scripts/build-ipk.py` 生成 ARM64 `aarch64_generic` 后端包和 `all` LuCI 包到 `dist/`，版本为脚本内的 0.2.0。这是构建步骤，修改源码或直接替换路由器二进制不会更新已有 ipk；使用前应重新构建。脚本生成的后端包包含 upgrade keep 清单，SDK Makefile 目前只有 conf 文件保留声明，两种构建产物配置保留项并不完全相同。请核对目标设备架构与 opkg 支持，不将 ipk 当 APK 使用。

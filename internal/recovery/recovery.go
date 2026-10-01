@@ -20,8 +20,9 @@ type Signal struct {
 	Baseline float64
 }
 
-// Detect uses history before current. A large drop needs both a relative and
-// an absolute improvement so ordinary jitter does not start a fast review.
+// Detect uses pre-observation history. Failure-to-success requires delay <=
+// goodMax. Otherwise, even after failure, a drop from the median of up to five
+// successful delays may qualify using both ratio and minDrop.
 func Detect(history []domain.Sample, previous domain.Probe, current domain.Probe, ratio, minDrop, goodMax float64) Signal {
 	if !current.Success {
 		return Signal{}

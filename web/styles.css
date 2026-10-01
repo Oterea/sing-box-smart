@@ -216,7 +216,7 @@ select{border:0!important;box-shadow:0 1px 0 #dce5e7;background:transparent}
 @media(max-width:700px){.node-table{min-width:880px}
 }
 
-/* Compact top bar: airport selection and health share one horizontal card. */
+/* Legacy top-card layout declarations; final overrides below show policy groups only. */
 .toolbar{display:flex;justify-content:flex-end;min-height:0;margin:22px 0 12px}.top-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center;margin-bottom:24px;padding:20px 24px}.top-airports{min-width:0}.top-airports .card-label{margin-bottom:10px}.top-health{min-width:0}.airport-options{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:0}.airport-option{min-height:48px;padding:9px 12px;background:transparent;color:#40576a;box-shadow:none!important}.airport-option:hover:not(:disabled){background:#edf2f5;color:#2d536f;box-shadow:none!important}.airport-option.selected,.airport-option:disabled.selected{background:var(--blue);color:var(--blue-text);opacity:1;box-shadow:0 0 14px rgba(25,159,224,.35)!important}.airport-option.selected small{color:#fff}.health-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.top-health .health-number{padding:0}.top-health .health-track{margin:10px 0 8px}.top-health .health-caption{font-size:11px}.top-health #recheck{flex-shrink:0;margin-top:2px}
 @media(max-width:900px){.top-card{grid-template-columns:1fr;gap:18px}.top-health{max-width:360px}}
 @media(max-width:700px){.toolbar{margin-top:16px}.top-card{padding:18px 16px}.airport-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -322,8 +322,8 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .node-table .metric-cell.tone-none{background:#edf3f5}
 .node-table .history-chart{display:block;width:100%;max-width:none;box-sizing:border-box}
 
-/* Values remain truthful while the newest history enters from the right and
-   the visible strip settles toward the left like a sliding timeline. */
+/* SVG replacement slides the entire chart a short distance while the newest
+   bar grows simultaneously; this is not a staged, one-slot DOM translation. */
 .metric-cell,.check-count{transition:color .22s ease,background-color .22s ease}
 .history-chart.history-shift{animation:history-shift-in .28s ease both}
 .history-chart.history-shift rect.chart-newest{transform-box:fill-box;transform-origin:center bottom;animation:history-bar-in .28s ease both}

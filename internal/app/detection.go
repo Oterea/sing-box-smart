@@ -36,7 +36,7 @@ func (a *App) resumeDetection() {
 	}
 	a.paused = false
 	a.revision++
-	// Refresh every node once rather than choosing from stale pre-pause scores.
+	// Make every node due. Evaluation is not gated on all refreshes finishing.
 	for _, n := range a.store.Nodes {
 		n.Plan.NormalDue = time.Now()
 	}

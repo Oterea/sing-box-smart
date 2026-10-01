@@ -66,18 +66,31 @@ func Handler(service Service) http.Handler {
 					continue
 				}
 				payload := struct {
-					Full bool `json:"full"`
+					Full    bool     `json:"full"`
+					Removed []string `json:"removed,omitempty"`
 					domain.Snapshot
-				}{Full: previous == nil, Snapshot: s}
+				}{Full: previous == nil || previous.AirportID != s.AirportID, Snapshot: s}
+				if previous != nil {
+					if payload.Full {
+						previous = nil
+					}
+				}
 				if previous != nil {
 					changed := make([]domain.NodeView, 0)
 					old := make(map[string]domain.NodeView, len(previous.Nodes))
+					currentIDs := make(map[string]struct{}, len(s.Nodes))
 					for _, node := range previous.Nodes {
 						old[node.ID] = node
 					}
 					for _, node := range s.Nodes {
+						currentIDs[node.ID] = struct{}{}
 						if prior, ok := old[node.ID]; !ok || !reflect.DeepEqual(prior, node) {
 							changed = append(changed, node)
+						}
+					}
+					for id := range old {
+						if _, ok := currentIDs[id]; !ok {
+							payload.Removed = append(payload.Removed, id)
 						}
 					}
 					payload.Nodes = changed

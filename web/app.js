@@ -220,6 +220,7 @@ function connectStream(){
   if(message.full||!state){render(message);}
   else {
    const byId=new Map(state.nodes.map(node=>[node.id,node]));
+   for(const id of message.removed??[])byId.delete(id);
    for(const node of message.nodes??[])byId.set(node.id,node);
    render({...state,...message,nodes:[...byId.values()]});
   }

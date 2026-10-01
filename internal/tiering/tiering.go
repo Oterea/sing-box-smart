@@ -31,9 +31,9 @@ type scored struct {
 	Score float64
 }
 
-// Classify finds a dominant score gap. Nodes before that gap are candidates;
-// without a convincing gap, all currently usable scored nodes remain in the
-// candidate band rather than inventing a rank cut such as "top ten".
+// Classify uses a dominant score gap when available, with at most 20 candidates.
+// Without a gap, pools larger than 20 use a top-quarter band (minimum 10);
+// smaller pools keep all usable finite-score nodes. Previous tiers are not used.
 func Classify(nodes []Node) Result {
 	r := Result{Tiers: make(map[string]domain.Tier, len(nodes))}
 	for _, n := range nodes {

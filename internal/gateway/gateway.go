@@ -1,4 +1,4 @@
-// Package gateway is the boundary for replacing the simulator with a sing-box adapter.
+// Package gateway defines the interface shared by real and demo adapters.
 package gateway
 
 import (
@@ -19,4 +19,6 @@ type Client interface {
 type APIConfigurable interface{ SetAPI(string) error }
 
 // Probe returns node failures as Probe{Success:false}, and management/transport failures as error.
-// A real adapter must classify ambiguous delay-endpoint errors with a separate health check.
+// The real adapter treats HTTP delay errors and deadline timeouts as node
+// failures; other transport errors are API errors. No per-response health check
+// is performed.

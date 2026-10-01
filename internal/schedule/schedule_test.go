@@ -10,6 +10,9 @@ func TestRecoveryDueWinsOverClearedNormalDue(t *testing.T) {
 	now := time.Now()
 	p := Plan{}
 	p.StartRecovery(now, []time.Duration{3 * time.Second, 6 * time.Second})
+	if got := p.Due(now, "normal", false); got != "" {
+		t.Fatalf("recovery ran before due time: %q", got)
+	}
 	if got := p.Due(now.Add(3*time.Second), "normal", false); got != "recovery" {
 		t.Fatalf("got %q", got)
 	}

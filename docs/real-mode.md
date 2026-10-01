@@ -1,21 +1,38 @@
 # 真实 sing-box 模式
 
-程序使用 sing-box 的 Clash API。先确认 sing-box 的 external controller 只监听本机，再启动程序。默认不会监听外部网卡。
+程序调用 sing-box 的 Clash API；默认测试 URL 是 `https://www.gstatic.com/generate_204`。探测使用 API delay 接口，不是 ICMP ping。程序没有 Clash API secret 认证参数。
 
 ```sh
 go run ./cmd/sing-box-smart \
   -mode real \
   -api http://127.0.0.1:9695 \
   -root proxy \
-  -pins 'Pei=pei PIN,ToLink=tolink PIN,Cloud=cloud PIN' \
+  -pins 'ToLink=tolink PIN,Pei=pei PIN' \
   -test-url https://www.gstatic.com/generate_204 \
-  -listen 127.0.0.1:8787
+  -listen 127.0.0.1:8787 \
+  -settings connection.json
 ```
 
-`-pins` 的左边只是面板显示名，右边必须是 sing-box 中真实存在的 selector 名称。每个 PIN selector 的成员应是该机场的节点。
+## 策略组发现
 
-启动时程序会分别读取每个 PIN 的成员，约 10 秒内独立检查，随后从有成功延迟的节点中选最低分节点写入该 PIN。切换机场时，程序向根 selector（默认 `proxy`）选择对应的 PIN；选择机场后重新执行启动观察。
+当前命令行及配置校验仍要求 `-pins`，格式为“显示名称=selector”。它用于目录接口读取失败或没有有效目录时的兼容回退。
 
-接口连接错误不会记为节点失败。delay 接口能正常返回 HTTP 响应但表示节点失败时，才把这次结果记为节点失败。
+目录读取成功时忽略 pins，读取 root 的直接成员，选出类型为 Selector 且名字符合正则的组；默认正则 `PIN$`，不要求 PIN 前有空格。此时显示名和 ID 都使用实际组名。root 不存在或没有成员时，代码会扫描整个目录匹配 Selector，因此当前并非始终只搜索 root 内部。
 
-当前版本不保存评分状态跨重启。日志只写程序事件和探测摘要，不写 API 密钥；如果未来给 API 加认证，需要把认证配置放在本地权限受限的配置文件或系统密钥存储中。
+组成员应是待测节点；发现过程检查非空和重复，但不进一步保证每个成员都是单节点出站。只在启动、重新应用配置时发现，不会自动追踪后续订阅变化。
+
+## 启动和切换
+
+启动后选发现列表第一组，在该组内约 10 秒连续检查；所有节点至少完成一次后，提出最低分可用目标，确认探测并再次比较，再写入组 selector。启动不会自动把根组切到这个 PIN。
+
+手动切换策略组时当前代码写入固定 `proxy`，尚未使用可配置 root；确认后重新执行启动观察。正常间隔、恢复及失败处理见 [设计说明](design.md)。
+
+HTTP 节点失败响应和外层超时计为节点失败；其他连接错误计为 API 异常。不能保证所有错误 HTTP 响应都被正确识别为管理接口故障。
+
+## OpenWrt
+
+示例服务配置 `deploy/sing-box-smart.conf` 监听 `0.0.0.0:9797`，调用本机 API `127.0.0.1:9695`。LuCI 管理 init 服务启动、停止、重启、自启动；监控页面暂停/继续检测不等于停止进程。
+
+已有 `/etc/sing-box-smart/connection.json` 会优先覆盖启动配置中的 API、root、pattern。重启会清空评分和历史，保留该连接文件。参数未提供定时间隔的 CLI 开关，当前间隔在 `internal/config.Default` 中配置。
+
+`deploy/install-router.sh` 是早期 sbwatch 迁移脚本，会备份、停止并禁用 sbwatch，再安装指定 /tmp 文件；不是通用 ipk 安装步骤。

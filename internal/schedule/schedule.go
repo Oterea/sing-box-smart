@@ -20,8 +20,11 @@ func (p *Plan) Due(now time.Time, phase string, current bool) string {
 	if phase == "startup" {
 		return "startup"
 	}
-	if !current && p.RecoveryStep > 0 && !now.Before(p.ExtraDue) {
-		return "recovery"
+	if !current && p.RecoveryStep > 0 {
+		if !now.Before(p.ExtraDue) {
+			return "recovery"
+		}
+		return ""
 	}
 	if !now.Before(p.NormalDue) {
 		return "normal"
@@ -29,6 +32,8 @@ func (p *Plan) Due(now time.Time, phase string, current bool) string {
 	return ""
 }
 
+// StartRecovery configures the extra due time and suppresses normal probes
+// until that time arrives.
 func (p *Plan) StartRecovery(now time.Time, steps []time.Duration) bool {
 	if len(steps) == 0 || p.RecoveryStep > 0 {
 		return false
