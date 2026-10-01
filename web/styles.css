@@ -326,7 +326,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .node-table .metric-cell.tone-medium{background:#fff7df}
 .node-table .metric-cell.tone-bad{background:#ffeded}
 .node-table .metric-cell.tone-none{background:#f1f6f8}
-.node-table .history-chart{box-sizing:border-box}
+.node-table .history-chart{box-sizing:border-box;background:#f5f8f9}
 
 /* Values remain truthful while the newest history enters from the right and
    the visible strip settles toward the left like a sliding timeline. */
