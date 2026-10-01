@@ -38,7 +38,7 @@ function history(samples, kind, best) {
   }
   return `<g><title>${esc(title)}</title>${shape}</g>`;
  }).join('');
- return `<svg class="history-chart" viewBox="0 0 320 36" preserveAspectRatio="none" role="img" aria-label="${kind==='score'?'分数':'延迟'}历史，最近${tail.length}次，旧到新，纵轴上限${Math.round(ceiling)}">${bars}${tail.length?'':'<text x="4" y="23" fill="#95a2ad" font-size="12">暂无记录</text>'}</svg>`;
+ return `<svg class="history-chart history-shift" viewBox="0 0 320 36" preserveAspectRatio="none" role="img" aria-label="${kind==='score'?'分数':'延迟'}历史，最近${tail.length}次，旧到新，纵轴上限${Math.round(ceiling)}">${bars}${tail.length?'':'<text x="4" y="23" fill="#95a2ad" font-size="12">暂无记录</text>'}</svg>`;
 }
 // Both sections share the same header, column definitions and row renderer.
 function tableHeading() {
