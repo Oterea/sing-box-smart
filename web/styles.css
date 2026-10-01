@@ -303,3 +303,13 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .header-actions #detection-toggle,.header-actions #recheck{background:var(--blue);color:var(--blue-text);box-shadow:0 0 6px rgba(66,211,242,.18)}
 .header-actions #detection-toggle:disabled,.header-actions #recheck:disabled{cursor:default}
 @media(max-width:700px){.api-settings{padding:18px 16px}.api-settings form{grid-template-columns:1fr;gap:12px}.header-actions{flex-wrap:wrap}.connection-state{width:100%}.header-actions #detection-toggle{padding:8px 10px;font-size:11px}}
+
+/* Node tier colors are independent of delay and score tones. */
+.node-table .node-choice.tier-candidate{background:#d5f5e4;color:var(--green-text)}
+.node-table .node-choice.tier-ordinary{background:#e6ebef;color:#536a7b}
+.node-table .node-choice.tier-recovery{background:#fff0c6;color:var(--amber-text)}
+.node-table .node-choice:hover:not(:disabled){filter:brightness(.97)}
+.legend i.tier-current{background:var(--blue)}
+.legend i.tier-candidate{background:#d5f5e4}
+.legend i.tier-ordinary{background:#e6ebef}
+.legend i.tier-recovery{background:#fff0c6}
