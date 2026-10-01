@@ -313,3 +313,10 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .legend i.tier-candidate{background:#d5f5e4}
 .legend i.tier-ordinary{background:#e6ebef}
 .legend i.tier-recovery{background:#fff0c6}
+
+/* Keep numeric updates and history motion soft while preserving truthful values. */
+.metric-cell,.check-count{transition:color .22s ease,background-color .22s ease}
+.history-chart rect.chart-bar,.history-chart rect.chart-failure{transform-box:fill-box;transform-origin:center bottom;animation:history-bar-in .28s ease both}
+.history-chart{overflow:visible}
+@keyframes history-bar-in{from{transform:scaleY(.18);opacity:.55}to{transform:scaleY(1);opacity:1}}
+@media(prefers-reduced-motion:reduce){.history-chart rect.chart-bar,.history-chart rect.chart-failure{animation:none}.metric-cell,.check-count{transition:none}}

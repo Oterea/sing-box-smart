@@ -2,6 +2,16 @@ const $ = id => document.getElementById(id);
 let state, busy = false, toastTimer, airportKey = '', eventsKey = '';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
+function animateNumber(el, value, formatter=num) {
+ const next=Number.isFinite(value)?Math.round(value):null;
+ const prev=Number(el.dataset.value);
+ if(next==null){el.textContent=formatter(value);delete el.dataset.value;return;}
+ if(!Number.isFinite(prev)||document.hidden||window.matchMedia('(prefers-reduced-motion: reduce)').matches){el.textContent=formatter(value);el.dataset.value=next;return;}
+ const start=performance.now(), from=prev, duration=260;
+ cancelAnimationFrame(Number(el.dataset.raf)||0);
+ const step=now=>{const t=Math.min(1,(now-start)/duration), eased=1-Math.pow(1-t,3);el.textContent=formatter(from+(next-from)*eased);el.dataset.value=next;if(t<1)el.dataset.raf=requestAnimationFrame(step);};
+ el.dataset.raf=requestAnimationFrame(step);
+}
 const time = value => new Date(value).toLocaleTimeString('zh-CN', {hour12:false});
 const tone = (value,best) => value == null ? 'none' : value <= best*1.4 ? 'good' : value <= best*2.5 ? 'medium' : 'bad';
 function history(samples, kind, best) {
@@ -32,7 +42,7 @@ function history(samples, kind, best) {
 }
 // Both sections share the same header, column definitions and row renderer.
 function tableHeading() {
- return '<colgroup><col class="col-node"><col class="col-action"><col class="col-score"><col class="col-delay"><col class="col-history"><col class="col-history"></colgroup><thead><tr><th scope="col">节点</th><th scope="col">检查次数</th><th scope="col">分数</th><th scope="col">延迟（ms）</th><th scope="col">分数历史</th><th scope="col">延迟历史</th></tr></thead>';
+ return '<colgroup><col class="col-node"><col class="col-action"><col class="col-score"><col class="col-delay"><col class="col-history"><col class="col-history"></colgroup><thead><tr><th scope="col">节点</th><th scope="col">检查次数</th><th scope="col">分数</th><th scope="col">延迟</th><th scope="col">分数历史</th><th scope="col">延迟历史</th></tr></thead>';
 }
 function nodeTier(n,s) {
  return n.id&&n.id===s.current_id?'current':n.recovery_remaining>0?'recovery':n.tier==='candidate'?'candidate':'ordinary';
@@ -60,11 +70,11 @@ function patchRow(row,n,best,s,selected=false) {
  button.disabled=disabled;
  button.className=`node-choice tier-${nodeTier(n,s)}${current?' selected':''}`;
  if(n.id)button.dataset.node=n.id;else delete button.dataset.node;
- row.cells[1].firstElementChild.textContent=n.checks;
- row.cells[2].firstElementChild.textContent=n.score_overflow?'∞':num(n.score);
+ animateNumber(row.cells[1].firstElementChild,n.checks);
+ animateNumber(row.cells[2].firstElementChild,n.score_overflow?null:n.score,v=>n.score_overflow?'∞':num(v));
  row.cells[2].firstElementChild.className=`metric-cell tone-${tone(n.score,best)}`;
  const delayTone=n.checks&&!n.last_success?'bad':n.delay_ms==null?'none':n.delay_ms<=200?'good':n.delay_ms<=400?'medium':'bad';
- row.cells[3].firstElementChild.textContent=n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—';
+ if(n.delay_ms!=null)animateNumber(row.cells[3].firstElementChild,n.delay_ms);else{row.cells[3].firstElementChild.textContent=n.checks?'失败':'—';delete row.cells[3].firstElementChild.dataset.value;}
  row.cells[3].firstElementChild.className=`metric-cell tone-${delayTone}`;
  row.cells[4].innerHTML=history(n.history,'score',best);
  row.cells[5].innerHTML=history(n.history,'delay',best);
