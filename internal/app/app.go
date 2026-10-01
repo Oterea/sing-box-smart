@@ -192,6 +192,7 @@ func (a *App) Run(ctx context.Context) {
 			a.switched(c)
 		case err := <-a.health:
 			a.healthBusy = false
+			a.revision++
 			if err == nil {
 				a.healthy = true
 				a.events.Record("api", "管理接口恢复，继续检查")
@@ -273,6 +274,7 @@ func (a *App) control(ctx context.Context, action, target string) error {
 		}
 		a.pending = target
 		a.pendingKind = "node"
+		a.revision++
 		a.manual = true
 		a.events.Record("manual", "手动选择：先检查目标节点")
 		a.startProbe(ctx, a.store.ByID[target], "confirm")
@@ -284,6 +286,7 @@ func (a *App) control(ctx context.Context, action, target string) error {
 				}
 				a.pending = target
 				a.pendingKind = "airport"
+				a.revision++
 				a.apply(ctx, "airport", target, "proxy", airport.Selector)
 				return nil
 			}
@@ -489,6 +492,7 @@ func (a *App) evaluate(ctx context.Context) {
 	}
 	a.pending = target
 	a.pendingKind = "node"
+	a.revision++
 	a.manual = false
 	candidate := a.store.ByID[target]
 	v, _ := score.Display(candidate.Metrics)
@@ -511,6 +515,7 @@ func (a *App) apply(ctx context.Context, kind, target, group, value string) {
 	}()
 }
 func (a *App) switched(c changed) {
+	a.revision++
 	a.switchBusy = false
 	a.pending = ""
 	a.pendingKind = ""
