@@ -17,7 +17,7 @@ const tone = (value,best) => value == null ? 'none' : value <= best*1.4 ? 'good'
 function history(samples, kind, best) {
  const tail=(samples ?? []).slice(-20);
  const values=tail.map(s=>kind==='score'?s.score:s.delay_ms).filter(v=>Number.isFinite(v)&&v>=0);
- const ceiling=Math.max(kind==='delay'?400:1,...values);
+ const ceiling=kind==='delay'?1000:2000;
  // SVG geometry attributes work with the server's strict CSP (no inline styles).
  const bars=tail.map((s,index)=>{
   const value=kind==='score'?s.score:s.delay_ms;
