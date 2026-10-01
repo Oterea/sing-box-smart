@@ -38,6 +38,41 @@ func Handler(service Service) http.Handler {
 		}
 		write(w, 200, s)
 	})
+	mux.HandleFunc("GET /api/events", func(w http.ResponseWriter, r *http.Request) {
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			write(w, 501, map[string]string{"error": "SSE 不受支持"})
+			return
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		ctx := r.Context()
+		last := uint64(^uint64(0))
+		ticker := time.NewTicker(250 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				s, err := service.Snapshot(ctx)
+				if err != nil {
+					return
+				}
+				if s.Revision == last {
+					continue
+				}
+				body, err := json.Marshal(s)
+				if err != nil {
+					return
+				}
+				fmt.Fprintf(w, "event: state\\ndata: %s\\n\\n", body)
+				flusher.Flush()
+				last = s.Revision
+			}
+		}
+	})
 	mux.HandleFunc("POST /api/config/filters", func(w http.ResponseWriter, r *http.Request) {
 		var b struct{ Root, Pattern string }
 		if json.NewDecoder(http.MaxBytesReader(w, r.Body, 2048)).Decode(&b) != nil {

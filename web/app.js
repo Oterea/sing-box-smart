@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-let state, busy = false, toastTimer, airportKey = '', eventsKey = '', stateEtag = '';
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '', stateEtag = '', streamOpen = false, stream;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 function animateNumber(el, value, formatter=num) {
@@ -208,7 +208,16 @@ for (const id of ['nodes','selected-node']) {
  });
 }
 // Background tabs do not need a full 78-node snapshot every second.
-async function poll(){await refresh();setTimeout(poll,document.hidden?5000:1000);}poll();
+async function poll(){if(!streamOpen)await refresh();setTimeout(poll,document.hidden?5000:1000);}poll();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
+
+function connectStream(){
+ if(!window.EventSource)return;
+ stream=new EventSource('/api/events');
+ stream.addEventListener('state',event=>{try{stateEtag='';render(JSON.parse(event.data));streamOpen=true;}catch(_){}});
+ stream.onopen=()=>{streamOpen=true;refresh();};
+ stream.onerror=()=>{streamOpen=false;stream.close();setTimeout(connectStream,3000);};
+}
+connectStream();
 
 $('api-test').addEventListener('click',async()=>{const button=$('api-test');button.disabled=true;try{const r=await fetch('/api/config/api/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api:$('api-address').value.trim()})});const data=await r.json();if(!r.ok)throw new Error(data.error);toast('连接正常，策略组可读取');}catch(e){toast(e.message);}finally{button.disabled=false;}});
