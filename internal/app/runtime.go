@@ -2,14 +2,10 @@ package app
 
 import (
 	"context"
-	"fmt"
-	"sing-box-smart/internal/decision"
 	"sing-box-smart/internal/domain"
 	"sing-box-smart/internal/recovery"
 	"sing-box-smart/internal/score"
-	"sing-box-smart/internal/settings"
 	"sing-box-smart/internal/state"
-	"sing-box-smart/internal/switching"
 	"time"
 )
 
@@ -45,98 +41,6 @@ func (a *App) Run(ctx context.Context) {
 			a.tick(ctx, now)
 		}
 	}
-}
-
-func (a *App) configureAPI(r request) error {
-	if a.switchBusy || a.pending != "" || a.healthBusy {
-		return fmt.Errorf("切换正在进行，请稍后重试")
-	}
-	root, pattern := a.groupRoot, a.groupPattern
-	if r.root != "" {
-		root, pattern = r.root, r.pattern
-	}
-	if err := settings.Save(a.cfg.SettingsPath, settings.Connection{API: r.target, Root: root, Pattern: pattern}); err != nil {
-		return fmt.Errorf("保存配置失败: %w", err)
-	}
-	a.apiAddress = r.target
-	a.groupRoot, a.groupPattern = root, pattern
-	selected := a.airport.ID
-	a.client = r.client
-	a.runner.Client = r.client
-	a.airports = r.airports
-	a.healthy = true
-	for _, airport := range a.airports {
-		if airport.ID == selected {
-			a.reset(airport)
-			return nil
-		}
-	}
-	a.reset(a.airports[0])
-	return nil
-}
-
-func (a *App) control(ctx context.Context, action, target string) error {
-	if action == "pause" {
-		a.pauseDetection()
-		return nil
-	}
-	if action == "resume" {
-		a.resumeDetection()
-		return nil
-	}
-	if a.paused {
-		return fmt.Errorf("检测已暂停，请先继续检测")
-	}
-	if action == "recheck" {
-		a.revision++
-		for _, n := range a.store.Nodes {
-			n.Plan.ClearRecovery()
-			n.Plan.NormalDue = time.Now()
-		}
-		a.events.Record("manual", "已安排当前机场全部节点重新检查")
-		return nil
-	}
-	if !a.healthy {
-		return fmt.Errorf("管理接口暂不可用")
-	}
-	if a.pending != "" || a.switchBusy {
-		return fmt.Errorf("已有切换正在处理中")
-	}
-	switch action {
-	case "node":
-		if a.phase == "startup" {
-			return fmt.Errorf("启动检查尚未结束")
-		}
-		if a.store.ByID[target] == nil {
-			return fmt.Errorf("节点不属于当前机场")
-		}
-		if target == a.current {
-			return nil
-		}
-		a.pending = target
-		a.pendingKind = "node"
-		a.revision++
-		a.manual = true
-		a.events.Record("manual", "手动选择：先检查目标节点")
-		a.startProbe(ctx, a.store.ByID[target], "confirm")
-	case "airport":
-		for _, airport := range a.airports {
-			if airport.ID == target {
-				if target == a.airport.ID {
-					return nil
-				}
-				a.pending = target
-				a.pendingKind = "airport"
-				a.revision++
-				a.apply(ctx, "airport", target, "proxy", airport.Selector)
-				return nil
-			}
-		}
-		return fmt.Errorf("未知机场")
-	default:
-		return fmt.Errorf("未知操作")
-	}
-	return nil
 }
 
 func (a *App) tick(ctx context.Context, now time.Time) {
@@ -226,15 +130,16 @@ func (a *App) observe(ctx context.Context, o observation) {
 	}
 	reason := n.Plan.Reason
 	wasCurrent := o.id == a.current
+	wasOrdinary := n.Tier == domain.TierOrdinary
 	signal := recovery.Signal{}
-	if a.phase != "startup" && reason == "normal" && !wasCurrent && n.Tier == domain.TierOrdinary && n.Checks > 0 {
+	if a.phase != "startup" && reason == "normal" && !wasCurrent && wasOrdinary && n.Checks > 0 {
 		signal = recovery.Detect(n.History, n.Last, o.probe, a.cfg.RecoveryDropRatio, a.cfg.RecoveryDropMinMS, a.cfg.RecoveryGoodMaxMS)
 	}
 	a.store.Record(o.id, o.probe)
 	a.revision++
 	changedTiers := a.store.Reclassify(a.current)
 	now := time.Now()
-	if signal.Kind == recovery.None && a.phase != "startup" && reason == "normal" && !wasCurrent && n.Tier == domain.TierOrdinary && a.store.NearCandidate(o.id, 0.15) {
+	if signal.Kind == recovery.None && a.phase != "startup" && reason == "normal" && !wasCurrent && wasOrdinary && a.store.NearCandidate(o.id, 0.15) {
 		signal = recovery.Signal{Kind: recovery.CandidateNear}
 	}
 	if reason == "recovery" {
@@ -249,7 +154,7 @@ func (a *App) observe(ctx context.Context, o observation) {
 	} else if a.phase == "unavailable" {
 		n.Plan.ClearRecovery()
 		n.Plan.NormalDue = now.Add(a.cfg.Recovery)
-	} else if !wasCurrent && reason == "normal" && signal.Kind != recovery.None && n.Tier == domain.TierOrdinary {
+	} else if !wasCurrent && reason == "normal" && signal.Kind != recovery.None && wasOrdinary {
 		if n.Plan.StartRecovery(now, a.cfg.RecoverySteps) {
 			a.events.Record("recovery", n.Info.Name+"：发现"+recoveryLabel(signal.Kind)+"，3 秒后开始恢复复查")
 		}
@@ -298,82 +203,4 @@ func (a *App) observe(ctx context.Context, o observation) {
 		return
 	}
 	a.evaluate(ctx)
-}
-
-func (a *App) choose() string {
-	nodes := make([]decision.Candidate, 0, len(a.store.Nodes))
-	for _, n := range a.store.Nodes {
-		v, ok := score.Value(n.Metrics)
-		nodes = append(nodes, decision.Candidate{ID: n.Info.ID, Score: v, HasScore: ok, Available: n.Checks > 0 && n.Last.Success})
-	}
-	return decision.Choose(nodes, a.current, a.cfg.SwitchRatio)
-}
-
-func (a *App) evaluate(ctx context.Context) {
-	if a.paused || a.phase == "startup" || !a.healthy || a.pending != "" || a.switchBusy {
-		return
-	}
-	if a.phase == "unavailable" && a.store.AnyAvailable() {
-		a.phase = "normal"
-		a.store.Reclassify(a.current)
-		a.store.Reschedule(time.Now(), a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
-		a.events.Record("phase", "有节点检查成功，恢复正常检查频率")
-	}
-	target := a.choose()
-	if target == "" {
-		return
-	}
-	a.pending = target
-	a.pendingKind = "node"
-	a.revision++
-	a.manual = false
-	candidate := a.store.ByID[target]
-	v, _ := score.Display(candidate.Metrics)
-	a.events.Trace("decision", "current", a.current, "candidate", target, "candidate_score", v, "threshold", a.cfg.SwitchRatio)
-	a.startProbe(ctx, candidate, "confirm")
-}
-
-func (a *App) apply(ctx context.Context, kind, target, group, value string) {
-	if a.paused {
-		return
-	}
-	a.switchBusy = true
-	go func() {
-		c, cancel := context.WithTimeout(ctx, 2*a.cfg.Timeout)
-		defer cancel()
-		r := switching.Apply(c, a.client, group, value)
-		select {
-		case a.changes <- changed{kind, target, r}:
-		case <-ctx.Done():
-		}
-	}()
-}
-
-func (a *App) switched(c changed) {
-	a.revision++
-	a.switchBusy = false
-	a.pending = ""
-	a.pendingKind = ""
-	if !c.result.Verified {
-		if c.kind == "node" && a.store.ByID[c.result.Actual] != nil {
-			a.current = c.result.Actual
-			a.store.Reclassify(a.current)
-			a.store.Reschedule(time.Now(), a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
-		}
-		a.events.Record("error", "切换未确认，等待后续重新判断")
-		return
-	}
-	if c.kind == "airport" {
-		for _, airport := range a.airports {
-			if airport.ID == c.target {
-				a.events.Record("switch", "已切换机场 PIN："+airport.Selector)
-				a.reset(airport)
-				return
-			}
-		}
-	}
-	a.current = c.target
-	a.store.Reclassify(a.current)
-	a.store.Reschedule(time.Now(), a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
-	a.events.Record("switch", "已确认选中："+a.store.ByID[c.target].Info.Name)
 }
