@@ -88,7 +88,7 @@ func (a *App) control(ctx context.Context, action, target string) error {
 				a.pending = target
 				a.pendingKind = "airport"
 				a.revision++
-				a.apply(ctx, "airport", target, "proxy", airport.Selector)
+				a.apply(ctx, "airport", target, a.groupRoot, airport.Selector)
 				return nil
 			}
 		}

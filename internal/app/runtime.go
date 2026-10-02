@@ -17,6 +17,10 @@ func (a *App) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case r := <-a.requests:
+			if r.ctx != nil && r.ctx.Err() != nil {
+				r.reply <- response{err: r.ctx.Err()}
+				continue
+			}
 			if r.action == "snapshot" {
 				r.reply <- response{snapshot: a.snapshot()}
 			} else if r.action == "api" {
@@ -51,10 +55,11 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 		if !a.healthBusy && now.Sub(a.lastHealth) >= a.cfg.Recovery {
 			a.healthBusy = true
 			a.lastHealth = now
+			client := a.client
 			go func() {
 				c, cancel := context.WithTimeout(ctx, a.cfg.Timeout)
 				defer cancel()
-				err := a.client.Health(c)
+				err := client.Health(c)
 				select {
 				case a.health <- err:
 				case <-ctx.Done():
@@ -92,6 +97,7 @@ func (a *App) startProbe(ctx context.Context, n *state.Node, reason string) {
 		return
 	}
 	n.Plan.InFlight = true
+	a.revision++
 	n.Plan.Reason = reason
 	id, generation := n.Info.ID, a.generation
 	probeCtx := a.probeCtx
@@ -141,7 +147,7 @@ func (a *App) observe(ctx context.Context, o observation) {
 	a.revision++
 	changedTiers := a.store.Reclassify(a.current)
 	now := time.Now()
-	if signal.Kind == recovery.None && a.phase != "startup" && reason == "normal" && !wasCurrent && wasOrdinary && a.store.NearCandidate(o.id, 0.15) {
+	if signal.Kind == recovery.None && a.phase != "startup" && reason == "normal" && !wasCurrent && wasOrdinary && o.probe.Success && a.store.NearCandidate(o.id, 0.15) {
 		signal = recovery.Signal{Kind: recovery.CandidateNear}
 	}
 	if reason == "recovery" {

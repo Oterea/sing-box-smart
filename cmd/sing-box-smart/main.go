@@ -5,13 +5,13 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"sing-box-smart/internal/app"
 	"sing-box-smart/internal/config"
 	"sing-box-smart/internal/demo"
-	"sing-box-smart/internal/domain"
 	"sing-box-smart/internal/events"
 	"sing-box-smart/internal/gateway"
 	"sing-box-smart/internal/httpapi"
@@ -32,10 +32,10 @@ func run() error {
 	var pins string
 	flag.StringVar(&cfg.Mode, "mode", cfg.Mode, "demo or real")
 	flag.StringVar(&cfg.API, "api", cfg.API, "sing-box Clash API base URL")
-	flag.StringVar(&cfg.Root, "root", cfg.Root, "root selector used for API health")
+	flag.StringVar(&cfg.Root, "root", cfg.Root, "root selector used for discovery, health and selection")
 	flag.StringVar(&cfg.TestURL, "test-url", cfg.TestURL, "URL used for delay checks")
-	flag.StringVar(&pins, "pins", "", "airport PINs: Name=selector,Name=selector")
-	flag.StringVar(&cfg.Listen, "listen", cfg.Listen, "loopback HTTP listen address")
+	flag.StringVar(&pins, "pins", "", "optional compatibility selectors: Name=selector,Name=selector")
+	flag.StringVar(&cfg.Listen, "listen", cfg.Listen, "HTTP listen address")
 	flag.StringVar(&cfg.LogDir, "log-dir", cfg.LogDir, "log directory")
 	flag.StringVar(&cfg.SettingsPath, "settings", "connection.json", "persistent connection settings file")
 	flag.Parse()
@@ -50,9 +50,6 @@ func run() error {
 			return err
 		}
 		cfg.Pins = parsed
-	}
-	if cfg.Mode == "real" && len(cfg.Pins) == 0 {
-		return fmt.Errorf("real mode requires -pins 'Name=selector,...'")
 	}
 	if err := cfg.Validate(); err != nil {
 		return err
@@ -76,7 +73,7 @@ func run() error {
 		return err
 	}
 	go service.Run(ctx)
-	server := &http.Server{Addr: cfg.Listen, Handler: httpapi.Handler(service), ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second}
+	server := &http.Server{Addr: cfg.Listen, Handler: httpapi.Handler(service), ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second, BaseContext: func(net.Listener) context.Context { return ctx }}
 	failures := make(chan error, 1)
 	go func() { failures <- server.ListenAndServe() }()
 	fmt.Printf("sing-box-smart · %s 模式 · http://%s\n", cfg.Mode, cfg.Listen)
@@ -91,6 +88,3 @@ func run() error {
 	defer cancel()
 	return server.Shutdown(shutdown)
 }
-
-var _ = context.Background
-var _ domain.Probe

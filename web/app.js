@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-let state, busy = false, toastTimer, airportKey = '', eventsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0;
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 function animateNumber(el, value, formatter=num) {
@@ -151,6 +151,9 @@ function syncRows(body,nodes,best,s,selected=false) {
  for(const row of [...body.children])if(!row.dataset.rowId)row.remove();
 }
 function render(s){
+ if(s.instance_id&&stateInstance&&s.instance_id===stateInstance&&Number.isFinite(Number(s.revision))&&Number(s.revision)<stateRevision)return;
+ if(s.instance_id)stateInstance=s.instance_id;
+ if(Number.isFinite(Number(s.revision)))stateRevision=Number(s.revision);
  state=s;
  $('detection-toggle').textContent=s.paused?'继续检测':'暂停检测';
  $('detection-toggle').disabled=busy;

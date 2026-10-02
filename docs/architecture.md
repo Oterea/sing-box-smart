@@ -42,4 +42,4 @@ HTTP 快照通过请求通道从事件循环取得。SSE 连接共享一个快�
 
 LuCI JavaScript 通过 rpcd `file.exec` 调固定 init 命令；`service.list` 每 3 秒读取服务状态。开机自动启动状态在页面加载时读取，页面停止服务后仍可用。监控面板只支持修改连接和策略组过滤，不支持编辑探测间隔等全部检测参数。
 
-`python3 scripts/build-ipk.py` 生成 ARM64 `aarch64_generic` 后端包和 `all` LuCI 包到 `dist/`，版本为脚本内的 0.2.0。这是构建步骤，修改源码或直接替换路由器二进制不会更新已有 ipk；使用前应重新构建。脚本生成的后端包包含 upgrade keep 清单，SDK Makefile 目前只有 conf 文件保留声明，两种构建产物配置保留项并不完全相同。请核对目标设备架构与 opkg 支持，不将 ipk 当 APK 使用。
+`python3 scripts/build-ipk.py` 生成 ARM64 `aarch64_generic` 后端包和 `all` LuCI 包到 `dist/`，版本为脚本内的 0.2.0。这是构建步骤，修改源码或直接替换路由器二进制不会更新已有 ipk；使用前应重新构建。脚本和 SDK Makefile 都保留 `/etc/sing-box-smart/` 与 `/etc/sing-box-smart.conf`，升级时保留运行配置。请核对目标设备架构与 opkg 支持，不将 ipk 当 APK 使用。

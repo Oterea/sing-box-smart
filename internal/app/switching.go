@@ -47,10 +47,11 @@ func (a *App) apply(ctx context.Context, kind, target, group, value string) {
 		return
 	}
 	a.switchBusy = true
+	client := a.client
 	go func() {
 		c, cancel := context.WithTimeout(ctx, 2*a.cfg.Timeout)
 		defer cancel()
-		r := switching.Apply(c, a.client, group, value)
+		r := switching.Apply(c, client, group, value)
 		select {
 		case a.changes <- changed{kind, target, r}:
 		case <-ctx.Done():

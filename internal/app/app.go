@@ -3,7 +3,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"sing-box-smart/internal/config"
 	"sing-box-smart/internal/discovery"
@@ -11,9 +10,7 @@ import (
 	"sing-box-smart/internal/events"
 	"sing-box-smart/internal/gateway"
 	"sing-box-smart/internal/probe"
-	"sing-box-smart/internal/real"
 	"sing-box-smart/internal/recovery"
-	"sing-box-smart/internal/settings"
 	"sing-box-smart/internal/state"
 	"sing-box-smart/internal/switching"
 	"time"
@@ -25,6 +22,7 @@ type request struct {
 	client         gateway.Client
 	airports       []domain.Airport
 	reply          chan response
+	ctx            context.Context
 }
 type response struct {
 	snapshot domain.Snapshot
@@ -96,6 +94,7 @@ func (a *App) reset(airport domain.Airport) {
 	a.events.Record("startup", airport.Name+"：开始约 10 秒启动检查，期间不选择节点")
 }
 func (a *App) request(ctx context.Context, r request) (response, error) {
+	r.ctx = ctx
 	r.reply = make(chan response, 1)
 	select {
 	case a.requests <- r:
@@ -117,92 +116,6 @@ func (a *App) Control(ctx context.Context, action, target string) error {
 	_, err := a.request(ctx, request{action: action, target: target})
 	return err
 }
-func (a *App) prepareAPI(ctx context.Context, api string) (gateway.Client, []domain.Airport, string, error) {
-	if a.cfg.Mode != "real" {
-		return nil, nil, "", fmt.Errorf("模拟模式不支持修改真实 API")
-	}
-	api, err := settings.NormalizeAPI(api)
-	if err != nil {
-		return nil, nil, "", err
-	}
-	snapshot, err := a.Snapshot(ctx)
-	if err != nil {
-		return nil, nil, "", err
-	}
-	cfg := a.cfg
-	cfg.API, cfg.Root, cfg.Pattern = api, snapshot.GroupRoot, snapshot.GroupPattern
-	client := real.New(cfg)
-	airports, err := discovery.Load(ctx, client)
-	if err != nil {
-		return nil, nil, "", err
-	}
-	return client, airports, api, nil
-}
-
-// ConfigureConnection validates and discovers the complete connection in one
-// step, so an API/root/pattern change cannot leave a half-applied configuration.
-func (a *App) ConfigureConnection(ctx context.Context, api, root, pattern string) error {
-	if a.cfg.Mode != "real" {
-		return fmt.Errorf("模拟模式不支持修改真实 API")
-	}
-	api, err := settings.NormalizeAPI(api)
-	if err != nil {
-		return err
-	}
-	if root == "" {
-		root = "proxy"
-	}
-	pattern, err = settings.NormalizePattern(pattern)
-	if err != nil {
-		return err
-	}
-	cfg := a.cfg
-	cfg.API, cfg.Root, cfg.Pattern = api, root, pattern
-	client := real.New(cfg)
-	airports, err := discovery.Load(ctx, client)
-	if err != nil {
-		return err
-	}
-	_, err = a.request(ctx, request{action: "api", target: api, root: root, pattern: pattern, client: client, airports: airports})
-	return err
-}
-
-func (a *App) TestAPI(ctx context.Context, api string) error {
-	_, _, _, err := a.prepareAPI(ctx, api)
-	return err
-}
-func (a *App) ConfigureAPI(ctx context.Context, api string) error {
-	client, airports, api, err := a.prepareAPI(ctx, api)
-	if err != nil {
-		return err
-	}
-	_, err = a.request(ctx, request{action: "api", target: api, client: client, airports: airports})
-	return err
-}
-func (a *App) ConfigureFilters(ctx context.Context, root, pattern string) error {
-	if root == "" {
-		root = "proxy"
-	}
-	if _, err := settings.NormalizePattern(pattern); err != nil {
-		return err
-	}
-	snapshot, err := a.Snapshot(ctx)
-	if err != nil {
-		return err
-	}
-	cfg := a.cfg
-	cfg.Root = root
-	cfg.Pattern = pattern
-	cfg.API = snapshot.APIAddress
-	client := real.New(cfg)
-	airports, err := discovery.Load(ctx, client)
-	if err != nil {
-		return err
-	}
-	_, err = a.request(ctx, request{action: "api", target: snapshot.APIAddress, root: root, pattern: pattern, client: client, airports: airports})
-	return err
-}
-
 func (a *App) snapshot() domain.Snapshot {
 	return domain.Snapshot{Revision: a.revision, Paused: a.paused, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
 }

@@ -60,6 +60,7 @@ type Event struct {
 	Message string    `json:"message"`
 }
 type Snapshot struct {
+	InstanceID     string     `json:"instance_id"`
 	Revision       uint64     `json:"revision"`
 	Paused         bool       `json:"paused"`
 	Mode           string     `json:"mode"`

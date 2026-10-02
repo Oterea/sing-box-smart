@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -28,12 +29,13 @@ type Client struct {
 }
 
 func (c *Client) SetAPI(api string) error {
-	u, err := url.Parse(strings.TrimRight(api, "/"))
+	api = strings.TrimSpace(api)
+	u, err := url.Parse(api)
 	if err != nil || u.Scheme == "" || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
 		return fmt.Errorf("API 地址无效")
 	}
 	c.mu.Lock()
-	c.base = strings.TrimRight(api, "/")
+	c.base = strings.TrimRight(u.String(), "/")
 	c.mu.Unlock()
 	return nil
 }
@@ -74,7 +76,7 @@ func (c *Client) get(ctx context.Context, path string, dst any) error {
 		return c.httpError(resp)
 	}
 	if dst != nil {
-		if err := json.NewDecoder(resp.Body).Decode(dst); err != nil {
+		if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(dst); err != nil {
 			return fmt.Errorf("decode %s: %w", path, err)
 		}
 	}
@@ -82,7 +84,7 @@ func (c *Client) get(ctx context.Context, path string, dst any) error {
 }
 func (c *Client) httpError(resp *http.Response) error {
 	var e apiError
-	_ = json.NewDecoder(resp.Body).Decode(&e)
+	_ = json.NewDecoder(io.LimitReader(resp.Body, 64<<10)).Decode(&e)
 	if e.Message != "" {
 		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, e.Message)
 	}
@@ -94,7 +96,8 @@ func (c *Client) members(ctx context.Context, group string) ([]string, string, e
 	return info.All, info.Now, err
 }
 func (c *Client) Airports(ctx context.Context) ([]domain.Airport, error) {
-	pins := c.pins
+	fallback := append([]config.Pin(nil), c.pins...)
+	pins := append([]config.Pin(nil), fallback...)
 	// Discover matching Selector groups during startup or connection reload.
 	// This does not refresh the running catalog after external config changes.
 	var catalog struct {
@@ -117,8 +120,11 @@ func (c *Client) Airports(ctx context.Context) ([]domain.Airport, error) {
 					pins = append(pins, config.Pin{ID: name, Name: name, Selector: name})
 				}
 			}
-			sort.Slice(pins, func(i, j int) bool { return pins[i].ID < pins[j].ID })
 		}
+		if len(pins) == 0 {
+			pins = fallback
+		}
+		sort.Slice(pins, func(i, j int) bool { return pins[i].ID < pins[j].ID })
 	}
 	out := make([]domain.Airport, 0, len(pins))
 	for _, pin := range pins {
@@ -177,7 +183,7 @@ func (c *Client) Probe(ctx context.Context, node string) (domain.Probe, error) {
 		Delay   int    `json:"delay"`
 		Message string `json:"message"`
 	}
-	_ = json.NewDecoder(resp.Body).Decode(&body)
+	_ = json.NewDecoder(io.LimitReader(resp.Body, 64<<10)).Decode(&body)
 	if resp.StatusCode != http.StatusOK || body.Delay <= 0 {
 		msg := body.Message
 		if msg == "" {

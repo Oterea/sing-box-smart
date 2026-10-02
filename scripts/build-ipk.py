@@ -31,6 +31,6 @@ package('sing-box-smart','aarch64_generic',[
  ('usr/bin/sing-box-smart',(OUT/'sing-box-smart').read_bytes(),0o755),
  ('etc/init.d/sing-box-smart',(ROOT/'deploy/sing-box-smart.init').read_bytes(),0o755),
  ('etc/sing-box-smart.conf',(ROOT/'deploy/sing-box-smart.conf').read_bytes(),0o600),
- ('lib/upgrade/keep.d/sing-box-smart','/etc/sing-box-smart/\n/etc/sing-box-smart.conf\n',0o644)],'libc',['/etc/sing-box-smart.conf'])
+ ('lib/upgrade/keep.d/sing-box-smart',(ROOT/'deploy/sing-box-smart.keep').read_bytes(),0o644)],'libc',['/etc/sing-box-smart.conf'])
 p=ROOT/'package/luci-app-sing-box-smart'
 package('luci-app-sing-box-smart','all',collect(p/'root')+collect(p/'htdocs','www/'),'luci-base, sing-box-smart')

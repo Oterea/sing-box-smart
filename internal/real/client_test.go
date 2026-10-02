@@ -52,3 +52,23 @@ func TestProbeTransportErrorIsAPIError(t *testing.T) {
 		t.Fatal("transport error classified as node failure")
 	}
 }
+
+func TestDynamicDiscoveryFallsBackToPinsWhenCatalogHasNoMatchingSelector(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/proxies":
+			_, _ = w.Write([]byte(`{"proxies":{"proxy":{"type":"Selector","all":["other"]},"other":{"type":"Selector","all":["node"]}}}`))
+		case "/proxies/fallback PIN":
+			_, _ = w.Write([]byte(`{"type":"Selector","all":["node"]}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	c := New(config.Config{API: srv.URL, Root: "proxy", Pattern: "PIN$", Pins: []config.Pin{{ID: "fallback PIN", Name: "fallback", Selector: "fallback PIN"}}})
+	airports, err := c.Airports(context.Background())
+	if err != nil || len(airports) != 1 || airports[0].Selector != "fallback PIN" {
+		t.Fatalf("airports=%+v err=%v", airports, err)
+	}
+}

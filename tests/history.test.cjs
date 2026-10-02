@@ -11,7 +11,7 @@ const heights = html => [...html.matchAll(/class="chart-(?:bar|failure)[^\"]*"[^
 
 test('柱高按固定共同比例尺绘制，并从同一基线向上绘制', () => {
  const html = history([100, 200, 400].map(v => sample(v)), 'delay', 100);
- assert.deepEqual(heights(html), [3.1, 6.2, 12.4]);
+ assert.deepEqual(heights(html), [3.6, 7.2, 14.4]);
  for (const m of html.matchAll(/class="chart-bar[^\"]*"[^>]* y="([^\"]+)"[^>]* height="([^\"]+)"/g)) {
   assert.equal(Number(m[1]) + Number(m[2]), 36);
  }
@@ -31,7 +31,7 @@ test('失败没有伪造延迟；分数仍按实际值绘制', () => {
  assert.match(history([sample(200, false)], 'delay', 100), /chart-failure/);
  assert.deepEqual(heights(history([sample(200, false)], 'delay', 100)), [36]);
  const failedScore=history([sample(200, false), sample(400)], 'score', 100);
- assert.deepEqual(heights(failedScore), [3.1, 6.2]);
+ assert.deepEqual(heights(failedScore), [3.6, 7.2]);
  assert.match(failedScore, /class="chart-failure"/);
  assert.doesNotMatch(failedScore, /chart-grid|chart-baseline|stroke-dasharray/);
 });

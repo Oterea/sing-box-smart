@@ -16,11 +16,11 @@ func TestParsePinsRejectsDuplicate(t *testing.T) {
 		t.Fatal("duplicate selector accepted")
 	}
 }
-func TestRealConfigNeedsPins(t *testing.T) {
+func TestRealConfigAllowsDynamicDiscoveryWithoutPins(t *testing.T) {
 	c := Default()
 	c.Mode = "real"
-	if err := c.Validate(); err == nil {
-		t.Fatal("real config without pins accepted")
+	if err := c.Validate(); err != nil {
+		t.Fatal(err)
 	}
 }
 

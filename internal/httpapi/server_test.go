@@ -98,3 +98,15 @@ func TestControlRejectsNonSingleJSONObject(t *testing.T) {
 		}
 	}
 }
+
+func TestETagMatchingSupportsListsAndWeakTags(t *testing.T) {
+	if !matchesETag(`"old", W/"instance-7"`, `W/"instance-7"`) {
+		t.Fatal("weak ETag list was not matched")
+	}
+	if !matchesETag("*", `W/"instance-7"`) {
+		t.Fatal("wildcard ETag was not matched")
+	}
+	if matchesETag(`"other"`, `W/"instance-7"`) {
+		t.Fatal("different ETag matched")
+	}
+}
