@@ -31,7 +31,7 @@ type Client struct {
 func (c *Client) SetAPI(api string) error {
 	api = strings.TrimSpace(api)
 	u, err := url.Parse(api)
-	if err != nil || u.Scheme == "" || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
+	if err != nil || u.Scheme == "" || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
 		return fmt.Errorf("API 地址无效")
 	}
 	c.mu.Lock()

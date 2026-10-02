@@ -29,3 +29,19 @@ func TestLogFileDrainsBufferedWritesOnClose(t *testing.T) {
 		t.Fatalf("got %d bytes", len(b))
 	}
 }
+
+func TestLogFileRejectsWritesAfterClose(t *testing.T) {
+	w, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.Write([]byte("late")); err == nil {
+		t.Fatal("write after close succeeded")
+	}
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+}

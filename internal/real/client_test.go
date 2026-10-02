@@ -72,3 +72,15 @@ func TestDynamicDiscoveryFallsBackToPinsWhenCatalogHasNoMatchingSelector(t *test
 		t.Fatalf("airports=%+v err=%v", airports, err)
 	}
 }
+
+func TestSetAPIRejectsCredentialsQueryAndFragment(t *testing.T) {
+	c := New(config.Config{API: "http://127.0.0.1:1"})
+	for _, raw := range []string{"ftp://router", "http://user:pass@router", "http://router?q=1", "http://router#fragment"} {
+		if err := c.SetAPI(raw); err == nil {
+			t.Fatalf("accepted %q", raw)
+		}
+	}
+	if err := c.SetAPI("http://router:9090/"); err != nil || c.endpoint("/health") != "http://router:9090/health" {
+		t.Fatalf("valid SetAPI failed: %v", err)
+	}
+}

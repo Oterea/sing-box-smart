@@ -27,3 +27,18 @@ func TestAPIValidation(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadDefaultsAndRejectsMalformedFiles(t *testing.T) {
+	dir := t.TempDir()
+	missing, err := Load(filepath.Join(dir, "missing.json"))
+	if err != nil || missing != (Connection{}) {
+		t.Fatalf("missing=%+v err=%v", missing, err)
+	}
+	path := filepath.Join(dir, "bad.json")
+	if err := os.WriteFile(path, []byte(`{"api":"not-an-api"}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(path); err == nil {
+		t.Fatal("malformed connection accepted")
+	}
+}

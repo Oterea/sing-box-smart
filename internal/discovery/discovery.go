@@ -16,11 +16,13 @@ func Load(ctx context.Context, client gateway.Client) ([]domain.Airport, error) 
 		return nil, fmt.Errorf("no airport selectors found")
 	}
 	ids := map[string]bool{}
+	selectors := map[string]bool{}
 	for _, a := range airports {
-		if a.ID == "" || a.Selector == "" || len(a.Nodes) == 0 || ids[a.ID] {
+		if a.ID == "" || a.Selector == "" || len(a.Nodes) == 0 || ids[a.ID] || selectors[a.Selector] {
 			return nil, fmt.Errorf("invalid or duplicate airport")
 		}
 		ids[a.ID] = true
+		selectors[a.Selector] = true
 		nodes := map[string]bool{}
 		for _, n := range a.Nodes {
 			if n.ID == "" || nodes[n.ID] {
