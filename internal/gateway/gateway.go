@@ -14,10 +14,6 @@ type Client interface {
 	Health(context.Context) error
 }
 
-// APIConfigurable is implemented by gateways whose management endpoint can
-// be changed while the monitor is running.
-type APIConfigurable interface{ SetAPI(string) error }
-
 // Probe returns node failures as Probe{Success:false}, and management/transport failures as error.
 // The real adapter treats HTTP delay errors and deadline timeouts as node
 // failures; other transport errors are API errors. No per-response health check
