@@ -37,8 +37,14 @@ func (a *App) evaluate(ctx context.Context) {
 	a.revision++
 	a.manual = false
 	candidate := a.store.ByID[target]
-	v, _ := score.Display(candidate.Metrics)
-	a.events.Trace("decision", "current", a.current, "candidate", target, "candidate_score", v, "threshold", a.cfg.SwitchRatio)
+	v, overflow := score.Display(candidate.Metrics)
+	var loggedScore any = "—"
+	if v != nil {
+		loggedScore = *v
+	} else if overflow {
+		loggedScore = "∞"
+	}
+	a.events.Trace("decision", "current", a.current, "candidate", target, "candidate_score", loggedScore, "threshold", a.cfg.SwitchRatio)
 	a.startProbe(ctx, candidate, "confirm")
 }
 
