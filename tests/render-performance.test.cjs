@@ -78,7 +78,7 @@ test('header stays informational and the manual check sits in the health card', 
 
 test('active controls use the cyan palette and balanced health text', () => {
  const css=fs.readFileSync('web/styles.css','utf8');
- assert.match(css,/--blue:#42D3F2/);
+ assert.match(css,/--blue:#51A2FF/);
  assert.match(css,/\.node-table \.node-choice\{[^}]*text-align:center/);
  assert.match(css,/\.top-health #recheck\{[^}]*background:var\(--blue\)[^}]*box-shadow:0 0 6px/);
  assert.match(css,/\.health-number span\{font-size:16px/);
