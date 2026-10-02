@@ -21,6 +21,9 @@ test('LuCI view cannot execute user supplied commands and serializes controls', 
  assert.match(view, /if \(busy\) return Promise\.resolve\(\)/);
  assert.match(view, /service && service\.instances/);
  assert.doesNotMatch(view, /fs\.exec\([^,]+,\s*\[[^\]]*target/);
+ assert.match(view, /sbs-auto-row/);
+ assert.match(view, /打开监控面板/);
+ assert.doesNotMatch(view, /sbs-link-card|sbs-arrow|打开 smart 面板.*↗/);
 });
 
 test('LuCI menu and init script point at the packaged service', () => {

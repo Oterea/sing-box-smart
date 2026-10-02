@@ -18,6 +18,7 @@ return view.extend({
   const auto = E('input',{type:'checkbox',checked:data[1].code === 0});
   const autoTrack = E('button',{type:'button',class:'sbs-switch-track',ariaLabel:'开机自动启动'});
   const autoLabel = E('div',{class:'sbs-switch'},[auto,autoTrack,E('span',{class:'sbs-switch-text'},['开机自动启动'])]);
+  const monitorLink = E('a',{class:'sbs-open',href:window.location.protocol+'//'+window.location.hostname+':9797/',target:'_blank',rel:'noopener'},['打开监控面板']);
   const actions = [];
   const update = function(result) {
    const service = result && result[serviceName];
@@ -64,14 +65,10 @@ return view.extend({
      E('div',{class:'sbs-card-title'},[E('span',{},['服务控制']),statusLine]),
      E('div',{class:'sbs-actions'},actions),
      E('div',{class:'sbs-divider'}),
-     autoLabel,
+     E('div',{class:'sbs-auto-row'},[autoLabel,monitorLink]),
      E('p',{class:'sbs-hint'},['开机后自动启动并监控服务。'])
     ]),
-    E('section',{class:'sbs-card sbs-link-card'},[
-     E('div',{class:'sbs-card-title'},[E('span',{},['监控面板']),E('span',{class:'sbs-arrow'},['↗'])]),
-     E('p',{},['查看节点评分、延迟历史和自动切换状态。']),
-     E('a',{class:'sbs-open',href:window.location.protocol+'//'+window.location.hostname+':9797/',target:'_blank',rel:'noopener'},['打开 smart 面板',' ↗'])
-    ])
+
    ]),
    E('div',{class:'sbs-note'},['API 地址、根策略组和匹配正则在 smart 面板中修改。'])
   ]);
