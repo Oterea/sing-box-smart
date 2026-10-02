@@ -20,31 +20,41 @@ return view.extend({
   const autoLabel = E('div',{class:'sbs-switch'},[auto,autoTrack,E('span',{class:'sbs-switch-text'},['开机自动启动'])]);
   const actions = [];
   const update = function(result) {
-   const instances = (result[serviceName] || {}).instances || {};
+   const service = result && result[serviceName];
+   const instances = service && service.instances && typeof service.instances === 'object' ? service.instances : {};
    const running = Object.keys(instances).some(k => instances[k].running);
    status.textContent = running ? '运行中' : '已停止';
    dot.classList.toggle('is-running',running);
    dot.classList.toggle('is-stopped',!running);
    return running;
   };
+  let busy = false;
+  const setBusy = function(value) {
+   busy = value;
+   actions.forEach(b => b.disabled = value);
+   auto.disabled = value;
+   autoTrack.disabled = value;
+  };
   const run = function(action) {
-   actions.forEach(b => b.disabled = true);
+   if (busy) return Promise.resolve();
+   setBusy(true);
    return fs.exec(initPath,[action]).then(function(r) {
     if (r.code !== 0) throw new Error(r.stderr || '操作失败');
     return list(serviceName).then(update);
    }).catch(function(e) { ui.addNotification(null,E('p',{},[e.message])); })
-   .finally(function() { actions.forEach(b => b.disabled = false); });
+   .finally(function() { setBusy(false); });
   };
   ['启动','停止','重启'].forEach(function(label,i) {
    actions.push(E('button',{class:'cbi-button sbs-action '+(['start','stop','restart'][i]),click:function(){return run(['start','stop','restart'][i]);}},[label]));
   });
   auto.addEventListener('change', function() {
-   auto.disabled = true;
+   if (busy) return;
+   setBusy(true);
    fs.exec(initPath,[auto.checked ? 'enable' : 'disable']).then(function(r) {
     if(r.code!==0)throw new Error(r.stderr || '保存失败');
-   }).catch(function(e){auto.checked=!auto.checked;ui.addNotification(null,E('p',{},[e.message]));}).finally(function(){auto.disabled=false;});
+   }).catch(function(e){auto.checked=!auto.checked;ui.addNotification(null,E('p',{},[e.message]));}).finally(function(){setBusy(false);});
   });
-  autoTrack.addEventListener('click', function() { if (!auto.disabled) { auto.checked = !auto.checked; auto.dispatchEvent(new Event('change')); } });
+  autoTrack.addEventListener('click', function() { if (!busy) { auto.checked = !auto.checked; auto.dispatchEvent(new Event('change')); } });
   update(data[0]);
   poll.add(function(){return list(serviceName).then(update);},3);
   return E('div',{class:'sbs-page'},[
