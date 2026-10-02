@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const acl = JSON.parse(fs.readFileSync('package/luci-app-sing-box-smart/root/usr/share/rpcd/acl.d/luci-app-sing-box-smart.json', 'utf8'))['luci-app-sing-box-smart'];
 const view = fs.readFileSync('package/luci-app-sing-box-smart/htdocs/luci-static/resources/view/sing-box-smart/app.js', 'utf8');
 const init = fs.readFileSync('deploy/sing-box-smart.init', 'utf8');
+const packer = fs.readFileSync('scripts/build-ipk.py', 'utf8');
 const menu = JSON.parse(fs.readFileSync('package/luci-app-sing-box-smart/root/usr/share/luci/menu.d/luci-app-sing-box-smart.json', 'utf8'));
 
 test('LuCI ACL is least privilege and exposes only fixed init actions', () => {
@@ -28,4 +29,11 @@ test('LuCI menu and init script point at the packaged service', () => {
  assert.match(init, /\/usr\/bin\/sing-box-smart/);
  assert.match(init, /-settings \/etc\/sing-box-smart\/connection\.json/);
  assert.match(init, /procd_set_param respawn/);
+});
+
+test('IPK builder uses the target opkg tar.gz container', () => {
+ assert.match(packer, /def write_ipk\(/);
+ assert.match(packer, /tarfile\.open\(path, mode='w:gz'\)/);
+ assert.match(packer, /write_ipk\(path/);
+ assert.doesNotMatch(packer, /\['ar',\s*'r'/);
 });
