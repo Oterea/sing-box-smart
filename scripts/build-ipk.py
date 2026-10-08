@@ -43,7 +43,7 @@ def package(name,arch,files,depends,conffiles=None):
   write_ipk(path, [('debian-binary',(root/'debian-binary').read_bytes()),('data.tar.gz',(root/'data.tar.gz').read_bytes()),('control.tar.gz',(root/'control.tar.gz').read_bytes())])
   print(path)
 def collect(folder,prefix=''):
- return [(prefix+str(p.relative_to(folder)),p.read_bytes(),0o644) for p in folder.rglob('*') if p.is_file()]
+ return [(prefix+str(p.relative_to(folder)),p.read_bytes(),0o755 if p.stat().st_mode & 0o111 else 0o644) for p in folder.rglob('*') if p.is_file()]
 subprocess.run(['go','build','-trimpath','-ldflags=-s -w','-o',str(OUT/'sing-box-smart'),'./cmd/sing-box-smart'],cwd=ROOT,check=True,env={**__import__('os').environ,'CGO_ENABLED':'0','GOOS':'linux','GOARCH':'arm64'})
 package('sing-box-smart','aarch64_generic',[
  ('usr/bin/sing-box-smart',(OUT/'sing-box-smart').read_bytes(),0o755),
