@@ -21,5 +21,5 @@ func (r *Recorder) Record(kind, message string) {
 	r.Logger.Printf("kind=%s %s", kind, message)
 }
 func (r *Recorder) Trace(message string, args ...any) {
-	r.Logger.Printf("%s args=%s", message, fmt.Sprint(args))
+	r.Logger.Printf("%s args=%s", message, fmt.Sprint(args...))
 }
