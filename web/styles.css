@@ -335,6 +335,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 
 /* Selection mode is a small control group, separate from detection pause. */
 .selection-controls{display:flex;align-items:center;gap:8px}
-.selection-controls .button{padding:7px 10px;font-size:12px}
-.selection-controls .button.active{background:var(--blue);color:var(--blue-text);box-shadow:0 0 6px rgba(81,162,255,.18)}
-@media(max-width:700px){.selection-controls{gap:5px}.selection-controls .button{padding:6px 8px;font-size:11px}}
+.selection-controls .button{padding:7px 10px;font-size:12px;background:#e6ebef;border:0;color:#536a7b;box-shadow:none;min-width:92px;text-align:center}
+.selection-controls .button:hover{background:#e6ebef;color:#536a7b}
+.selection-controls .button.active{background:var(--blue);color:var(--blue-text);box-shadow:0 0 14px rgba(81,162,255,.35)}
+@media(max-width:700px){.selection-controls{gap:5px}.selection-controls .button{padding:6px 8px;font-size:11px;min-width:80px}}

@@ -181,7 +181,6 @@ function render(s){
  $('success-summary').textContent=available+' / '+s.nodes.length+' 节点成功';
  $('sample-count').textContent=s.nodes.reduce((v,n)=>v+n.checks,0)+' 次检查';
  const current=s.nodes.find(n=>n.id===s.current_id);
- $('phase').textContent=s.paused?'已暂停':!s.api_healthy?'接口异常':s.phase==='startup'?'启动检查':s.phase==='unavailable'?'等待恢复':s.selection_mode==='manual'?'手动选择':'自动选择';
  const elapsed=(new Date(s.now)-new Date(s.started_at))/1000;
  $('status-line').textContent=s.paused?'检测已暂停，分数和历史保留。':!s.api_healthy?'管理接口不可用：暂停选择，不将接口错误记为节点失败。':s.control_active===false?`根策略组当前选择 ${s.root_selection||'尚未同步'}，smart 暂不自动切换。`:s.pending_id?'正在确认切换目标，读取接口结果后更新当前选择。':s.phase==='startup'?`启动检查 ${Math.min(elapsed,s.startup_seconds).toFixed(1)} / ${s.startup_seconds} 秒 · 观察结束后开始自动判断。`:s.phase==='unavailable'?'暂时全部不可用：每 3 秒重新检查，保留已有选择。':s.selection_mode==='manual'?'手动选择模式：继续检测并更新数据，smart 不会自动切换节点。':'';
  const valid=s.nodes.filter(n=>n.score!=null), best=valid.length?Math.min(...valid.map(n=>n.score)):Infinity;

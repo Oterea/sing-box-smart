@@ -82,3 +82,11 @@ test('选择按钮只在允许选择的状态启用，当前节点与启动状�
  assert.match(button({...s,pending_id:'p'}), /disabled/);
  assert.match(button({...s,api_healthy:false}), /disabled/);
 });
+
+test('选择模式只给当前按钮阴影，移除冗余状态文字', () => {
+ const css = fs.readFileSync('web/styles.css', 'utf8');
+ const html = fs.readFileSync('web/index.html', 'utf8');
+ assert.match(css, /\.selection-controls \.button\{[^}]*background:#e6ebef[^}]*box-shadow:none/);
+ assert.match(css, /\.selection-controls \.button\.active\{[^}]*box-shadow:0 0 14px/);
+ assert.doesNotMatch(html, /id="phase"/);
+});
