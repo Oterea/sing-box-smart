@@ -83,6 +83,14 @@ test('选择按钮只在允许选择的状态启用，当前节点与启动状�
  assert.match(button({...s,api_healthy:false}), /disabled/);
 });
 
+test('延迟颜色在 200ms 和 600ms 处分界', () => {
+ const state = {current_id:'other',api_healthy:true,phase:'normal'};
+ const row = delay => context.nodeRow({id:'n',name:'节点',checks:1,score:100,delay_ms:delay,last_success:true,history:[]},100,state);
+ assert.match(row(200), /metric-cell tone-good\">200/);
+ assert.match(row(600), /metric-cell tone-medium\">600/);
+ assert.match(row(601), /metric-cell tone-bad\">601/);
+});
+
 test('选择模式只给当前按钮阴影，移除冗余状态文字', () => {
  const css = fs.readFileSync('web/styles.css', 'utf8');
  const html = fs.readFileSync('web/index.html', 'utf8');

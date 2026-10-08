@@ -14,6 +14,7 @@ function animateNumber(el, value, formatter=num) {
 }
 const time = value => new Date(value).toLocaleTimeString('zh-CN', {hour12:false});
 const tone = (value,best) => value == null ? 'none' : value <= best*1.4 ? 'good' : value <= best*2.5 ? 'medium' : 'bad';
+const delayTone = value => value == null ? 'none' : value <= 200 ? 'good' : value <= 600 ? 'medium' : 'bad';
 const sampleKey = sample => JSON.stringify([sample.at,sample.success,sample.score,sample.delay_ms,sample.error]);
 function historyFrames(previous, next) {
  const oldList=previous??[], newList=next??[];
@@ -66,7 +67,7 @@ function history(samples, kind, best, motion=false) {
    shape=`<path class="chart-missing" d="M${x} 36h5"/>`;
   } else {
    const height=Math.min(36,Math.max(1,value/ceiling*36));
-   const color=kind==='score'?tone(value,best):value<=200?'good':value<=400?'medium':'bad';
+   const color=kind==='score'?tone(value,best):delayTone(value);
    shape=`<rect class="chart-bar bar-${color}${newest?' chart-newest':''}" x="${x}" y="${36-height}" width="4" height="${height}"/>`;
   }
   return `<g><title>${esc(title)}</title>${shape}</g>`;
@@ -92,9 +93,9 @@ function historyKey(n) {
 function nodeRow(n,best,s) {
  const current=Boolean(n.id)&&n.id===s.current_id;
  const disabled=busy||Boolean(s.pending_id)||s.paused||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
- const delayTone=n.checks&&!n.last_success?'bad':n.delay_ms==null?'none':n.delay_ms<=200?'good':n.delay_ms<=400?'medium':'bad';
+ const delayColor=n.checks&&!n.last_success?'bad':delayTone(n.delay_ms);
  const buttonText=n.id?n.name:'等待首次选择';
- return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}">${esc(buttonText)}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${n.score_overflow?'∞':num(n.score)}</span></td><td><span class="metric-cell tone-${delayTone}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td></tr>`;
+ return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}">${esc(buttonText)}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${n.score_overflow?'∞':num(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td></tr>`;
 }
 function patchRow(row,n,best,s,selected=false) {
  const current=Boolean(n.id)&&n.id===s.current_id;
@@ -109,9 +110,9 @@ function patchRow(row,n,best,s,selected=false) {
  animateNumber(row.cells[1].firstElementChild,n.checks);
  animateNumber(row.cells[2].firstElementChild,n.score_overflow?null:n.score,v=>n.score_overflow?'∞':num(v));
  row.cells[2].firstElementChild.className=`metric-cell tone-${tone(n.score,best)}`;
- const delayTone=n.checks&&!n.last_success?'bad':n.delay_ms==null?'none':n.delay_ms<=200?'good':n.delay_ms<=400?'medium':'bad';
+ const delayColor=n.checks&&!n.last_success?'bad':delayTone(n.delay_ms);
  if(n.delay_ms!=null)animateNumber(row.cells[3].firstElementChild,n.delay_ms);else{row.cells[3].firstElementChild.textContent=n.checks?'失败':'—';delete row.cells[3].firstElementChild.dataset.value;}
- row.cells[3].firstElementChild.className=`metric-cell tone-${delayTone}`;
+ row.cells[3].firstElementChild.className=`metric-cell tone-${delayColor}`;
  const nextHistoryKey=historyKey(n);
  const historyChanged=row.dataset.historyKey!==nextHistoryKey;
  if(historyChanged)queueHistory(row,n.history,best);
