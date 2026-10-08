@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"sing-box-smart/internal/domain"
 	"sing-box-smart/internal/settings"
 	"time"
 )
@@ -25,6 +26,9 @@ func (a *App) configureAPI(r request) error {
 	a.runner.Client = r.client
 	a.airports = r.airports
 	a.healthy = true
+	a.rootSelection = ""
+	a.controlActive = false
+	a.lastSelectionSync = time.Time{}
 	for _, airport := range a.airports {
 		if airport.ID == selected {
 			a.reset(airport)
@@ -43,6 +47,9 @@ func (a *App) control(ctx context.Context, action, target string) error {
 	if action == "resume" {
 		a.resumeDetection()
 		return nil
+	}
+	if action == "auto" || action == "manual" {
+		return a.controlSelectionMode(ctx, action)
 	}
 	if a.paused {
 		return fmt.Errorf("检测已暂停，请先继续检测")
@@ -70,23 +77,29 @@ func (a *App) control(ctx context.Context, action, target string) error {
 		if a.store.ByID[target] == nil {
 			return fmt.Errorf("节点不属于当前机场")
 		}
+		if !a.controlActive || !a.selectionInitialized {
+			return fmt.Errorf("请先在根策略组选择 smart 策略组")
+		}
+		a.setSelectionMode(domain.SelectionManual)
 		if target == a.current {
 			return nil
 		}
 		a.pending = target
 		a.pendingKind = "node"
 		a.revision++
-		a.manual = true
+		a.pendingManual = true
+		a.selectionEpoch++
 		a.events.Record("manual", "手动选择：先检查目标节点")
 		a.startProbe(ctx, a.store.ByID[target], "confirm")
 	case "airport":
 		for _, airport := range a.airports {
 			if airport.ID == target {
-				if target == a.airport.ID {
+				if target == a.airport.ID && a.controlActive {
 					return nil
 				}
 				a.pending = target
 				a.pendingKind = "airport"
+				a.selectionEpoch++
 				a.revision++
 				a.apply(ctx, "airport", target, a.groupRoot, airport.Selector)
 				return nil

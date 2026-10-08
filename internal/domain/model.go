@@ -15,6 +15,13 @@ const (
 	TierOrdinary  Tier = "ordinary"
 )
 
+type SelectionMode string
+
+const (
+	SelectionAuto   SelectionMode = "auto"
+	SelectionManual SelectionMode = "manual"
+)
+
 type Airport struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
@@ -60,22 +67,25 @@ type Event struct {
 	Message string    `json:"message"`
 }
 type Snapshot struct {
-	InstanceID     string     `json:"instance_id"`
-	Revision       uint64     `json:"revision"`
-	Paused         bool       `json:"paused"`
-	Mode           string     `json:"mode"`
-	Phase          string     `json:"phase"`
-	AirportID      string     `json:"airport_id"`
-	Airports       []Airport  `json:"airports"`
-	CurrentID      string     `json:"current_id"`
-	PendingID      string     `json:"pending_id"`
-	APIAddress     string     `json:"api_address"`
-	GroupRoot      string     `json:"group_root"`
-	GroupPattern   string     `json:"group_pattern"`
-	APIHealthy     bool       `json:"api_healthy"`
-	StartedAt      time.Time  `json:"started_at"`
-	Now            time.Time  `json:"now"`
-	StartupSeconds float64    `json:"startup_seconds"`
-	Nodes          []NodeView `json:"nodes"`
-	Events         []Event    `json:"events"`
+	InstanceID     string        `json:"instance_id"`
+	Revision       uint64        `json:"revision"`
+	Paused         bool          `json:"paused"`
+	Mode           string        `json:"mode"`
+	SelectionMode  SelectionMode `json:"selection_mode"`
+	RootSelection  string        `json:"root_selection"`
+	ControlActive  bool          `json:"control_active"`
+	Phase          string        `json:"phase"`
+	AirportID      string        `json:"airport_id"`
+	Airports       []Airport     `json:"airports"`
+	CurrentID      string        `json:"current_id"`
+	PendingID      string        `json:"pending_id"`
+	APIAddress     string        `json:"api_address"`
+	GroupRoot      string        `json:"group_root"`
+	GroupPattern   string        `json:"group_pattern"`
+	APIHealthy     bool          `json:"api_healthy"`
+	StartedAt      time.Time     `json:"started_at"`
+	Now            time.Time     `json:"now"`
+	StartupSeconds float64       `json:"startup_seconds"`
+	Nodes          []NodeView    `json:"nodes"`
+	Events         []Event       `json:"events"`
 }

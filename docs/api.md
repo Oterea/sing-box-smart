@@ -16,12 +16,24 @@ SSE 首条消息包含 `full:true` 和全部节点，后续 `full:false` 的 `no
 | 接口 | JSON 请求体 | 行为 |
 | --- | --- | --- |
 | `POST /api/control/airport` | `{ "id": "tolink PIN" }` | 选择策略组，确认后重新启动观察；写入当前配置的根策略组 |
-| `POST /api/control/node` | `{ "id": "实际节点名称" }` | 探测目标，成功后手动选择，不受自动 1.4 倍门槛约束 |
+| `POST /api/control/node` | `{ "id": "实际节点名称" }` | 探测目标，成功后手动选择，不受自动 1.4 倍门槛约束；检测继续运行，但不会再自动切换 |
+| `POST /api/control/auto` | `{}` | 开启 smart 自动选择；保持当前节点，后续按正常评分和切换条件决定是否切换 |
+| `POST /api/control/manual` | `{}` | 开启手动选择；保持 sing-box 当前节点，继续检测和更新数据 |
 | `POST /api/control/recheck` | `{}` | 将当前组所有节点安排为到期；已有在途探测不重复启动 |
 | `POST /api/control/pause` | `{}` | 暂停新探测、丢弃旧结果、不再发起自动切换 |
 | `POST /api/control/resume` | `{}` | 继续检测并安排全组重新检查 |
 
 暂停不会撤销已经发出的 selector 写入；该写入仍可能完成并回读。启动阶段拒绝手动节点选择。
+
+## 选择状态同步
+
+后端运行循环每 2 秒读取一次根策略组和当前机场策略组的 `now` 值：
+
+- smart 写入 selector 后，仍通过 Clash API 回读确认，面板和 sing-box Dashboard 显示同一节点；
+- 用户在 sing-box Dashboard 切换机场或节点后，smart 会更新当前机场、当前节点、分层和检查计划；
+- 检测到外部切换时自动进入手动模式，避免 smart 把用户刚选的节点立即改回去；
+- 同步由单个 app 事件循环负责，SSE 客户端不会直接访问 sing-box，也不会因打开多个面板而增加 API 轮询次数；
+- 状态读取失败不会伪造节点失败，下一轮继续同步；节点探测 API 的健康状态仍由原有健康检查负责。
 
 ## 连接设置
 

@@ -12,7 +12,7 @@ app → decision → 确认探测 → switching → selector 写入与回读
 app → snapshot → httpapi（HTTP / SSE） → web
 ```
 
-`app` 通过单写入事件循环编排探测、控制、快照、连接替换和切换结果。基础模块并非完全互相独立：`state` 使用 `score`、`tiering`、`schedule`；`probe` 和 `switching` 使用 `gateway`。真实 API 实现在 `internal/real`，不是 `gateway` 包。
+`app` 通过单写入事件循环编排探测、控制、快照、连接替换、选择同步和切换结果。基础模块并非完全互相独立：`state` 使用 `score`、`tiering`、`schedule`；`probe` 和 `switching` 使用 `gateway`。真实 API 实现在 `internal/real`，不是 `gateway` 包。
 
 ## app 文件边界
 
@@ -20,7 +20,9 @@ app → snapshot → httpapi（HTTP / SSE） → web
 - `runtime.go`：事件循环、25ms 调度扫描、启动阶段、异步探测、结果处理。
 - `control.go`：配置应用、手动节点/策略组选择、重新检查、暂停/继续入口。
 - `detection.go`：取消探测及恢复检测计划。
-- `switching.go`：选择比较、候选确认安排、异步写入和回读结果。
+- `switching.go`：选择比较、候选确认安排、写入前复核、异步写入和回读结果。
+- `selection_mode.go`：自动/手动模式控制；模式只影响切换，不影响探测和计分。
+- `selection_sync.go`：单实例读取根策略组和当前策略组的 `now`，处理外部 Dashboard 切换和运行状态重建。
 
 这是同一个 Go package 内的函数拆分，不是多个独立服务。公共配置入口的网络发现发生在事件循环之外；运行状态通过快照读取，准备好的客户端通过请求安装。设置文件保存目前发生在事件循环内，磁盘等待仍可能阻塞该循环。
 
@@ -32,7 +34,7 @@ app → snapshot → httpapi（HTTP / SSE） → web
 
 ## 并发和推送
 
-每个节点最多一个在途探测，不同节点可并发。探测捕获 runner、上下文和 generation；旧机场或暂停前的结果会丢弃。切换请求使用根上下文，暂停不会撤销已发出的写入。
+每个节点最多一个在途探测，不同节点可并发。选择同步每 2 秒最多发起一组根策略组/当前策略组读取，由后端单实例完成，浏览器数量不会放大 sing-box API 请求。探测捕获 runner、上下文和 generation；旧机场或暂停前的结果会丢弃。切换请求使用根上下文，暂停不会撤销已发出的写入。
 
 HTTP 快照通过请求通道从事件循环取得。SSE 连接共享一个快照采集器，每 250ms 最多向事件循环读取一次；各连接根据自己最后收到的快照计算节点差量，慢连接只保留最新版本。没有持久重放队列；浏览器合并 ID，历史通过前端队列播放。当前全组重置、旧节点移除的协议限制见 [接口文档](api.md)。
 

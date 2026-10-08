@@ -39,27 +39,35 @@ type changed struct {
 	result       switching.Result
 }
 type App struct {
-	cfg                                     config.Config
-	apiAddress, groupRoot, groupPattern     string
-	client                                  gateway.Client
-	runner                                  probe.Runner
-	airports                                []domain.Airport
-	airport                                 domain.Airport
-	store                                   *state.Store
-	events                                  events.Recorder
-	phase, current, pending, pendingKind    string
-	manual, switchBusy, healthy, healthBusy bool
-	paused                                  bool
-	pausedAt                                time.Time
-	started, lastHealth                     time.Time
-	generation                              int
-	revision                                uint64
-	requests                                chan request
-	results                                 chan observation
-	changes                                 chan changed
-	health                                  chan error
-	rootCtx, probeCtx                       context.Context
-	probeCancel                             context.CancelFunc
+	cfg                                    config.Config
+	apiAddress, groupRoot, groupPattern    string
+	client                                 gateway.Client
+	runner                                 probe.Runner
+	airports                               []domain.Airport
+	airport                                domain.Airport
+	store                                  *state.Store
+	events                                 events.Recorder
+	phase, current, pending, pendingKind   string
+	selectionMode                          domain.SelectionMode
+	selectionInitialized                   bool
+	rootSelection                          string
+	controlActive                          bool
+	selectionEpoch                         uint64
+	pendingManual                          bool
+	switchBusy, healthy, healthBusy        bool
+	selectionSyncBusy                      bool
+	paused                                 bool
+	pausedAt                               time.Time
+	started, lastHealth, lastSelectionSync time.Time
+	generation                             int
+	revision                               uint64
+	requests                               chan request
+	results                                chan observation
+	changes                                chan changed
+	health                                 chan error
+	selection                              chan selectionObservation
+	rootCtx, probeCtx                      context.Context
+	probeCancel                            context.CancelFunc
 }
 
 func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.Logger) (*App, error) {
@@ -71,7 +79,7 @@ func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.L
 		return nil, err
 	}
 	probeCtx, probeCancel := context.WithCancel(ctx)
-	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger}, healthy: true, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan error, 1), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel}
+	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan error, 1), selection: make(chan selectionObservation, 1), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel}
 	a.apiAddress, a.groupRoot, a.groupPattern = cfg.API, cfg.Root, cfg.Pattern
 	a.reset(airports[0])
 	return a, nil
@@ -91,6 +99,9 @@ func (a *App) reset(airport domain.Airport) {
 	a.pending = ""
 	a.pendingKind = ""
 	a.switchBusy = false
+	a.selectionInitialized = false
+	a.selectionEpoch++
+	a.pendingManual = false
 	a.events.Record("startup", airport.Name+"：开始约 10 秒启动检查，期间不选择节点")
 }
 func (a *App) request(ctx context.Context, r request) (response, error) {
@@ -117,7 +128,7 @@ func (a *App) Control(ctx context.Context, action, target string) error {
 	return err
 }
 func (a *App) snapshot() domain.Snapshot {
-	return domain.Snapshot{Revision: a.revision, Paused: a.paused, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
+	return domain.Snapshot{Revision: a.revision, Paused: a.paused, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
 }
 
 func recoveryLabel(kind recovery.Kind) string {

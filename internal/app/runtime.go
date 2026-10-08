@@ -41,6 +41,9 @@ func (a *App) Run(ctx context.Context) {
 			} else {
 				a.lastHealth = time.Now()
 			}
+		case selection := <-a.selection:
+			a.selectionSyncBusy = false
+			a.applySelectionObservation(selection)
 		case now := <-ticker.C:
 			a.tick(ctx, now)
 		}
@@ -48,6 +51,10 @@ func (a *App) Run(ctx context.Context) {
 }
 
 func (a *App) tick(ctx context.Context, now time.Time) {
+	if !a.selectionSyncBusy && (a.lastSelectionSync.IsZero() || now.Sub(a.lastSelectionSync) >= selectionSyncInterval) {
+		a.lastSelectionSync = now
+		a.startSelectionSync(ctx)
+	}
 	if a.paused {
 		return
 	}
@@ -201,8 +208,15 @@ func (a *App) observe(ctx context.Context, o observation) {
 			a.events.Record("unavailable", "当前机场暂时全部不可用，保留原选择，每 3 秒重试")
 		}
 	}
+	if a.phase == "unavailable" && a.store.AnyAvailable() {
+		a.phase = "normal"
+		a.revision++
+		a.store.Reclassify(a.current)
+		a.store.Reschedule(now, a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
+		a.events.Record("phase", "有节点检查成功，恢复正常检查频率")
+	}
 	if a.pendingKind == "node" && a.pending == o.id && !a.switchBusy {
-		if o.probe.Success && (a.manual || a.choose() == o.id) {
+		if o.probe.Success && (a.pendingManual || (a.selectionMode == domain.SelectionAuto && a.controlActive && a.choose() == o.id)) {
 			a.apply(ctx, "node", o.id, a.airport.Selector, o.id)
 		} else {
 			a.events.Record("decision", "取消本次切换：目标检查失败或更新后分差不足")

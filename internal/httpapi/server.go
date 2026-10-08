@@ -117,7 +117,7 @@ func Handler(service Service) http.Handler {
 		}
 		write(w, 202, map[string]string{"status": "reloaded"})
 	})
-	for _, action := range []string{"airport", "node", "recheck", "pause", "resume"} {
+	for _, action := range []string{"airport", "node", "recheck", "pause", "resume", "auto", "manual"} {
 		action := action
 		mux.HandleFunc("POST /api/control/"+action, func(w http.ResponseWriter, r *http.Request) {
 			var body struct {

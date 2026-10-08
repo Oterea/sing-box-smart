@@ -8,9 +8,11 @@ import (
 )
 
 type Result struct {
-	Actual   string
-	Verified bool
-	Err      error
+	Actual     string
+	Verified   bool
+	Err        error
+	RootActual string
+	Superseded bool
 }
 
 func Apply(ctx context.Context, c gateway.Client, group, target string) Result {
