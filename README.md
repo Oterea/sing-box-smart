@@ -1,5 +1,8 @@
 # sing-box-smart
 
+<img width="2946" height="1808" alt="CleanShot 2026-10-02 at 12 03 06@2x" src="https://github.com/user-attachments/assets/3767a868-6da0-47c3-bef8-83e4cc2de975" />
+
+
 `sing-box-smart` 是运行在 OpenWrt/ImmortalWrt 软路由上的 sing-box 节点监控和自动选路服务。它通过 sing-box 的 Clash API 检查节点质量，持续记录节点的成功率、延迟和失败情况，再根据分数、分层和恢复迹象决定是否切换当前策略组中的节点。
 
 它主要解决三个问题：
