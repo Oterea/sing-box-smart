@@ -30,7 +30,8 @@ test('LuCI view cannot execute user supplied commands and serializes controls', 
  assert.match(view, /progress\+'%'/);
  assert.match(updateStatus, /state.*success/);
  assert.match(updateStatus, /rm -f.*\$status/);
- assert.match(view, /已是最新版本 ·/);
+ assert.match(view, /当前版本 ·/);
+ assert.match(view, /最新版本 ·/);
  assert.doesNotMatch(view, /fs\.exec\([^,]+,\s*\[[^\]]*https?:/);
  assert.doesNotMatch(view, /sbs-link-card|sbs-arrow|打开 smart 面板.*↗/);
 });

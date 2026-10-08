@@ -9,5 +9,5 @@ if [ -f "$status" ]; then
     fi
     printf '%s\n' "$content"
 else
-    printf '%s\n' '{"state":"idle","message":"未进行更新","progress":0}'
+    printf '%s\n' '{"state":"idle","message":"当前版本","progress":0}'
 fi
