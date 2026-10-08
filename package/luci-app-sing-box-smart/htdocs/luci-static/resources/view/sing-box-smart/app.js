@@ -48,7 +48,7 @@ return view.extend({
    return fs.exec(updateCheckPath,[]).then(function(r) {
     if (r.code !== 0) throw new Error(r.stderr || '更新检查失败');
     const result = JSON.parse(r.stdout || '{}');
-    updateText.textContent = result.available ? '发现 '+result.version : '已是最新版本';
+    updateText.textContent = result.available ? '发现 '+result.version+'（当前 '+(result.current||'未知')+'）' : '已是最新版本 · '+(result.current||result.version||'未知');
     updateText.classList.toggle('is-available',Boolean(result.available));
     updateButton.dataset.available = result.available ? 'yes' : 'no';
     updateButton.textContent = result.available ? '立即更新' : '检查更新';
