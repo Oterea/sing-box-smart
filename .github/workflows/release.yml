@@ -1,0 +1,56 @@
+name: Build and publish latest packages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test
+        run: |
+          go test ./...
+          go test -race ./...
+          go vet ./...
+          node --test tests/*.cjs
+      - name: Build packages
+        env:
+          PACKAGE_VERSION: 0.2.${{ github.run_number }}
+        run: |
+          python3 scripts/build-ipk.py
+          cp dist/sing-box-smart_${PACKAGE_VERSION}_aarch64_generic.ipk dist/sing-box-smart-latest.ipk
+          cp dist/luci-app-sing-box-smart_${PACKAGE_VERSION}_all.ipk dist/luci-app-sing-box-smart-latest.ipk
+          CORE_SHA=$(sha256sum dist/sing-box-smart-latest.ipk | awk '{print $1}')
+          LUCI_SHA=$(sha256sum dist/luci-app-sing-box-smart-latest.ipk | awk '{print $1}')
+          python3 - <<PY
+          import json
+          version = '${PACKAGE_VERSION}'
+          base = 'https://github.com/${{ github.repository }}/releases/download/latest/'
+          manifest = {
+              'version': version,
+              'commit': '${{ github.sha }}',
+              'core_url': base + 'sing-box-smart-latest.ipk',
+              'luci_url': base + 'luci-app-sing-box-smart-latest.ipk',
+              'core_sha256': '${CORE_SHA}',
+              'luci_sha256': '${LUCI_SHA}',
+          }
+          open('dist/sing-box-smart-release.json', 'w').write(json.dumps(manifest, indent=2) + '\n')
+          PY
+      - name: Update latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view latest >/dev/null 2>&1 || gh release create latest --target "${GITHUB_SHA}" --title "Latest" --notes "自动构建的最新 sing-box-smart 包" --prerelease
+          gh release edit latest --target "${GITHUB_SHA}" --title "Latest" --notes "自动构建的最新 sing-box-smart 包"
+          gh release upload latest dist/sing-box-smart-latest.ipk dist/luci-app-sing-box-smart-latest.ipk dist/sing-box-smart-release.json --clobber

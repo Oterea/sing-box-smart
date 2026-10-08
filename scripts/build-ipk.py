@@ -3,7 +3,7 @@
 import io, pathlib, subprocess, tarfile, time
 ROOT=pathlib.Path(__file__).resolve().parent.parent
 OUT=ROOT/'dist';OUT.mkdir(exist_ok=True)
-VERSION='0.2.0'
+VERSION=__import__('os').environ.get('PACKAGE_VERSION','0.2.0')
 def archive(files):
  b=io.BytesIO()
  with tarfile.open(fileobj=b,mode='w:gz') as t:
@@ -51,4 +51,4 @@ package('sing-box-smart','aarch64_generic',[
  ('etc/sing-box-smart.conf',(ROOT/'deploy/sing-box-smart.conf').read_bytes(),0o600),
  ('lib/upgrade/keep.d/sing-box-smart',(ROOT/'deploy/sing-box-smart.keep').read_bytes(),0o644)],'libc',['/etc/sing-box-smart.conf'])
 p=ROOT/'package/luci-app-sing-box-smart'
-package('luci-app-sing-box-smart','all',collect(p/'root')+collect(p/'htdocs','www/'),'luci-base, sing-box-smart')
+package('luci-app-sing-box-smart','all',collect(p/'root')+collect(p/'htdocs','www/'),'luci-base, sing-box-smart, uclient-fetch, jsonfilter')

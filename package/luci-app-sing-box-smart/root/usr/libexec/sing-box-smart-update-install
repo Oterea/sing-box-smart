@@ -1,0 +1,27 @@
+#!/bin/sh
+set -eu
+lock='/tmp/sing-box-smart-update.lock'
+tmp='/tmp/sing-box-smart-update'
+manifest_url='https://github.com/Oterea/sing-box-smart/releases/download/latest/sing-box-smart-release.json'
+if ! mkdir "$lock" 2>/dev/null; then
+    printf '%s\n' '更新已经在进行中' >&2
+    exit 1
+fi
+cleanup() { rm -rf "$tmp" "$lock"; }
+trap cleanup EXIT INT TERM
+mkdir -p "$tmp"
+uclient-fetch -q -O "$tmp/manifest.json" "$manifest_url"
+core_url="$(jsonfilter -i "$tmp/manifest.json" -e '@.core_url')"
+luci_url="$(jsonfilter -i "$tmp/manifest.json" -e '@.luci_url')"
+core_sha="$(jsonfilter -i "$tmp/manifest.json" -e '@.core_sha256')"
+luci_sha="$(jsonfilter -i "$tmp/manifest.json" -e '@.luci_sha256')"
+[ -n "$core_url" ] && [ -n "$luci_url" ] && [ -n "$core_sha" ] && [ -n "$luci_sha" ] || { printf '%s\n' '更新清单缺少必要字段' >&2; exit 1; }
+uclient-fetch -q -O "$tmp/core.ipk" "$core_url"
+uclient-fetch -q -O "$tmp/luci.ipk" "$luci_url"
+[ "$(sha256sum "$tmp/core.ipk" | awk '{print $1}')" = "$core_sha" ] || { printf '%s\n' '核心包校验失败' >&2; exit 1; }
+[ "$(sha256sum "$tmp/luci.ipk" | awk '{print $1}')" = "$luci_sha" ] || { printf '%s\n' 'LuCI 包校验失败' >&2; exit 1; }
+opkg install --force-reinstall "$tmp/core.ipk"
+opkg install --force-reinstall "$tmp/luci.ipk"
+/etc/init.d/sing-box-smart restart
+/etc/init.d/rpcd restart
+printf '%s\n' '更新完成'

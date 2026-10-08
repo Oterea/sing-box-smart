@@ -10,8 +10,8 @@ const menu = JSON.parse(fs.readFileSync('package/luci-app-sing-box-smart/root/us
 
 test('LuCI ACL is least privilege and exposes only fixed init actions', () => {
  assert.deepEqual(acl.read.ubus, {service:['list']});
- assert.deepEqual(Object.keys(acl.read.file), ['/etc/init.d/sing-box-smart enabled']);
- assert.deepEqual(Object.keys(acl.write.file).sort(), ['disable','enable','restart','start','stop'].map(a => `/etc/init.d/sing-box-smart ${a}`).sort());
+ assert.deepEqual(Object.keys(acl.read.file).sort(), ['/etc/init.d/sing-box-smart enabled','/usr/libexec/sing-box-smart-update-check'].sort());
+ assert.deepEqual(Object.keys(acl.write.file).sort(), ['disable','enable','restart','start','stop'].map(a => `/etc/init.d/sing-box-smart ${a}`).concat(['/usr/libexec/sing-box-smart-update-install']).sort());
  assert.equal('ubus' in acl.write, false);
 });
 
@@ -23,6 +23,9 @@ test('LuCI view cannot execute user supplied commands and serializes controls', 
  assert.doesNotMatch(view, /fs\.exec\([^,]+,\s*\[[^\]]*target/);
  assert.match(view, /sbs-auto-row/);
  assert.match(view, /打开监控面板/);
+ assert.match(view, /sing-box-smart-update-check/);
+ assert.match(view, /sing-box-smart-update-install/);
+ assert.doesNotMatch(view, /fs\.exec\([^,]+,\s*\[[^\]]*https?:/);
  assert.doesNotMatch(view, /sbs-link-card|sbs-arrow|打开 smart 面板.*↗/);
 });
 

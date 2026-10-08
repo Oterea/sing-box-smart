@@ -6,6 +6,8 @@
 'require ui';
 const serviceName = 'sing-box-smart';
 const initPath = '/etc/init.d/' + serviceName;
+const updateCheckPath = '/usr/libexec/sing-box-smart-update-check';
+const updateInstallPath = '/usr/libexec/sing-box-smart-update-install';
 const list = rpc.declare({object:'service',method:'list',params:['name'],expect:{'':{}}});
 return view.extend({
  load: function() { return Promise.all([list(serviceName), fs.exec(initPath,['enabled'])]); },
@@ -20,6 +22,9 @@ return view.extend({
   const autoLabel = E('div',{class:'sbs-switch'},[auto,autoTrack,E('span',{class:'sbs-switch-text'},['开机自动启动'])]);
   const monitorLink = E('a',{class:'sbs-open',href:window.location.protocol+'//'+window.location.hostname+':9797/',target:'_blank',rel:'noopener'},['打开监控面板']);
   const actions = [];
+  const updateText = E('span',{class:'sbs-update-text'},['正在检查更新…']);
+  const updateButton = E('button',{type:'button',class:'cbi-button sbs-update-button',disabled:true},['检查更新']);
+  const updateRow = E('div',{class:'sbs-update-row'},[E('span',{},['面板更新']),updateText,updateButton]);
   const update = function(result) {
    const service = result && result[serviceName];
    const instances = service && service.instances && typeof service.instances === 'object' ? service.instances : {};
@@ -35,7 +40,35 @@ return view.extend({
    actions.forEach(b => b.disabled = value);
    auto.disabled = value;
    autoTrack.disabled = value;
+   updateButton.disabled = value || updateButton.dataset.available !== 'yes';
   };
+  const readUpdate = function() {
+   return fs.exec(updateCheckPath,[]).then(function(r) {
+    if (r.code !== 0) throw new Error(r.stderr || '更新检查失败');
+    const result = JSON.parse(r.stdout || '{}');
+    updateText.textContent = result.available ? '发现 '+result.version : '已是最新版本';
+    updateText.classList.toggle('is-available',Boolean(result.available));
+    updateButton.dataset.available = result.available ? 'yes' : 'no';
+    updateButton.textContent = result.available ? '立即更新' : '检查更新';
+    updateButton.disabled = !result.available;
+   }).catch(function() {
+    updateText.textContent = '暂时无法检查';
+    updateButton.dataset.available = 'no';
+    updateButton.disabled = true;
+   });
+  };
+  updateButton.addEventListener('click',function() {
+   if (busy || updateButton.dataset.available !== 'yes' || !window.confirm('更新 LuCI 面板和 smart 核心？现有配置会保留。')) return;
+   setBusy(true);
+   fs.exec(updateInstallPath,[]).then(function(r) {
+    if (r.code !== 0) throw new Error(r.stderr || '更新失败');
+    updateText.textContent = '更新完成，正在刷新…';
+    setTimeout(function(){window.location.reload();},1200);
+   }).catch(function(e) {
+    ui.addNotification(null,E('p',{},[e.message]));
+    setBusy(false);
+   });
+  });
   const run = function(action) {
    if (busy) return Promise.resolve();
    setBusy(true);
@@ -57,6 +90,7 @@ return view.extend({
   });
   autoTrack.addEventListener('click', function() { if (!busy) { auto.checked = !auto.checked; auto.dispatchEvent(new Event('change')); } });
   update(data[0]);
+  readUpdate();
   poll.add(function(){return list(serviceName).then(update);},3);
   return E('div',{class:'sbs-page'},[
    E('div',{class:'sbs-heading'},[E('h2',{},['sing-box-smart'])]),
@@ -66,6 +100,7 @@ return view.extend({
      E('div',{class:'sbs-actions'},actions),
      E('div',{class:'sbs-divider'}),
      E('div',{class:'sbs-auto-row'},[autoLabel,monitorLink]),
+     updateRow,
      E('p',{class:'sbs-hint'},['开机后自动启动并监控服务。'])
     ]),
 
