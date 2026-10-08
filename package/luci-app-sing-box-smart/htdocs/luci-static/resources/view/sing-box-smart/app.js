@@ -36,6 +36,8 @@ return view.extend({
    return running;
   };
   let busy = false;
+  let updating = false;
+  let reloadScheduled = false;
   const setBusy = function(value) {
    busy = value;
    actions.forEach(b => b.disabled = value);
@@ -60,12 +62,19 @@ return view.extend({
   };
   const showUpdateStatus = function(result) {
    if (!result || !result.state) return;
+   if (result.state === 'idle') return;
+   const active = ['starting','downloading','verifying','installing','restarting'].includes(result.state);
+   if (!active && !updating) return;
+   if (active) { updating = true; setBusy(true); }
    const progress = Number(result.progress) || 0;
    updateText.textContent = (result.message || '正在更新…')+' · '+progress+'%';
    if (result.state === 'success') {
+    if (reloadScheduled) return;
+    reloadScheduled = true;
     updateText.textContent = '更新完成 · 100%，正在刷新…';
     setTimeout(function(){window.location.reload();},1200);
    } else if (result.state === 'error') {
+    updating = false;
     updateText.textContent = result.message || '更新失败';
     setBusy(false);
    }
@@ -81,11 +90,13 @@ return view.extend({
   updateButton.addEventListener('click',function() {
    if (busy || updateButton.dataset.available !== 'yes' || !window.confirm('更新 LuCI 面板和 smart 核心？现有配置会保留。')) return;
    setBusy(true);
+   updating = true;
    fs.exec(updateStartPath,[]).then(function(r) {
     if (r.code !== 0) throw new Error(r.stderr || '无法启动更新');
     updateButton.disabled = true;
     updateText.textContent = '正在准备更新…';
    }).catch(function(e) {
+    updating = false;
     ui.addNotification(null,E('p',{},[e.message]));
     setBusy(false);
    });
@@ -111,7 +122,7 @@ return view.extend({
   });
   autoTrack.addEventListener('click', function() { if (!busy) { auto.checked = !auto.checked; auto.dispatchEvent(new Event('change')); } });
   update(data[0]);
-  readUpdate();
+  pollUpdateStatus().then(function() { if (!updating) return readUpdate(); }).catch(function() { return readUpdate(); });
   poll.add(pollUpdateStatus,1);
   poll.add(function(){return list(serviceName).then(update);},3);
   return E('div',{class:'sbs-page'},[
