@@ -6,5 +6,5 @@ if [ -d /tmp/sing-box-smart-update.lock ]; then
     exit 1
 fi
 printf '%s\n' '{"state":"starting","message":"正在准备更新","progress":1}' > "$status"
-nohup /usr/libexec/sing-box-smart-update-install >/tmp/sing-box-smart-update.log 2>&1 </dev/null &
+/usr/bin/setsid /usr/libexec/sing-box-smart-update-install >/tmp/sing-box-smart-update.log 2>&1 </dev/null &
 printf '%s\n' '更新任务已启动'
