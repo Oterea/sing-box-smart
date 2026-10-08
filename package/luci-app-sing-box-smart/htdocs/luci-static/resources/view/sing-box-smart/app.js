@@ -7,7 +7,8 @@
 const serviceName = 'sing-box-smart';
 const initPath = '/etc/init.d/' + serviceName;
 const updateCheckPath = '/usr/libexec/sing-box-smart-update-check';
-const updateInstallPath = '/usr/libexec/sing-box-smart-update-install';
+const updateStartPath = '/usr/libexec/sing-box-smart-update-start';
+const updateStatusPath = '/usr/libexec/sing-box-smart-update-status';
 const list = rpc.declare({object:'service',method:'list',params:['name'],expect:{'':{}}});
 return view.extend({
  load: function() { return Promise.all([list(serviceName), fs.exec(initPath,['enabled'])]); },
@@ -23,8 +24,9 @@ return view.extend({
   const monitorLink = E('a',{class:'sbs-open',href:window.location.protocol+'//'+window.location.hostname+':9797/',target:'_blank',rel:'noopener'},['打开监控面板']);
   const actions = [];
   const updateText = E('span',{class:'sbs-update-text'},['正在检查更新…']);
+  const updateProgress = E('progress',{class:'sbs-update-progress',max:100,value:0,hidden:true});
   const updateButton = E('button',{type:'button',class:'cbi-button sbs-update-button',disabled:true},['检查更新']);
-  const updateRow = E('div',{class:'sbs-update-row'},[E('span',{},['面板更新']),updateText,updateButton]);
+  const updateRow = E('div',{class:'sbs-update-row'},[E('span',{},['面板更新']),updateText,updateProgress,updateButton]);
   const update = function(result) {
    const service = result && result[serviceName];
    const instances = service && service.instances && typeof service.instances === 'object' ? service.instances : {};
@@ -57,13 +59,39 @@ return view.extend({
     updateButton.disabled = true;
    });
   };
+  const showUpdateStatus = function(result) {
+   if (!result || !result.state) return;
+   updateText.textContent = result.message || '正在更新…';
+   updateProgress.value = Number(result.progress) || 0;
+   updateProgress.hidden = !['starting','downloading','verifying','installing','restarting'].includes(result.state);
+   if (result.state === 'success') {
+    updateText.textContent = '更新完成，正在刷新…';
+    updateProgress.hidden = false;
+    updateProgress.value = 100;
+    setTimeout(function(){window.location.reload();},1200);
+   } else if (result.state === 'error') {
+    updateText.textContent = result.message || '更新失败';
+    updateProgress.hidden = true;
+    setBusy(false);
+   }
+  };
+  const pollUpdateStatus = function() {
+   return fs.exec(updateStatusPath,[]).then(function(r) {
+    if (r.code !== 0) throw new Error(r.stderr || '无法读取更新状态');
+    const result = JSON.parse(r.stdout || '{}');
+    showUpdateStatus(result);
+    return result;
+   });
+  };
   updateButton.addEventListener('click',function() {
    if (busy || updateButton.dataset.available !== 'yes' || !window.confirm('更新 LuCI 面板和 smart 核心？现有配置会保留。')) return;
    setBusy(true);
-   fs.exec(updateInstallPath,[]).then(function(r) {
-    if (r.code !== 0) throw new Error(r.stderr || '更新失败');
-    updateText.textContent = '更新完成，正在刷新…';
-    setTimeout(function(){window.location.reload();},1200);
+   updateProgress.hidden = false;
+   updateProgress.value = 1;
+   fs.exec(updateStartPath,[]).then(function(r) {
+    if (r.code !== 0) throw new Error(r.stderr || '无法启动更新');
+    updateButton.disabled = true;
+    updateText.textContent = '正在准备更新…';
    }).catch(function(e) {
     ui.addNotification(null,E('p',{},[e.message]));
     setBusy(false);
@@ -91,6 +119,7 @@ return view.extend({
   autoTrack.addEventListener('click', function() { if (!busy) { auto.checked = !auto.checked; auto.dispatchEvent(new Event('change')); } });
   update(data[0]);
   readUpdate();
+  poll.add(pollUpdateStatus,1);
   poll.add(function(){return list(serviceName).then(update);},3);
   return E('div',{class:'sbs-page'},[
    E('div',{class:'sbs-heading'},[E('h2',{},['sing-box-smart'])]),

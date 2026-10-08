@@ -2,26 +2,43 @@
 set -eu
 lock='/tmp/sing-box-smart-update.lock'
 tmp='/tmp/sing-box-smart-update'
+status='/tmp/sing-box-smart-update.status'
 manifest_url='https://github.com/Oterea/sing-box-smart/releases/download/latest/sing-box-smart-release.json'
+write_status() {
+    printf '{"state":"%s","message":"%s","progress":%s}\n' "$1" "$2" "$3" > "$status"
+}
+fail() {
+    write_status error "$1" 0
+    printf '%s\n' "$1" >&2
+    exit 1
+}
 if ! mkdir "$lock" 2>/dev/null; then
-    printf '%s\n' '更新已经在进行中' >&2
+    write_status error '更新已经在进行中' 0
     exit 1
 fi
 cleanup() { rm -rf "$tmp" "$lock"; }
 trap cleanup EXIT INT TERM
 mkdir -p "$tmp"
-uclient-fetch -q -O "$tmp/manifest.json" "$manifest_url"
+write_status downloading '正在下载更新清单' 5
+uclient-fetch -q -O "$tmp/manifest.json" "$manifest_url" || fail '无法下载更新清单'
 core_url="$(jsonfilter -i "$tmp/manifest.json" -e '@.core_url')"
 luci_url="$(jsonfilter -i "$tmp/manifest.json" -e '@.luci_url')"
 core_sha="$(jsonfilter -i "$tmp/manifest.json" -e '@.core_sha256')"
 luci_sha="$(jsonfilter -i "$tmp/manifest.json" -e '@.luci_sha256')"
-[ -n "$core_url" ] && [ -n "$luci_url" ] && [ -n "$core_sha" ] && [ -n "$luci_sha" ] || { printf '%s\n' '更新清单缺少必要字段' >&2; exit 1; }
-uclient-fetch -q -O "$tmp/core.ipk" "$core_url"
-uclient-fetch -q -O "$tmp/luci.ipk" "$luci_url"
-[ "$(sha256sum "$tmp/core.ipk" | awk '{print $1}')" = "$core_sha" ] || { printf '%s\n' '核心包校验失败' >&2; exit 1; }
-[ "$(sha256sum "$tmp/luci.ipk" | awk '{print $1}')" = "$luci_sha" ] || { printf '%s\n' 'LuCI 包校验失败' >&2; exit 1; }
-opkg install --force-reinstall "$tmp/core.ipk"
-opkg install --force-reinstall "$tmp/luci.ipk"
-/etc/init.d/sing-box-smart restart
-/etc/init.d/rpcd restart
+[ -n "$core_url" ] && [ -n "$luci_url" ] && [ -n "$core_sha" ] && [ -n "$luci_sha" ] || fail '更新清单缺少必要字段'
+write_status downloading '正在下载 smart 核心包' 20
+uclient-fetch -q -O "$tmp/core.ipk" "$core_url" || fail 'smart 核心包下载失败'
+write_status downloading '正在下载 LuCI 面板包' 35
+uclient-fetch -q -O "$tmp/luci.ipk" "$luci_url" || fail 'LuCI 面板包下载失败'
+write_status verifying '正在校验软件包' 50
+[ "$(sha256sum "$tmp/core.ipk" | awk '{print $1}')" = "$core_sha" ] || fail '核心包校验失败'
+[ "$(sha256sum "$tmp/luci.ipk" | awk '{print $1}')" = "$luci_sha" ] || fail 'LuCI 包校验失败'
+write_status installing '正在安装 smart 核心' 65
+opkg install --force-reinstall "$tmp/core.ipk" || fail 'smart 核心安装失败'
+write_status installing '正在安装 LuCI 面板' 78
+opkg install --force-reinstall "$tmp/luci.ipk" || fail 'LuCI 面板安装失败'
+write_status restarting '正在重启服务' 90
+/etc/init.d/sing-box-smart restart || fail 'smart 服务重启失败'
+/etc/init.d/rpcd restart || fail 'LuCI 服务重启失败'
+write_status success '更新完成' 100
 printf '%s\n' '更新完成'

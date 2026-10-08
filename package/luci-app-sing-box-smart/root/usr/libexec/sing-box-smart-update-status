@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+status='/tmp/sing-box-smart-update.status'
+if [ -f "$status" ]; then
+    cat "$status"
+else
+    printf '%s\n' '{"state":"idle","message":"未进行更新","progress":0}'
+fi
