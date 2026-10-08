@@ -2,7 +2,12 @@
 set -eu
 status='/tmp/sing-box-smart-update.status'
 if [ -f "$status" ]; then
-    cat "$status"
+    state="$(sed -n 's/.*\"state\":\"\([^\"]*\)\".*/\1/p' "$status")"
+    content="$(cat "$status")"
+    if [ "$state" = 'success' ] || [ "$state" = 'error' ]; then
+        rm -f "$status"
+    fi
+    printf '%s\n' "$content"
 else
     printf '%s\n' '{"state":"idle","message":"未进行更新","progress":0}'
 fi

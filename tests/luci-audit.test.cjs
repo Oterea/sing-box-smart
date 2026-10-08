@@ -4,6 +4,7 @@ const fs = require('node:fs');
 
 const acl = JSON.parse(fs.readFileSync('package/luci-app-sing-box-smart/root/usr/share/rpcd/acl.d/luci-app-sing-box-smart.json', 'utf8'))['luci-app-sing-box-smart'];
 const view = fs.readFileSync('package/luci-app-sing-box-smart/htdocs/luci-static/resources/view/sing-box-smart/app.js', 'utf8');
+const updateStatus = fs.readFileSync('package/luci-app-sing-box-smart/root/usr/libexec/sing-box-smart-update-status', 'utf8');
 const init = fs.readFileSync('deploy/sing-box-smart.init', 'utf8');
 const packer = fs.readFileSync('scripts/build-ipk.py', 'utf8');
 const menu = JSON.parse(fs.readFileSync('package/luci-app-sing-box-smart/root/usr/share/luci/menu.d/luci-app-sing-box-smart.json', 'utf8'));
@@ -27,6 +28,8 @@ test('LuCI view cannot execute user supplied commands and serializes controls', 
  assert.match(view, /sing-box-smart-update-start/);
  assert.match(view, /sing-box-smart-update-status/);
  assert.match(view, /progress\+'%'/);
+ assert.match(updateStatus, /state.*success/);
+ assert.match(updateStatus, /rm -f.*\$status/);
  assert.match(view, /已是最新版本 ·/);
  assert.doesNotMatch(view, /fs\.exec\([^,]+,\s*\[[^\]]*https?:/);
  assert.doesNotMatch(view, /sbs-link-card|sbs-arrow|打开 smart 面板.*↗/);
