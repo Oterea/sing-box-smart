@@ -70,6 +70,9 @@ type Snapshot struct {
 	InstanceID         string        `json:"instance_id"`
 	Revision           uint64        `json:"revision"`
 	Paused             bool          `json:"paused"`
+	Sleeping           bool          `json:"sleeping"`
+	SleepEnabled       bool          `json:"sleep_enabled"`
+	LastActivity       *time.Time    `json:"last_activity,omitempty"`
 	Mode               string        `json:"mode"`
 	SelectionMode      SelectionMode `json:"selection_mode"`
 	RootSelection      string        `json:"root_selection"`

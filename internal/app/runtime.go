@@ -44,6 +44,8 @@ func (a *App) Run(ctx context.Context) {
 		case selection := <-a.selection:
 			a.selectionSyncBusy = false
 			a.applySelectionObservation(selection)
+		case event := <-a.activityEvents:
+			a.handleActivity(event)
 		case now := <-ticker.C:
 			a.tick(ctx, now)
 		}
@@ -51,11 +53,14 @@ func (a *App) Run(ctx context.Context) {
 }
 
 func (a *App) tick(ctx context.Context, now time.Time) {
+	if a.sleepController.Tick(now, a.paused || a.pending != "" || a.switchBusy) {
+		a.enterSleep()
+	}
 	if !a.selectionSyncBusy && (a.lastSelectionSync.IsZero() || now.Sub(a.lastSelectionSync) >= selectionSyncInterval) {
 		a.lastSelectionSync = now
 		a.startSelectionSync(ctx)
 	}
-	if a.paused {
+	if a.paused || a.sleeping {
 		return
 	}
 	if !a.healthy {
@@ -107,7 +112,7 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 }
 
 func (a *App) startProbe(ctx context.Context, n *state.Node, reason string) {
-	if a.paused || n.Plan.InFlight {
+	if a.paused || a.sleeping || n.Plan.InFlight {
 		return
 	}
 	n.Plan.InFlight = true
@@ -126,7 +131,7 @@ func (a *App) startProbe(ctx context.Context, n *state.Node, reason string) {
 }
 
 func (a *App) observe(ctx context.Context, o observation) {
-	if a.paused || o.generation != a.generation {
+	if a.paused || a.sleeping || o.generation != a.generation {
 		return
 	}
 	n := a.store.ByID[o.id]

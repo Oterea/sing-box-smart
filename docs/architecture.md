@@ -10,9 +10,12 @@ app → state.Reclassify → tiering
 app → recovery / state.NearCandidate → schedule
 app → decision → 确认探测 → switching → selector 写入与回读
 app → snapshot → httpapi（HTTP / SSE） → web
+sing-box gRPC → grpcactivity → activity → app → sleep controller → observation gate
 ```
 
 `app` 通过单写入事件循环编排探测、控制、快照、连接替换、选择同步和切换结果。基础模块并非完全互相独立：`state` 使用 `score`、`tiering`、`schedule`；`probe` 和 `switching` 使用 `gateway`。真实 API 实现在 `internal/real`，不是 `gateway` 包。
+
+睡眠监控通过 gRPC 的连接事件独立接入。`grpcactivity` 不参与评分和节点选择，只把用户连接活动转换成 `activity.Event`；`sleep` 只维护空闲状态；最终由 `app` 事件循环决定是否暂停或恢复探测。这样后续将策略组、切换和探测迁移到 gRPC 时，不需要复制睡眠逻辑。
 
 ## app 文件边界
 

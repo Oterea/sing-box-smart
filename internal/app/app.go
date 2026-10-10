@@ -4,6 +4,7 @@ package app
 import (
 	"context"
 	"log"
+	"sing-box-smart/internal/activity"
 	"sing-box-smart/internal/config"
 	"sing-box-smart/internal/discovery"
 	"sing-box-smart/internal/domain"
@@ -12,6 +13,7 @@ import (
 	"sing-box-smart/internal/observewindow"
 	"sing-box-smart/internal/probe"
 	"sing-box-smart/internal/recovery"
+	"sing-box-smart/internal/sleep"
 	"sing-box-smart/internal/state"
 	"sing-box-smart/internal/switching"
 	"time"
@@ -58,6 +60,9 @@ type App struct {
 	switchBusy, healthy, healthBusy        bool
 	selectionSyncBusy                      bool
 	paused                                 bool
+	sleeping                               bool
+	activityEvents                         chan activity.Event
+	sleepController                        *sleep.Controller
 	resumeWindow                           bool
 	observeWindow                          observewindow.Window
 	started, lastHealth, lastSelectionSync time.Time
@@ -81,11 +86,15 @@ func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.L
 		return nil, err
 	}
 	probeCtx, probeCancel := context.WithCancel(ctx)
-	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan error, 1), selection: make(chan selectionObservation, 1), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel}
+	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan error, 1), selection: make(chan selectionObservation, 1), activityEvents: make(chan activity.Event, 256), sleepController: sleep.New(sleep.Config{Enabled: cfg.SleepEnabled, IdleAfter: cfg.SleepIdleAfter}, time.Now()), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel}
 	a.apiAddress, a.groupRoot, a.groupPattern = cfg.API, cfg.Root, cfg.Pattern
 	a.reset(airports[0])
 	return a, nil
 }
+
+// ActivitySink is the single input for automatic sleep monitoring.  The
+// application event loop remains the owner of sleeping and probe scheduling.
+func (a *App) ActivitySink() chan<- activity.Event { return a.activityEvents }
 func (a *App) reset(airport domain.Airport) {
 	if a.probeCancel != nil {
 		a.probeCancel()
@@ -100,6 +109,8 @@ func (a *App) reset(airport domain.Airport) {
 	}
 	a.observeWindow.Begin(a.cfg.Startup, ids, now)
 	a.resumeWindow = false
+	a.sleeping = false
+	a.sleepController = sleep.New(sleep.Config{Enabled: a.cfg.SleepEnabled, IdleAfter: a.cfg.SleepIdleAfter}, now)
 	a.generation++
 	a.revision++
 	a.started = now
@@ -137,7 +148,12 @@ func (a *App) Control(ctx context.Context, action, target string) error {
 	return err
 }
 func (a *App) snapshot() domain.Snapshot {
-	return domain.Snapshot{Revision: a.revision, Paused: a.paused, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), ObservationSeconds: a.observeWindow.Duration().Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
+	var lastActivity *time.Time
+	if t := a.sleepController.LastActivity(); !t.IsZero() {
+		v := t
+		lastActivity = &v
+	}
+	return domain.Snapshot{Revision: a.revision, Paused: a.paused, Sleeping: a.sleeping, SleepEnabled: a.sleepController.Enabled(), LastActivity: lastActivity, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), ObservationSeconds: a.observeWindow.Duration().Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
 }
 
 func recoveryLabel(kind recovery.Kind) string {

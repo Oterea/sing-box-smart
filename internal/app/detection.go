@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"sing-box-smart/internal/sleep"
 	"time"
 )
 
@@ -12,6 +13,10 @@ func (a *App) pauseDetection() {
 		return
 	}
 	a.paused = true
+	if a.sleeping {
+		a.sleeping = false
+		a.sleepController.Wake()
+	}
 	a.revision++
 	a.generation++
 	a.probeCancel()
@@ -26,10 +31,15 @@ func (a *App) pauseDetection() {
 	a.events.Record("manual", "已暂停检测和自动切换")
 }
 func (a *App) resumeDetection() {
+	if a.sleeping {
+		a.wakeFromSleep()
+		return
+	}
 	if !a.paused {
 		return
 	}
 	a.probeCtx, a.probeCancel = context.WithCancel(a.rootCtx)
+	a.sleepController.Observe(sleep.Event{At: time.Now(), Active: true})
 	a.paused = false
 	a.revision++
 	now := time.Now()

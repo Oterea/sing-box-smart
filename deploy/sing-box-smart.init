@@ -19,7 +19,11 @@ start_service() {
         -pins "$PINS" \
         -test-url "$TEST_URL" \
         -listen "$LISTEN" \
-        -log-dir "$LOG_DIR"
+        -log-dir "$LOG_DIR" \
+        -grpc "$GRPC_ADDR" \
+        -grpc-secret "$GRPC_SECRET" \
+        -sleep-monitor "$SLEEP_MONITOR" \
+        -sleep-idle "$SLEEP_IDLE"
     procd_set_param respawn 3600 5 0
     procd_set_param stdout 1
     procd_set_param stderr 1

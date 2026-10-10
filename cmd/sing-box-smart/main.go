@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"sing-box-smart/internal/app"
@@ -14,6 +15,7 @@ import (
 	"sing-box-smart/internal/demo"
 	"sing-box-smart/internal/events"
 	"sing-box-smart/internal/gateway"
+	"sing-box-smart/internal/grpcactivity"
 	"sing-box-smart/internal/httpapi"
 	"sing-box-smart/internal/real"
 	"sing-box-smart/internal/settings"
@@ -38,6 +40,10 @@ func run() error {
 	flag.StringVar(&cfg.Listen, "listen", cfg.Listen, "HTTP listen address")
 	flag.StringVar(&cfg.LogDir, "log-dir", cfg.LogDir, "log directory")
 	flag.StringVar(&cfg.SettingsPath, "settings", "connection.json", "persistent connection settings file")
+	flag.StringVar(&cfg.GRPCAddress, "grpc", cfg.GRPCAddress, "sing-box native gRPC API address; enables sleep monitoring when set")
+	flag.StringVar(&cfg.GRPCSecret, "grpc-secret", cfg.GRPCSecret, "sing-box native gRPC API secret")
+	flag.BoolVar(&cfg.SleepEnabled, "sleep-monitor", cfg.SleepEnabled, "pause smart probes after prolonged inactivity")
+	flag.DurationVar(&cfg.SleepIdleAfter, "sleep-idle", cfg.SleepIdleAfter, "idle duration before smart enters sleep")
 	flag.Parse()
 	if saved, err := settings.Load(cfg.SettingsPath); err != nil {
 		return err
@@ -73,6 +79,14 @@ func run() error {
 		return err
 	}
 	go service.Run(ctx)
+	if cfg.SleepEnabled && cfg.GRPCAddress != "" {
+		probeHost := ""
+		if parsed, e := url.Parse(cfg.TestURL); e == nil {
+			probeHost = parsed.Hostname()
+		}
+		source := grpcactivity.New(grpcactivity.Config{Address: cfg.GRPCAddress, Secret: cfg.GRPCSecret, Interval: time.Second, ProbeDomains: []string{probeHost}})
+		go func() { _ = source.Run(ctx, service.ActivitySink()) }()
+	}
 	server := &http.Server{Addr: cfg.Listen, Handler: httpapi.Handler(service), ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second, BaseContext: func(net.Listener) context.Context { return ctx }}
 	failures := make(chan error, 1)
 	go func() { failures <- server.ListenAndServe() }()

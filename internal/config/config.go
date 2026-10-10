@@ -12,8 +12,11 @@ import (
 type Pin struct{ ID, Name, Selector string }
 type Config struct {
 	Mode, API, Root, Pattern, TestURL, Listen, LogDir, SettingsPath  string
+	GRPCAddress, GRPCSecret                                          string
 	Pins                                                             []Pin
 	Startup, Resume, Current, Candidate, Ordinary, Recovery, Timeout time.Duration
+	SleepEnabled                                                     bool
+	SleepIdleAfter                                                   time.Duration
 	RecoverySteps                                                    []time.Duration
 	RecoveryDropRatio, RecoveryDropMinMS, RecoveryGoodMaxMS          float64
 	SwitchRatio                                                      float64
@@ -21,7 +24,7 @@ type Config struct {
 }
 
 func Default() Config {
-	return Config{Mode: "demo", API: "http://127.0.0.1:9695", Root: "proxy", Pattern: "PIN$", TestURL: "https://www.gstatic.com/generate_204", Listen: "127.0.0.1:8787", LogDir: "logs", Startup: 10 * time.Second, Resume: 5 * time.Second, Current: 3 * time.Second, Candidate: 30 * time.Second, Ordinary: 5 * time.Minute, Recovery: 3 * time.Second, Timeout: 4 * time.Second, RecoverySteps: []time.Duration{3 * time.Second, 6 * time.Second, 12 * time.Second, 20 * time.Second}, RecoveryDropRatio: .75, RecoveryDropMinMS: 100, RecoveryGoodMaxMS: 400, SwitchRatio: 1.4, HistoryLimit: 24}
+	return Config{Mode: "demo", API: "http://127.0.0.1:9695", Root: "proxy", Pattern: "PIN$", TestURL: "https://www.gstatic.com/generate_204", Listen: "127.0.0.1:8787", LogDir: "logs", Startup: 10 * time.Second, Resume: 5 * time.Second, Current: 3 * time.Second, Candidate: 30 * time.Second, Ordinary: 5 * time.Minute, Recovery: 3 * time.Second, Timeout: 4 * time.Second, SleepIdleAfter: 10 * time.Minute, RecoverySteps: []time.Duration{3 * time.Second, 6 * time.Second, 12 * time.Second, 20 * time.Second}, RecoveryDropRatio: .75, RecoveryDropMinMS: 100, RecoveryGoodMaxMS: 400, SwitchRatio: 1.4, HistoryLimit: 24}
 }
 func ParsePins(raw string) ([]Pin, error) {
 	var out []Pin
@@ -62,7 +65,10 @@ func (c Config) Validate() error {
 	if c.Mode == "real" && (c.API == "" || c.TestURL == "") {
 		return fmt.Errorf("real mode requires api and test-url")
 	}
-	if c.Startup <= 0 || c.Resume <= 0 || c.Current <= 0 || c.Candidate <= 0 || c.Ordinary <= 0 || c.Recovery <= 0 || c.Timeout <= 0 || len(c.RecoverySteps) == 0 || c.RecoveryDropRatio <= 0 || c.RecoveryDropRatio >= 1 || c.RecoveryDropMinMS <= 0 || c.RecoveryGoodMaxMS <= 0 || c.SwitchRatio <= 1 || c.HistoryLimit < 1 {
+	if c.SleepEnabled && strings.TrimSpace(c.GRPCAddress) == "" {
+		return fmt.Errorf("sleep monitor requires grpc address")
+	}
+	if c.Startup <= 0 || c.Resume <= 0 || c.Current <= 0 || c.Candidate <= 0 || c.Ordinary <= 0 || c.Recovery <= 0 || c.Timeout <= 0 || c.SleepIdleAfter <= 0 || len(c.RecoverySteps) == 0 || c.RecoveryDropRatio <= 0 || c.RecoveryDropRatio >= 1 || c.RecoveryDropMinMS <= 0 || c.RecoveryGoodMaxMS <= 0 || c.SwitchRatio <= 1 || c.HistoryLimit < 1 {
 		return fmt.Errorf("invalid timing, ratio, or history settings")
 	}
 	for _, step := range c.RecoverySteps {

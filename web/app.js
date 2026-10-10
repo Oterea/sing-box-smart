@@ -85,14 +85,14 @@ function nodeKey(n,best,s,selected=false) {
  // A changing best score matters only when it changes a visible color.
  // Including the raw best value would redraw every node's SVG on each update.
  const colors=(n.history??[]).slice(-20).map(sample=>tone(sample.score,best)).join(',');
- return JSON.stringify({id:n.id,name:n.name,tier:nodeTier(n,s),checks:n.checks,score:n.score,delay:n.delay_ms,overflow:n.score_overflow,last:n.last_success,current:selected||n.id===s.current_id,history:n.history,colors,rowColor:tone(n.score,best),busy,pending:s.pending_id,phase:s.phase,paused:s.paused,api:s.api_healthy,selection_mode:s.selection_mode,control_active:s.control_active});
+ return JSON.stringify({id:n.id,name:n.name,tier:nodeTier(n,s),checks:n.checks,score:n.score,delay:n.delay_ms,overflow:n.score_overflow,last:n.last_success,current:selected||n.id===s.current_id,history:n.history,colors,rowColor:tone(n.score,best),busy,pending:s.pending_id,phase:s.phase,paused:s.paused,sleeping:s.sleeping,api:s.api_healthy,selection_mode:s.selection_mode,control_active:s.control_active});
 }
 function historyKey(n) {
  return JSON.stringify((n.history??[]).slice(-20).map(sample=>[sample.at,sample.success,sample.score,sample.delay_ms,sample.error]));
 }
 function nodeRow(n,best,s) {
  const current=Boolean(n.id)&&n.id===s.current_id;
- const disabled=busy||Boolean(s.pending_id)||s.paused||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
+ const disabled=busy||Boolean(s.pending_id)||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
  const delayColor=n.checks&&!n.last_success?'bad':delayTone(n.delay_ms);
  const buttonText=n.id?n.name:'等待首次选择';
  return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}">${esc(buttonText)}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${n.score_overflow?'∞':num(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td></tr>`;
@@ -101,7 +101,7 @@ function patchRow(row,n,best,s,selected=false) {
  const current=Boolean(n.id)&&n.id===s.current_id;
  row.className=current?'current-row':'';
  const button=row.querySelector('button.node-choice');
- const disabled=busy||Boolean(s.pending_id)||s.paused||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
+ const disabled=busy||Boolean(s.pending_id)||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
  button.textContent=n.id?n.name:'等待首次选择';
  button.title=n.name;
  button.disabled=disabled;
@@ -156,9 +156,9 @@ function render(s){
  if(s.instance_id)stateInstance=s.instance_id;
  if(Number.isFinite(Number(s.revision)))stateRevision=Number(s.revision);
  state=s;
- $('detection-toggle').textContent=s.paused?'继续检测':'暂停检测';
+ $('detection-toggle').textContent=(s.paused||s.sleeping)?'继续检测':'暂停检测';
  $('detection-toggle').disabled=busy;
- $('recheck').disabled=busy||s.paused;
+ $('recheck').disabled=busy||s.paused||s.sleeping;
  $('selection-auto').disabled=busy||Boolean(s.pending_id);
  $('selection-auto').setAttribute?.('aria-pressed',s.selection_mode!=='manual');
  $('selection-manual').disabled=busy;
@@ -172,9 +172,9 @@ function render(s){
  $('connection').textContent=s.api_healthy?'后端已连接':'管理接口异常';
  $('mode-note-text').textContent=s.mode==='real'?'真实模式 · 已连接 sing-box API':'模拟模式 · 切换仅作用于模拟接口';
  $('mode-note').classList.toggle('real-mode',s.mode==='real');
- const nextAirportKey=JSON.stringify({airports:s.airports,selected:s.airport_id,busy,pending:s.pending_id,paused:s.paused,active:s.control_active});
+ const nextAirportKey=JSON.stringify({airports:s.airports,selected:s.airport_id,busy,pending:s.pending_id,paused:s.paused,sleeping:s.sleeping,active:s.control_active});
  if(nextAirportKey!==airportKey){
-  $('airport-options').innerHTML=s.airports.map(a=>`<button class="airport-option ${a.id===s.airport_id&&s.control_active!==false?'selected':''}" data-airport="${esc(a.id)}" title="${esc(a.selector)}" ${busy||s.paused||s.pending_id||(a.id===s.airport_id&&s.control_active!==false)?'disabled':''} aria-pressed="${a.id===s.airport_id&&s.control_active!==false}"><strong>${esc(a.selector)}</strong></button>`).join('');
+ $('airport-options').innerHTML=s.airports.map(a=>`<button class="airport-option ${a.id===s.airport_id&&s.control_active!==false?'selected':''}" data-airport="${esc(a.id)}" title="${esc(a.selector)}" ${busy||s.paused||s.sleeping||s.pending_id||(a.id===s.airport_id&&s.control_active!==false)?'disabled':''} aria-pressed="${a.id===s.airport_id&&s.control_active!==false}"><strong>${esc(a.selector)}</strong></button>`).join('');
   airportKey=nextAirportKey;
  }
  $('node-count').textContent=s.nodes.length;
@@ -184,7 +184,7 @@ function render(s){
  const current=s.nodes.find(n=>n.id===s.current_id);
  const elapsed=(new Date(s.now)-new Date(s.started_at))/1000;
  const observationSeconds=s.observation_seconds||s.startup_seconds;
- $('status-line').textContent=s.paused?'检测已暂停，分数和历史保留。':!s.api_healthy?'管理接口不可用：暂停选择，不将接口错误记为节点失败。':s.control_active===false?`根策略组当前选择 ${s.root_selection||'尚未同步'}，smart 暂不自动切换。`:s.pending_id?'正在确认切换目标，读取接口结果后更新当前选择。':s.phase==='startup'?`启动/恢复观察中：${Math.min(elapsed,observationSeconds).toFixed(1)} / ${observationSeconds} 秒 · 观察结束后开始自动判断。`:s.phase==='unavailable'?'暂时全部不可用：每 3 秒重新检查，保留已有选择。':s.selection_mode==='manual'?'手动选择模式：继续检测并更新数据，smart 不会自动切换节点。':'';
+ $('status-line').textContent=s.paused?'检测已暂停，分数和历史保留。':s.sleeping?'长时间无用户活动，已自动暂停检测；产生新连接后自动恢复。':!s.api_healthy?'管理接口不可用：暂停选择，不将接口错误记为节点失败。':s.control_active===false?`根策略组当前选择 ${s.root_selection||'尚未同步'}，smart 暂不自动切换。`:s.pending_id?'正在确认切换目标，读取接口结果后更新当前选择。':s.phase==='startup'?`启动/恢复观察中：${Math.min(elapsed,observationSeconds).toFixed(1)} / ${observationSeconds} 秒 · 观察结束后开始自动判断。`:s.phase==='unavailable'?'暂时全部不可用：每 3 秒重新检查，保留已有选择。':s.selection_mode==='manual'?'手动选择模式：继续检测并更新数据，smart 不会自动切换节点。':'';
  const valid=s.nodes.filter(n=>n.score!=null), best=valid.length?Math.min(...valid.map(n=>n.score)):Infinity;
  const sorted=[...s.nodes].sort((a,b)=>(a.score??Infinity)-(b.score??Infinity)||a.id.localeCompare(b.id));
  const selected=current??{id:'',name:'等待首次选择',checks:0,history:[],score:null,delay_ms:null,last_success:false};
@@ -207,7 +207,7 @@ async function control(action,id=''){
 }
 $('airport-options').addEventListener('click',e=>{const button=e.target.closest('[data-airport]');if(button)control('airport',button.dataset.airport);});
 $('recheck').addEventListener('click',()=>control('recheck'));
-$('detection-toggle').addEventListener('click',()=>{if(state)control(state.paused?'resume':'pause');});
+$('detection-toggle').addEventListener('click',()=>{if(state)control((state.paused||state.sleeping)?'resume':'pause');});
 $('selection-auto').addEventListener('click',()=>control('auto'));
 $('selection-manual').addEventListener('click',()=>control('manual'));
 if($('api-form'))$('api-form').addEventListener('submit',async e=>{e.preventDefault();const api=$('api-address').value.trim();if(!api)return toast('请输入 API 地址');try{const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api,root:$('group-root').value.trim(),pattern:$('group-pattern').value.trim()})});const data=await r.json();if(!r.ok)throw new Error(data.error||'设置应用失败');toast('设置已应用，正在重新读取节点');await refresh();}catch(err){toast(err.message);}});
