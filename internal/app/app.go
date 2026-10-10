@@ -63,6 +63,7 @@ type App struct {
 	sleeping                               bool
 	activityEvents                         chan activity.Event
 	sleepController                        *sleep.Controller
+	sleepRecords                           *sleep.Recorder
 	resumeWindow                           bool
 	observeWindow                          observewindow.Window
 	started, lastHealth, lastSelectionSync time.Time
@@ -86,7 +87,7 @@ func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.L
 		return nil, err
 	}
 	probeCtx, probeCancel := context.WithCancel(ctx)
-	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan error, 1), selection: make(chan selectionObservation, 1), activityEvents: make(chan activity.Event, 256), sleepController: sleep.New(sleep.Config{Enabled: cfg.SleepEnabled, IdleAfter: cfg.SleepIdleAfter}, time.Now()), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel}
+	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan error, 1), selection: make(chan selectionObservation, 1), activityEvents: make(chan activity.Event, 256), sleepController: sleep.New(sleep.Config{Enabled: cfg.SleepEnabled, IdleAfter: cfg.SleepIdleAfter}, time.Now()), sleepRecords: sleep.NewRecorder(3), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel}
 	a.apiAddress, a.groupRoot, a.groupPattern = cfg.API, cfg.Root, cfg.Pattern
 	a.reset(airports[0])
 	return a, nil
@@ -153,7 +154,8 @@ func (a *App) snapshot() domain.Snapshot {
 		v := t
 		lastActivity = &v
 	}
-	return domain.Snapshot{Revision: a.revision, Paused: a.paused, Sleeping: a.sleeping, SleepEnabled: a.sleepController.Enabled(), LastActivity: lastActivity, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), ObservationSeconds: a.observeWindow.Duration().Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
+	now := time.Now()
+	return domain.Snapshot{Revision: a.revision, Paused: a.paused, Sleeping: a.sleeping, SleepEnabled: a.sleepController.Enabled(), LastActivity: lastActivity, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: now, StartupSeconds: a.cfg.Startup.Seconds(), ObservationSeconds: a.observeWindow.Duration().Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...), SleepRecords: a.sleepRecords.Snapshot(now)}
 }
 
 func recoveryLabel(kind recovery.Kind) string {

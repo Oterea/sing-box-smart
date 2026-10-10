@@ -26,6 +26,7 @@ func (a *App) enterSleep() {
 		return
 	}
 	a.sleeping = true
+	a.sleepRecords.Start(time.Now(), "idle")
 	a.generation++
 	a.probeCancel()
 	for _, n := range a.store.Nodes {
@@ -41,12 +42,14 @@ func (a *App) wakeFromSleep() {
 	if !a.sleeping {
 		return
 	}
+	now := time.Now()
+	a.sleepRecords.End(now, "connection")
 	a.sleepController.Wake()
-	a.sleepController.Observe(sleep.Event{At: time.Now(), Active: true})
+	a.sleepController.Observe(sleep.Event{At: now, Active: true})
 	a.sleeping = false
 	a.probeCtx, a.probeCancel = context.WithCancel(a.rootCtx)
 	a.revision++
-	a.started = time.Now()
+	a.started = now
 	a.phase = "startup"
 	a.resumeWindow = true
 	ids := make([]string, 0, len(a.store.Nodes))
@@ -56,6 +59,6 @@ func (a *App) wakeFromSleep() {
 		n.Plan.ClearRecovery()
 		n.Plan.NormalDue = time.Time{}
 	}
-	a.observeWindow.Begin(a.cfg.Resume, ids, time.Now())
+	a.observeWindow.Begin(a.cfg.Resume, ids, now)
 	a.events.Record("sleep", "检测到用户活动，恢复检测并开始快速观察")
 }

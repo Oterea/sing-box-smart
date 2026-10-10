@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-let state, busy = false, toastTimer, airportKey = '', eventsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '';
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 function animateNumber(el, value, formatter=num) {
@@ -190,11 +190,25 @@ function render(s){
  const selected=current??{id:'',name:'等待首次选择',checks:0,history:[],score:null,delay_ms:null,last_success:false};
  syncRows($('selected-node'),[selected],best,s,true);
  syncRows($('nodes'),sorted,best,s,false);
- const kinds={startup:'启动',phase:'状态',switch:'切换',recovery:'复查',manual:'手动',decision:'判断',api:'接口',error:'错误',unavailable:'故障'};
+ const kinds={startup:'启动',phase:'状态',switch:'切换',recovery:'复查',sleep:'睡眠',manual:'手动',decision:'判断',api:'接口',error:'错误',unavailable:'故障'};
  const nextEventsKey=JSON.stringify(s.events);
  if(nextEventsKey!==eventsKey){
   $('events').innerHTML=[...s.events].reverse().slice(0,8).map(e=>`<div class="event"><time>${time(e.at)}</time><span class="event-kind">${kinds[e.kind]??'记录'}</span><span class="event-text" title="${esc(e.message)}">${esc(e.message)}</span></div>`).join('');
   eventsKey=nextEventsKey;
+ }
+ const sleepRecords=s.sleep_records??[];
+ const nextSleepRecordsKey=JSON.stringify(sleepRecords);
+ if(nextSleepRecordsKey!==sleepRecordsKey){
+  $('sleep-count').textContent=sleepRecords.length;
+  $('sleep-records').innerHTML=sleepRecords.length?[...sleepRecords].reverse().map(record=>{
+   const duration=Number(record.duration_seconds)||0;
+   const minutes=Math.floor(duration/60), seconds=Math.floor(duration%60);
+   const elapsed=minutes?`${minutes} 分钟${seconds?` ${seconds} 秒`:''}`:`${seconds} 秒`;
+   const range=record.active?`${time(record.started_at)} 开始`:`${time(record.started_at)}–${time(record.ended_at)}`;
+   const label=record.active?`正在睡眠 · 已持续 ${elapsed}`:`持续 ${elapsed}`;
+   return `<div class="sleep-record"><span class="sleep-record-time">${esc(range)}</span><span class="sleep-record-state">${esc(label)}</span></div>`;
+  }).join(''):'<div class="sleep-record-empty">暂无睡眠记录</div>';
+  sleepRecordsKey=nextSleepRecordsKey;
  }
  $('updated').textContent='更新于 '+time(s.now);
 }

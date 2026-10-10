@@ -66,6 +66,16 @@ type Event struct {
 	Kind    string    `json:"kind"`
 	Message string    `json:"message"`
 }
+
+// SleepRecord describes one automatic sleep interval exposed by the API.
+type SleepRecord struct {
+	StartedAt       time.Time  `json:"started_at"`
+	EndedAt         *time.Time `json:"ended_at,omitempty"`
+	DurationSeconds float64    `json:"duration_seconds"`
+	Reason          string     `json:"reason"`
+	WakeReason      string     `json:"wake_reason,omitempty"`
+	Active          bool       `json:"active"`
+}
 type Snapshot struct {
 	InstanceID         string        `json:"instance_id"`
 	Revision           uint64        `json:"revision"`
@@ -92,4 +102,5 @@ type Snapshot struct {
 	ObservationSeconds float64       `json:"observation_seconds"`
 	Nodes              []NodeView    `json:"nodes"`
 	Events             []Event       `json:"events"`
+	SleepRecords       []SleepRecord `json:"sleep_records"`
 }
