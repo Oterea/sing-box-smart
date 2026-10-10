@@ -4,6 +4,7 @@ import (
 	"context"
 	"sing-box-smart/internal/domain"
 	"sing-box-smart/internal/recovery"
+	"sing-box-smart/internal/scan"
 	"sing-box-smart/internal/score"
 	"sing-box-smart/internal/state"
 	"time"
@@ -75,6 +76,14 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 		}
 		return
 	}
+	if a.refresh.Active() {
+		for _, n := range a.store.Nodes {
+			if a.refresh.Pending(n.Info.ID) && !n.Plan.InFlight {
+				a.startProbe(ctx, n, string(a.refresh.Kind()))
+			}
+		}
+		return
+	}
 	if a.phase == "startup" && now.Sub(a.started) >= a.cfg.Startup && a.store.AllChecked() {
 		a.revision++
 		a.phase = "normal"
@@ -97,6 +106,25 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 			a.startProbe(ctx, n, reason)
 		}
 	}
+}
+
+func (a *App) finishRefresh(ctx context.Context, now time.Time) {
+	a.refresh.Reset()
+	a.revision++
+	a.store.Reclassify(a.current)
+	if a.store.AnyAvailable() {
+		a.phase = "normal"
+		a.store.Reschedule(now, a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
+		a.events.Record("phase", "恢复后的全量检查完成，恢复正常检查频率")
+	} else {
+		a.phase = "unavailable"
+		for _, n := range a.store.Nodes {
+			n.Plan.ClearRecovery()
+			n.Plan.NormalDue = now.Add(a.cfg.Recovery)
+		}
+		a.events.Record("unavailable", "恢复后的全量检查完成，但当前机场暂无可用节点，每 3 秒重试")
+	}
+	a.evaluate(ctx)
 }
 
 func (a *App) startProbe(ctx context.Context, n *state.Node, reason string) {
@@ -147,17 +175,22 @@ func (a *App) observe(ctx context.Context, o observation) {
 	wasCurrent := o.id == a.current
 	wasOrdinary := n.Tier == domain.TierOrdinary
 	signal := recovery.Signal{}
-	if a.phase != "startup" && reason == "normal" && !wasCurrent && wasOrdinary && n.Checks > 0 {
+	if a.phase != "startup" && a.phase != "refresh" && reason == "normal" && !wasCurrent && wasOrdinary && n.Checks > 0 {
 		signal = recovery.Detect(n.History, n.Last, o.probe, a.cfg.RecoveryDropRatio, a.cfg.RecoveryDropMinMS, a.cfg.RecoveryGoodMaxMS)
 	}
 	a.store.Record(o.id, o.probe)
 	a.revision++
 	changedTiers := a.store.Reclassify(a.current)
 	now := time.Now()
-	if signal.Kind == recovery.None && a.phase != "startup" && reason == "normal" && !wasCurrent && wasOrdinary && o.probe.Success && a.store.NearCandidate(o.id, 0.15) {
+	if signal.Kind == recovery.None && a.phase != "startup" && a.phase != "refresh" && reason == "normal" && !wasCurrent && wasOrdinary && o.probe.Success && a.store.NearCandidate(o.id, 0.15) {
 		signal = recovery.Signal{Kind: recovery.CandidateNear}
 	}
-	if reason == "recovery" {
+	if reason == string(scan.Resume) {
+		// A resume refresh is a separate observation cycle. It updates metrics,
+		// but does not start recovery review or reschedule the normal tiers one
+		// node at a time. The cycle is released only after every node replies.
+		a.refresh.Complete(o.id)
+	} else if reason == "recovery" {
 		next := a.cfg.Ordinary
 		if n.Tier == domain.TierCandidate {
 			next = a.cfg.Candidate
@@ -177,13 +210,15 @@ func (a *App) observe(ctx context.Context, o observation) {
 		n.Plan.ClearRecovery()
 		a.store.RescheduleNode(now, n, a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
 	}
-	for _, id := range changedTiers {
-		if id == o.id {
-			continue
-		}
-		other := a.store.ByID[id]
-		if other != nil && !other.Plan.InFlight && other.Plan.RecoveryStep == 0 {
-			a.store.RescheduleNode(now, other, a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
+	if reason != string(scan.Resume) {
+		for _, id := range changedTiers {
+			if id == o.id {
+				continue
+			}
+			other := a.store.ByID[id]
+			if other != nil && !other.Plan.InFlight && other.Plan.RecoveryStep == 0 {
+				a.store.RescheduleNode(now, other, a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
+			}
 		}
 	}
 	value, overflow := score.Display(n.Metrics)
@@ -195,6 +230,12 @@ func (a *App) observe(ctx context.Context, o observation) {
 	}
 	a.events.Trace("probe", "node", o.id, "reason", n.Plan.Reason, "success", o.probe.Success, "delay_ms", o.probe.DelayMS, "score", loggedScore, "score_overflow", overflow, "L", n.Metrics.L, "S", n.Metrics.S, "N", n.Metrics.N, "f", n.Metrics.F)
 	if !a.healthy {
+		return
+	}
+	if reason == string(scan.Resume) {
+		if a.refresh.Done() {
+			a.finishRefresh(ctx, now)
+		}
 		return
 	}
 	if a.phase != "startup" {

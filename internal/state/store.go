@@ -63,7 +63,7 @@ func (s *Store) Views(current, phase string) []domain.NodeView {
 		} else if n.Tier == domain.TierCandidate {
 			frequency = "30 秒"
 		}
-		if phase == "startup" {
+		if phase == "startup" || phase == "refresh" {
 			frequency = "连续检查"
 		}
 		if phase == "unavailable" {
@@ -150,6 +150,7 @@ func (s *Store) Reschedule(now time.Time, current string, currentEvery, candidat
 	for _, n := range s.Nodes {
 		d := schedule.DurationFor(n.Tier, current, n.Info.ID, currentEvery, candidateEvery, ordinaryEvery)
 		n.Plan.ClearRecovery()
+		n.Plan.Reason = ""
 		n.Plan.NormalDue = now.Add(d)
 		if n.Info.ID != current && n.Tier != domain.TierCurrent {
 			idx := seen[n.Tier]
@@ -162,5 +163,6 @@ func (s *Store) Reschedule(now time.Time, current string, currentEvery, candidat
 }
 
 func (s *Store) RescheduleNode(now time.Time, n *Node, current string, currentEvery, candidateEvery, ordinaryEvery time.Duration) {
+	n.Plan.Reason = ""
 	n.Plan.NormalDue = now.Add(schedule.DurationFor(n.Tier, current, n.Info.ID, currentEvery, candidateEvery, ordinaryEvery))
 }

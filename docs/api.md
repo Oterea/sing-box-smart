@@ -21,7 +21,7 @@ SSE 首条消息包含 `full:true` 和全部节点，后续 `full:false` 的 `no
 | `POST /api/control/manual` | `{}` | 开启手动选择；保持 sing-box 当前节点，继续检测和更新数据 |
 | `POST /api/control/recheck` | `{}` | 将当前组所有节点安排为到期；已有在途探测不重复启动 |
 | `POST /api/control/pause` | `{}` | 暂停新探测、丢弃旧结果、不再发起自动切换 |
-| `POST /api/control/resume` | `{}` | 继续检测并安排全组重新检查 |
+| `POST /api/control/resume` | `{}` | 继续检测；先并发检查当前组每个节点一次，全部完成后恢复分层调度并进行一次自动判断 |
 
 暂停不会撤销已经发出的 selector 写入；该写入仍可能完成并回读。启动阶段拒绝手动节点选择。
 

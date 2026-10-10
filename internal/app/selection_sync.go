@@ -110,7 +110,7 @@ func (a *App) setCurrentNode(id string) {
 	}
 	a.current = id
 	a.store.Reclassify(id)
-	if a.phase != "startup" {
+	if a.phase != "startup" && a.phase != "refresh" {
 		a.store.Reschedule(time.Now(), id, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
 	}
 	a.revision++

@@ -11,6 +11,7 @@ import (
 	"sing-box-smart/internal/gateway"
 	"sing-box-smart/internal/probe"
 	"sing-box-smart/internal/recovery"
+	"sing-box-smart/internal/scan"
 	"sing-box-smart/internal/state"
 	"sing-box-smart/internal/switching"
 	"time"
@@ -57,7 +58,7 @@ type App struct {
 	switchBusy, healthy, healthBusy        bool
 	selectionSyncBusy                      bool
 	paused                                 bool
-	pausedAt                               time.Time
+	refresh                                scan.Cycle
 	started, lastHealth, lastSelectionSync time.Time
 	generation                             int
 	revision                               uint64
@@ -89,6 +90,7 @@ func (a *App) reset(airport domain.Airport) {
 		a.probeCancel()
 	}
 	a.probeCtx, a.probeCancel = context.WithCancel(a.rootCtx)
+	a.refresh.Reset()
 	a.airport = airport
 	a.store = state.New(airport.Nodes, a.cfg.HistoryLimit)
 	a.generation++
