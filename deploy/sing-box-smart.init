@@ -10,8 +10,7 @@ start_service() {
     [ -r "$CONF" ] || return 1
     . "$CONF"
     mkdir -p "$LOG_DIR"
-    procd_open_instance
-    procd_set_param command /usr/bin/sing-box-smart \
+    set -- /usr/bin/sing-box-smart \
         -mode real \
         -settings /etc/sing-box-smart/connection.json \
         -api "$API" \
@@ -19,11 +18,19 @@ start_service() {
         -pins "$PINS" \
         -test-url "$TEST_URL" \
         -listen "$LISTEN" \
-        -log-dir "$LOG_DIR" \
-        -grpc "$GRPC_ADDR" \
-        -grpc-secret "$GRPC_SECRET" \
-        -sleep-monitor "$SLEEP_MONITOR" \
-        -sleep-idle "$SLEEP_IDLE"
+        -log-dir "$LOG_DIR"
+    # Keep older /etc/sing-box-smart.conf files compatible.  Passing an empty
+    # value to a boolean Go flag can accidentally enable sleep monitoring.
+    if [ "${SLEEP_MONITOR:-0}" = "1" ] || [ "${SLEEP_MONITOR:-0}" = "true" ]; then
+        [ -n "${GRPC_ADDR:-}" ] || return 1
+        set -- "$@" \
+            -grpc "$GRPC_ADDR" \
+            -grpc-secret "${GRPC_SECRET:-}" \
+            -sleep-monitor=true \
+            -sleep-idle "${SLEEP_IDLE:-10m}"
+    fi
+    procd_open_instance
+    procd_set_param command "$@"
     procd_set_param respawn 3600 5 0
     procd_set_param stdout 1
     procd_set_param stderr 1
