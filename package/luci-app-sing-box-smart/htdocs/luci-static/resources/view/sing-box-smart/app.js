@@ -24,7 +24,7 @@ return view.extend({
   const monitorLink = E('a',{class:'sbs-open',href:window.location.protocol+'//'+window.location.hostname+':9797/',target:'_blank',rel:'noopener'},['打开监控面板']);
   const actions = [];
   const updateText = E('span',{class:'sbs-update-text'},['正在检查更新…']);
-  const updateButton = E('button',{type:'button',class:'cbi-button sbs-update-button',disabled:true},['检查更新']);
+   const updateButton = E('button',{type:'button',class:'cbi-button sbs-update-button'},['检查更新']);
   const updateRow = E('div',{class:'sbs-update-row'},[E('span',{},['面板更新']),updateText,updateButton]);
   const update = function(result) {
    const service = result && result[serviceName];
@@ -43,7 +43,9 @@ return view.extend({
    actions.forEach(b => b.disabled = value);
    auto.disabled = value;
    autoTrack.disabled = value;
-   updateButton.disabled = value || updateButton.dataset.available !== 'yes';
+   // Checking for updates is always available; service actions must not turn
+   // this button into a misleading disabled control.
+   updateButton.disabled = updating;
   };
   const readUpdate = function() {
    return fs.exec(updateCheckPath,[]).then(function(r) {
@@ -53,11 +55,11 @@ return view.extend({
     updateText.classList.toggle('is-available',Boolean(result.available));
     updateButton.dataset.available = result.available ? 'yes' : 'no';
     updateButton.textContent = result.available ? '立即更新' : '检查更新';
-    updateButton.disabled = !result.available;
+    updateButton.disabled = updating;
    }).catch(function() {
     updateText.textContent = '暂时无法检查';
     updateButton.dataset.available = 'no';
-    updateButton.disabled = true;
+    updateButton.disabled = updating;
    });
   };
   const showUpdateStatus = function(result) {
@@ -88,7 +90,12 @@ return view.extend({
    });
   };
   updateButton.addEventListener('click',function() {
-   if (busy || updateButton.dataset.available !== 'yes' || !window.confirm('更新 LuCI 面板和 smart 核心？现有配置会保留。')) return;
+   if (updating) return;
+   if (updateButton.dataset.available !== 'yes') {
+    updateText.textContent = '正在检查更新…';
+    return readUpdate();
+   }
+   if (!window.confirm('更新 LuCI 面板和 smart 核心？现有配置会保留。')) return;
    setBusy(true);
    updating = true;
    fs.exec(updateStartPath,[]).then(function(r) {
