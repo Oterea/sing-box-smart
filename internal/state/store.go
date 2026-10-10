@@ -63,7 +63,7 @@ func (s *Store) Views(current, phase string) []domain.NodeView {
 		} else if n.Tier == domain.TierCandidate {
 			frequency = "30 秒"
 		}
-		if phase == "startup" || phase == "refresh" {
+		if phase == "startup" {
 			frequency = "连续检查"
 		}
 		if phase == "unavailable" {

@@ -71,7 +71,7 @@ func (a *App) control(ctx context.Context, action, target string) error {
 	}
 	switch action {
 	case "node":
-		if a.phase == "startup" || a.phase == "refresh" {
+		if a.phase == "startup" {
 			return fmt.Errorf("启动检查尚未结束")
 		}
 		if a.store.ByID[target] == nil {

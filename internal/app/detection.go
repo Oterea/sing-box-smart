@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"sing-box-smart/internal/scan"
 	"time"
 )
 
@@ -16,7 +15,6 @@ func (a *App) pauseDetection() {
 	a.revision++
 	a.generation++
 	a.probeCancel()
-	a.refresh.Reset()
 	for _, n := range a.store.Nodes {
 		n.Plan.InFlight = false
 		n.Plan.ClearRecovery()
@@ -35,17 +33,18 @@ func (a *App) resumeDetection() {
 	a.paused = false
 	a.revision++
 	now := time.Now()
+	a.started = now
+	a.phase = "startup"
+	a.resumeWindow = true
 	ids := make([]string, 0, len(a.store.Nodes))
+	for _, n := range a.store.Nodes {
+		ids = append(ids, n.Info.ID)
+	}
+	a.observeWindow.Begin(a.cfg.Resume, ids, now)
 	for _, n := range a.store.Nodes {
 		n.Plan.InFlight = false
 		n.Plan.ClearRecovery()
 		n.Plan.NormalDue = time.Time{}
-		ids = append(ids, n.Info.ID)
 	}
-	a.refresh.Begin(scan.Resume, ids, now)
-	a.phase = "refresh"
-	a.events.Record("manual", "继续检测，先快速检查当前机场全部节点，完成后恢复正常调度")
-	if !a.refresh.Active() {
-		a.finishRefresh(a.rootCtx, now)
-	}
+	a.events.Record("manual", "继续检测，开始约 5 秒快速观察，期间不自动切换")
 }

@@ -9,9 +9,9 @@ import (
 	"sing-box-smart/internal/domain"
 	"sing-box-smart/internal/events"
 	"sing-box-smart/internal/gateway"
+	"sing-box-smart/internal/observewindow"
 	"sing-box-smart/internal/probe"
 	"sing-box-smart/internal/recovery"
-	"sing-box-smart/internal/scan"
 	"sing-box-smart/internal/state"
 	"sing-box-smart/internal/switching"
 	"time"
@@ -58,7 +58,8 @@ type App struct {
 	switchBusy, healthy, healthBusy        bool
 	selectionSyncBusy                      bool
 	paused                                 bool
-	refresh                                scan.Cycle
+	resumeWindow                           bool
+	observeWindow                          observewindow.Window
 	started, lastHealth, lastSelectionSync time.Time
 	generation                             int
 	revision                               uint64
@@ -90,12 +91,18 @@ func (a *App) reset(airport domain.Airport) {
 		a.probeCancel()
 	}
 	a.probeCtx, a.probeCancel = context.WithCancel(a.rootCtx)
-	a.refresh.Reset()
+	now := time.Now()
 	a.airport = airport
 	a.store = state.New(airport.Nodes, a.cfg.HistoryLimit)
+	ids := make([]string, 0, len(airport.Nodes))
+	for _, n := range airport.Nodes {
+		ids = append(ids, n.ID)
+	}
+	a.observeWindow.Begin(a.cfg.Startup, ids, now)
+	a.resumeWindow = false
 	a.generation++
 	a.revision++
-	a.started = time.Now()
+	a.started = now
 	a.phase = "startup"
 	a.current = ""
 	a.pending = ""
@@ -130,7 +137,7 @@ func (a *App) Control(ctx context.Context, action, target string) error {
 	return err
 }
 func (a *App) snapshot() domain.Snapshot {
-	return domain.Snapshot{Revision: a.revision, Paused: a.paused, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
+	return domain.Snapshot{Revision: a.revision, Paused: a.paused, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: time.Now(), StartupSeconds: a.cfg.Startup.Seconds(), ObservationSeconds: a.observeWindow.Duration().Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...)}
 }
 
 func recoveryLabel(kind recovery.Kind) string {
