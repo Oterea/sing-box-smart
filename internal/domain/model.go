@@ -62,9 +62,13 @@ type NodeView struct {
 	Tier              Tier       `json:"tier"`
 }
 type Event struct {
-	At      time.Time `json:"at"`
-	Kind    string    `json:"kind"`
-	Message string    `json:"message"`
+	At      time.Time      `json:"at"`
+	Kind    string         `json:"kind"`
+	Level   string         `json:"level,omitempty"`
+	Module  string         `json:"module,omitempty"`
+	Event   string         `json:"event,omitempty"`
+	Message string         `json:"message"`
+	Fields  map[string]any `json:"fields,omitempty"`
 }
 
 // SleepRecord describes one automatic sleep interval exposed by the API.

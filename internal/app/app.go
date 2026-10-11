@@ -166,7 +166,7 @@ func (a *App) snapshot() domain.Snapshot {
 		lastActivity = &v
 	}
 	now := time.Now()
-	return domain.Snapshot{Revision: a.revision, Paused: a.paused, Sleeping: a.sleeping, SleepEnabled: a.sleepController.Enabled(), LastActivity: lastActivity, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: now, StartupSeconds: a.cfg.Startup.Seconds(), ObservationSeconds: a.observeWindow.Duration().Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: append([]domain.Event{}, a.events.Recent...), SleepRecords: a.sleepRecords.Snapshot(now)}
+	return domain.Snapshot{Revision: a.revision, Paused: a.paused, Sleeping: a.sleeping, SleepEnabled: a.sleepController.Enabled(), LastActivity: lastActivity, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: now, StartupSeconds: a.cfg.Startup.Seconds(), ObservationSeconds: a.observeWindow.Duration().Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: a.events.RecentSnapshot(), SleepRecords: a.sleepRecords.Snapshot(now)}
 }
 
 func recoveryLabel(kind recovery.Kind) string {

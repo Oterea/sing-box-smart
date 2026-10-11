@@ -193,10 +193,10 @@ function render(s){
  const selected=current??{id:'',name:'等待首次选择',checks:0,history:[],score:null,delay_ms:null,last_success:false};
  syncRows($('selected-node'),[selected],best,s,true);
  syncRows($('nodes'),sorted,best,s,false);
- const kinds={startup:'启动',phase:'状态',switch:'切换',recovery:'复查',sleep:'睡眠',manual:'手动',decision:'判断',api:'接口',error:'错误',unavailable:'故障'};
+ const kinds={startup:'启动',phase:'状态',switch:'切换',recovery:'复查',sleep:'睡眠',manual:'手动',decision:'判断',api:'接口',error:'错误',unavailable:'故障',grpc:'gRPC'};
  const nextEventsKey=JSON.stringify(s.events);
  if(nextEventsKey!==eventsKey){
-  $('events').innerHTML=[...s.events].reverse().slice(0,8).map(e=>`<div class="event"><time>${time(e.at)}</time><span class="event-kind">${kinds[e.kind]??'记录'}</span><span class="event-text" title="${esc(e.message)}">${esc(e.message)}</span></div>`).join('');
+  $('events').innerHTML=[...s.events].reverse().slice(0,8).map(e=>{const kind=kinds[e.module||e.kind]??'记录';const event=e.event&&e.event!=='state'?` · ${e.event}`:'';const cls=(e.module||e.kind)==='sleep'?' sleep-event':'';return `<div class="event${cls}"><time>${time(e.at)}</time><span class="event-kind">${esc(kind)}</span><span class="event-event">${esc(event)}</span><span class="event-text" title="${esc(e.message)}">${esc(e.message)}</span></div>`;}).join('');
   eventsKey=nextEventsKey;
  }
  const sleepRecords=s.sleep_records??[];

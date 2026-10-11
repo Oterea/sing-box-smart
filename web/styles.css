@@ -93,7 +93,9 @@ progress::-moz-progress-bar{background:var(--green)}
 .event{display:flex;align-items:baseline;gap:10px;border-top:1px solid #edf0f3;padding:12px 0;font-size:12px;color:#56697a;min-width:0}
 .event time{font-size:11px;color:#8b98a5;font-variant-numeric:tabular-nums;flex-shrink:0}
 .event-kind{font-size:10px;color:#5e8373;flex-shrink:0}
+.event-event{font-size:10px;color:#8b98a5;flex-shrink:0}
 .event-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sleep-event{background:#f0f8f5;border-radius:7px;padding-left:8px;padding-right:8px}
 .empty{padding:28px;text-align:center;color:#83929e}
 footer{display:flex;justify-content:space-between;gap:16px;padding:24px 0 28px;color:#8796a2;font-size:11px}
 footer>span:first-child{display:flex;align-items:center;gap:7px}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sing-box-smart/internal/domain"
+	"sync"
 	"time"
 )
 
@@ -19,6 +20,7 @@ const (
 
 // Recorder is owned by the app loop. Trace writes detailed logs without flooding the UI.
 type Recorder struct {
+	mu       sync.Mutex
 	Logger   *log.Logger
 	MinLevel Level
 	Recent   []domain.Event
@@ -41,10 +43,6 @@ func (r *Recorder) Error(module, event, message string, fields map[string]any) {
 }
 
 func (r *Recorder) Record(kind, message string) {
-	r.Recent = append(r.Recent, domain.Event{At: time.Now(), Kind: kind, Message: message})
-	if len(r.Recent) > 100 {
-		r.Recent = r.Recent[len(r.Recent)-100:]
-	}
 	r.Log(levelForKind(kind), kind, "state", message, nil)
 }
 
@@ -63,10 +61,19 @@ func levelForKind(kind string) Level {
 
 // Log writes a structured JSON record. Fields keep their native JSON types.
 func (r *Recorder) Log(level Level, module, event, message string, fields map[string]any) {
-	if r.Logger == nil || level < r.MinLevel {
+	if level < r.MinLevel {
 		return
 	}
 	name := map[Level]string{Debug: "DEBUG", Info: "INFO", Warn: "WARN", Error: "ERROR"}[level]
+	r.mu.Lock()
+	r.Recent = append(r.Recent, domain.Event{At: time.Now(), Kind: module, Level: name, Module: module, Event: event, Message: message, Fields: fields})
+	if len(r.Recent) > 100 {
+		r.Recent = r.Recent[len(r.Recent)-100:]
+	}
+	r.mu.Unlock()
+	if r.Logger == nil {
+		return
+	}
 	entry := struct {
 		Time    time.Time      `json:"time"`
 		Level   string         `json:"level"`
@@ -80,6 +87,12 @@ func (r *Recorder) Log(level Level, module, event, message string, fields map[st
 		return
 	}
 	r.Logger.Print(string(b))
+}
+
+func (r *Recorder) RecentSnapshot() []domain.Event {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]domain.Event(nil), r.Recent...)
 }
 
 func (r *Recorder) Trace(message string, args ...any) {
