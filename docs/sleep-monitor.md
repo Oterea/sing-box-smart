@@ -9,12 +9,14 @@ sing-box gRPC SubscribeConnections
         ↓
 过滤 smart 自己的探测连接
         ↓
-判断用户是否产生新连接或流量
+统计最近窗口内的真实流量
         ↓
-空闲达到 sleep-idle
+最近 10 分钟低于 64 KB
         ↓
 暂停 smart 探测
         ↓ 用户重新产生连接
+出现 5 秒内至少 32 KB 流量
+        ↓
 恢复当前节点检查和 5 秒快速观察
 ```
 
@@ -26,10 +28,13 @@ gRPC 连接断开时不会被当作“没有用户活动”，smart 会保持现
 -grpc 127.0.0.1:9090 \
 -grpc-secret '你的 secret' \
 -sleep-monitor=true \
--sleep-idle=10m
+-sleep-idle=10m \
+-sleep-quiet-bytes=65536 \
+-sleep-wake-window=5s \
+-sleep-wake-bytes=32768
 ```
 
-OpenWrt 的配置文件对应 `GRPC_ADDR`、`GRPC_SECRET`、`SLEEP_MONITOR` 和 `SLEEP_IDLE`。
+OpenWrt 的配置文件对应 `GRPC_ADDR`、`GRPC_SECRET`、`SLEEP_MONITOR`、`SLEEP_IDLE`、`SLEEP_QUIET_BYTES`、`SLEEP_WAKE_WINDOW` 和 `SLEEP_WAKE_BYTES`。
 
 必须先在 sing-box 中启用原生 `api` service。gRPC 地址建议只监听软路由本机地址，并配置 secret。
 
@@ -44,7 +49,7 @@ OpenWrt 的配置文件对应 `GRPC_ADDR`、`GRPC_SECRET`、`SLEEP_MONITOR` 和 
 
 - `internal/activity`：定义与传输方式无关的活动事件。
 - `internal/grpcactivity`：连接 sing-box gRPC，断线自动重连。
-- `internal/sleep`：只负责空闲计时和 Active/Sleeping 状态转换。
+- `internal/sleep`：只负责流量窗口、阈值和 Active/Sleeping 状态转换。
 - `internal/app/sleep.go`：把状态转换接入现有探测事件循环。
 - `internal/singboxapi/daemon`：固定 sing-box 1.14 的 gRPC protobuf 定义。
 

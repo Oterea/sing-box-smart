@@ -26,8 +26,11 @@ start_service() {
         set -- "$@" \
             -grpc "$GRPC_ADDR" \
             -grpc-secret "${GRPC_SECRET:-}" \
-            -sleep-monitor=true \
-            -sleep-idle "${SLEEP_IDLE:-10m}"
+			-sleep-monitor=true \
+			-sleep-idle "${SLEEP_IDLE:-10m}" \
+			-sleep-quiet-bytes "${SLEEP_QUIET_BYTES:-65536}" \
+			-sleep-wake-window "${SLEEP_WAKE_WINDOW:-5s}" \
+			-sleep-wake-bytes "${SLEEP_WAKE_BYTES:-32768}"
     fi
     procd_open_instance
     procd_set_param command "$@"

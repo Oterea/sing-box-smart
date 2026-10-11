@@ -17,8 +17,7 @@ func (a *App) handleActivity(event activity.Event) {
 }
 
 func activityToSleepEvent(event activity.Event) sleep.Event {
-	active := event.Kind == activity.ConnectionNew || event.UplinkDelta > 0 || event.DownlinkDelta > 0
-	return sleep.Event{At: event.At, Probe: event.Probe, Active: active}
+	return sleep.Event{At: event.At, Probe: event.Probe, Active: event.Kind == activity.ConnectionNew, UplinkDelta: event.UplinkDelta, DownlinkDelta: event.DownlinkDelta}
 }
 
 func (a *App) enterSleep() {
@@ -44,8 +43,7 @@ func (a *App) wakeFromSleep() {
 	}
 	now := time.Now()
 	a.sleepRecords.End(now, "connection")
-	a.sleepController.Wake()
-	a.sleepController.Observe(sleep.Event{At: now, Active: true})
+	a.sleepController.WakeAt(now)
 	a.sleeping = false
 	a.probeCtx, a.probeCancel = context.WithCancel(a.rootCtx)
 	a.revision++

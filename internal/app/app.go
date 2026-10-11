@@ -87,7 +87,7 @@ func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.L
 		return nil, err
 	}
 	probeCtx, probeCancel := context.WithCancel(ctx)
-	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan error, 1), selection: make(chan selectionObservation, 1), activityEvents: make(chan activity.Event, 256), sleepController: sleep.New(sleep.Config{Enabled: cfg.SleepEnabled, IdleAfter: cfg.SleepIdleAfter}, time.Now()), sleepRecords: sleep.NewRecorder(3), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel}
+	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan error, 1), selection: make(chan selectionObservation, 1), activityEvents: make(chan activity.Event, 256), sleepController: sleep.New(sleep.Config{Enabled: cfg.SleepEnabled, IdleAfter: cfg.SleepIdleAfter, QuietBytes: cfg.SleepQuietBytes, WakeWindow: cfg.SleepWakeWindow, WakeBytes: cfg.SleepWakeBytes}, time.Now()), sleepRecords: sleep.NewRecorder(3), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel}
 	a.apiAddress, a.groupRoot, a.groupPattern = cfg.API, cfg.Root, cfg.Pattern
 	a.reset(airports[0])
 	return a, nil
@@ -111,7 +111,7 @@ func (a *App) reset(airport domain.Airport) {
 	a.observeWindow.Begin(a.cfg.Startup, ids, now)
 	a.resumeWindow = false
 	a.sleeping = false
-	a.sleepController = sleep.New(sleep.Config{Enabled: a.cfg.SleepEnabled, IdleAfter: a.cfg.SleepIdleAfter}, now)
+	a.sleepController = sleep.New(sleep.Config{Enabled: a.cfg.SleepEnabled, IdleAfter: a.cfg.SleepIdleAfter, QuietBytes: a.cfg.SleepQuietBytes, WakeWindow: a.cfg.SleepWakeWindow, WakeBytes: a.cfg.SleepWakeBytes}, now)
 	a.generation++
 	a.revision++
 	a.started = now

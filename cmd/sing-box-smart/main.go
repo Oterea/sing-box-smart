@@ -44,6 +44,9 @@ func run() error {
 	flag.StringVar(&cfg.GRPCSecret, "grpc-secret", cfg.GRPCSecret, "sing-box native gRPC API secret")
 	flag.BoolVar(&cfg.SleepEnabled, "sleep-monitor", cfg.SleepEnabled, "pause smart probes after prolonged inactivity")
 	flag.DurationVar(&cfg.SleepIdleAfter, "sleep-idle", cfg.SleepIdleAfter, "idle duration before smart enters sleep")
+	flag.Int64Var(&cfg.SleepQuietBytes, "sleep-quiet-bytes", cfg.SleepQuietBytes, "maximum real traffic in the sleep window")
+	flag.DurationVar(&cfg.SleepWakeWindow, "sleep-wake-window", cfg.SleepWakeWindow, "short traffic window used to wake smart")
+	flag.Int64Var(&cfg.SleepWakeBytes, "sleep-wake-bytes", cfg.SleepWakeBytes, "traffic required to wake smart")
 	flag.Parse()
 	if saved, err := settings.Load(cfg.SettingsPath); err != nil {
 		return err

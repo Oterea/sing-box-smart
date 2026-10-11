@@ -87,6 +87,7 @@ func (s *Source) consume(ctx context.Context, conn *grpc.ClientConn, sink chan<-
 	if err != nil {
 		return err
 	}
+	probeByID := make(map[string]bool)
 	for {
 		batch, err := stream.Recv()
 		if err != nil {
@@ -111,11 +112,17 @@ func (s *Source) consume(ctx context.Context, conn *grpc.ClientConn, sink chan<-
 				mapped.Inbound = c.GetInbound()
 				mapped.InboundType = c.GetInboundType()
 				mapped.Probe = s.isProbe(c.GetDomain(), c.GetDestination())
+				probeByID[event.GetId()] = mapped.Probe
+			} else {
+				mapped.Probe = probeByID[event.GetId()]
 			}
 			select {
 			case sink <- mapped:
 			case <-ctx.Done():
 				return ctx.Err()
+			}
+			if event.GetType() == daemon.ConnectionEventType_CONNECTION_EVENT_CLOSED {
+				delete(probeByID, event.GetId())
 			}
 		}
 	}
