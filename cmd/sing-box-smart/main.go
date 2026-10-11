@@ -87,7 +87,7 @@ func run() error {
 		if parsed, e := url.Parse(cfg.TestURL); e == nil {
 			probeHost = parsed.Hostname()
 		}
-		source := grpcactivity.New(grpcactivity.Config{Address: cfg.GRPCAddress, Secret: cfg.GRPCSecret, Interval: time.Second, ProbeDomains: []string{probeHost}})
+		source := grpcactivity.New(grpcactivity.Config{Address: cfg.GRPCAddress, Secret: cfg.GRPCSecret, Interval: time.Second, ProbeDomains: []string{probeHost}, ManagementPort: grpcactivity.PortFromListenAddress(cfg.Listen)})
 		go func() { _ = source.Run(ctx, service.ActivitySink()) }()
 	}
 	server := &http.Server{Addr: cfg.Listen, Handler: httpapi.Handler(service), ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second, BaseContext: func(net.Listener) context.Context { return ctx }}

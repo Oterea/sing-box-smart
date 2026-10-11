@@ -16,10 +16,11 @@ import (
 )
 
 type Config struct {
-	Address      string
-	Secret       string
-	Interval     time.Duration
-	ProbeDomains []string
+	Address        string
+	Secret         string
+	Interval       time.Duration
+	ProbeDomains   []string
+	ManagementPort uint16
 }
 
 type Source struct{ cfg Config }
@@ -88,6 +89,7 @@ func (s *Source) consume(ctx context.Context, conn *grpc.ClientConn, sink chan<-
 		return err
 	}
 	probeByID := make(map[string]bool)
+	managementByID := make(map[string]bool)
 	for {
 		batch, err := stream.Recv()
 		if err != nil {
@@ -112,9 +114,17 @@ func (s *Source) consume(ctx context.Context, conn *grpc.ClientConn, sink chan<-
 				mapped.Inbound = c.GetInbound()
 				mapped.InboundType = c.GetInboundType()
 				mapped.Probe = s.isProbe(c.GetDomain(), c.GetDestination())
+				managementByID[event.GetId()] = IsManagementDestination(c.GetDestination(), s.cfg.ManagementPort)
 				probeByID[event.GetId()] = mapped.Probe
 			} else {
 				mapped.Probe = probeByID[event.GetId()]
+			}
+			if c := managementByID[event.GetId()]; c {
+				if event.GetType() == daemon.ConnectionEventType_CONNECTION_EVENT_CLOSED {
+					delete(managementByID, event.GetId())
+					delete(probeByID, event.GetId())
+				}
+				continue
 			}
 			select {
 			case sink <- mapped:
@@ -123,6 +133,7 @@ func (s *Source) consume(ctx context.Context, conn *grpc.ClientConn, sink chan<-
 			}
 			if event.GetType() == daemon.ConnectionEventType_CONNECTION_EVENT_CLOSED {
 				delete(probeByID, event.GetId())
+				delete(managementByID, event.GetId())
 			}
 		}
 	}
