@@ -8,9 +8,8 @@ import (
 )
 
 // LogFile buffers text log lines for background file I/O. Writes block when
-// the 256-entry queue is full. The events.jsonl filename does not imply JSON.
-// The queue is drained before Close returns; the current file and one 5 MiB
-// rotated file are retained.
+// the 256-entry queue is full. The queue is drained before Close returns; the
+// current file and one 5 MiB rotated file are retained.
 type LogFile struct {
 	stateMu sync.Mutex
 	queueMu sync.Mutex

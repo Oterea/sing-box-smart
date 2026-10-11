@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"sing-box-smart/internal/activity"
+	"sing-box-smart/internal/events"
 	daemon "sing-box-smart/internal/singboxapi/daemon"
 )
 
@@ -21,6 +22,11 @@ type Config struct {
 	Interval       time.Duration
 	ProbeDomains   []string
 	ManagementPort uint16
+	Logger         Logger
+}
+
+type Logger interface {
+	Log(events.Level, string, string, string, map[string]any)
 }
 
 type Source struct{ cfg Config }
@@ -56,12 +62,19 @@ func (s *Source) Run(ctx context.Context, sink chan<- activity.Event) error {
 	}
 	backoff := time.Second
 	for {
+		s.log(events.Debug, "connect", "正在连接 sing-box gRPC API", map[string]any{"address": s.cfg.Address})
 		dialCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		conn, err := grpc.DialContext(dialCtx, s.cfg.Address, append(s.dialOptions(), grpc.WithBlock())...)
 		cancel()
 		if err == nil {
+			s.log(events.Info, "connected", "已连接 sing-box gRPC API", nil)
 			err = s.consume(ctx, conn, sink)
 			_ = conn.Close()
+			if ctx.Err() == nil {
+				s.log(events.Warn, "disconnected", "sing-box gRPC API 连接已断开，准备重连", map[string]any{"error": errString(err)})
+			}
+		} else {
+			s.log(events.Warn, "connect_failed", "连接 sing-box gRPC API 失败，准备重试", map[string]any{"error": err.Error(), "backoff_seconds": backoff.Seconds()})
 		}
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -78,8 +91,20 @@ func (s *Source) Run(ctx context.Context, sink chan<- activity.Event) error {
 		if backoff < 30*time.Second {
 			backoff *= 2
 		}
-		_ = err
 	}
+}
+
+func (s *Source) log(level events.Level, event, message string, fields map[string]any) {
+	if s.cfg.Logger != nil {
+		s.cfg.Logger.Log(level, "grpc", event, message, fields)
+	}
+}
+
+func errString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }
 
 func (s *Source) consume(ctx context.Context, conn *grpc.ClientConn, sink chan<- activity.Event) error {

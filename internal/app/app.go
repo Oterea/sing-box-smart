@@ -82,12 +82,16 @@ func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.L
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
+	minLevel, err := events.ParseLevel(cfg.LogLevel)
+	if err != nil {
+		return nil, err
+	}
 	airports, err := discovery.Load(ctx, c)
 	if err != nil {
 		return nil, err
 	}
 	probeCtx, probeCancel := context.WithCancel(ctx)
-	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan error, 1), selection: make(chan selectionObservation, 1), activityEvents: make(chan activity.Event, 256), sleepController: sleep.New(sleep.Config{Enabled: cfg.SleepEnabled, IdleAfter: cfg.SleepIdleAfter, QuietBytes: cfg.SleepQuietBytes, WakeWindow: cfg.SleepWakeWindow, WakeBytes: cfg.SleepWakeBytes}, time.Now()), sleepRecords: sleep.NewRecorder(3), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel}
+	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger, MinLevel: minLevel}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), selection: make(chan selectionObservation, 1), activityEvents: make(chan activity.Event, 256), sleepController: sleep.New(sleep.Config{Enabled: cfg.SleepEnabled, IdleAfter: cfg.SleepIdleAfter, QuietBytes: cfg.SleepQuietBytes, WakeWindow: cfg.SleepWakeWindow, WakeBytes: cfg.SleepWakeBytes}, time.Now()), sleepRecords: sleep.NewRecorder(3), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel}
 	a.apiAddress, a.groupRoot, a.groupPattern = cfg.API, cfg.Root, cfg.Pattern
 	a.reset(airports[0])
 	return a, nil
@@ -96,6 +100,13 @@ func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.L
 // ActivitySink is the single input for automatic sleep monitoring.  The
 // application event loop remains the owner of sleeping and probe scheduling.
 func (a *App) ActivitySink() chan<- activity.Event { return a.activityEvents }
+
+// Log exposes the app's shared structured logger to background adapters.
+// Adapters can add lifecycle records without owning a second log format.
+func (a *App) Log(level events.Level, module, event, message string, fields map[string]any) {
+	a.events.Log(level, module, event, message, fields)
+}
+
 func (a *App) reset(airport domain.Airport) {
 	if a.probeCancel != nil {
 		a.probeCancel()

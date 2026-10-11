@@ -39,6 +39,7 @@ func run() error {
 	flag.StringVar(&pins, "pins", "", "optional compatibility selectors: Name=selector,Name=selector")
 	flag.StringVar(&cfg.Listen, "listen", cfg.Listen, "HTTP listen address")
 	flag.StringVar(&cfg.LogDir, "log-dir", cfg.LogDir, "log directory")
+	flag.StringVar(&cfg.LogLevel, "log-level", cfg.LogLevel, "log level: debug, info, warn, error")
 	flag.StringVar(&cfg.SettingsPath, "settings", "connection.json", "persistent connection settings file")
 	flag.StringVar(&cfg.GRPCAddress, "grpc", cfg.GRPCAddress, "sing-box native gRPC API address; enables sleep monitoring when set")
 	flag.StringVar(&cfg.GRPCSecret, "grpc-secret", cfg.GRPCSecret, "sing-box native gRPC API secret")
@@ -68,7 +69,9 @@ func run() error {
 		return err
 	}
 	defer output.Close()
-	logger := log.New(output, "", log.LstdFlags|log.Lmicroseconds)
+	// The logger writes complete JSON records; timestamps are part of each
+	// record, so the standard logger must not prepend a second text prefix.
+	logger := log.New(output, "", 0)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	var client gateway.Client
@@ -87,7 +90,7 @@ func run() error {
 		if parsed, e := url.Parse(cfg.TestURL); e == nil {
 			probeHost = parsed.Hostname()
 		}
-		source := grpcactivity.New(grpcactivity.Config{Address: cfg.GRPCAddress, Secret: cfg.GRPCSecret, Interval: time.Second, ProbeDomains: []string{probeHost}, ManagementPort: grpcactivity.PortFromListenAddress(cfg.Listen)})
+		source := grpcactivity.New(grpcactivity.Config{Address: cfg.GRPCAddress, Secret: cfg.GRPCSecret, Interval: time.Second, ProbeDomains: []string{probeHost}, ManagementPort: grpcactivity.PortFromListenAddress(cfg.Listen), Logger: service})
 		go func() { _ = source.Run(ctx, service.ActivitySink()) }()
 	}
 	server := &http.Server{Addr: cfg.Listen, Handler: httpapi.Handler(service), ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second, BaseContext: func(net.Listener) context.Context { return ctx }}
