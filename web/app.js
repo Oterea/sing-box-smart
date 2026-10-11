@@ -196,7 +196,7 @@ function render(s){
  const kinds={startup:'启动',phase:'状态',switch:'切换',recovery:'复查',sleep:'睡眠',manual:'手动',decision:'判断',api:'接口',error:'错误',unavailable:'故障',grpc:'gRPC'};
  const nextEventsKey=JSON.stringify(s.events);
  if(nextEventsKey!==eventsKey){
-  $('events').innerHTML=[...s.events].reverse().slice(0,8).map(e=>{const kind=kinds[e.module||e.kind]??'记录';const event=e.event&&e.event!=='state'?` · ${e.event}`:'';const cls=(e.module||e.kind)==='sleep'?' sleep-event':'';return `<div class="event${cls}"><time>${time(e.at)}</time><span class="event-kind">${esc(kind)}</span><span class="event-event">${esc(event)}</span><span class="event-text" title="${esc(e.message)}">${esc(e.message)}</span></div>`;}).join('');
+  $('events').innerHTML=[...s.events].reverse().slice(0,8).map(e=>{const kind=kinds[e.module||e.kind]??'记录';const eventNames={connected:'已连接',disconnected:'已断开',connect_failed:'连接失败',connect:'连接中',entered:'进入睡眠',woke:'已唤醒'};const event=e.event&&e.event!=='state'?` · ${eventNames[e.event]||e.event}`:'';const level=['DEBUG','INFO','WARN','ERROR'].includes(e.level)?e.level:'INFO';const cls=(e.module||e.kind)==='sleep'?' sleep-event':'';return `<div class="event${cls}"><time>${time(e.at)}</time><span class="event-level level-${level.toLowerCase()}">${level}</span><span class="event-kind">${esc(kind)}</span><span class="event-event">${esc(event)}</span><span class="event-text" title="${esc(e.message)}">${esc(e.message)}</span></div>`;}).join('');
   eventsKey=nextEventsKey;
  }
  const sleepRecords=s.sleep_records??[];
