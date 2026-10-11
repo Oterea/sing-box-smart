@@ -208,7 +208,8 @@ function render(s){
    const minutes=Math.floor(duration/60), seconds=Math.floor(duration%60);
    const elapsed=minutes?`${minutes} 分钟${seconds?` ${seconds} 秒`:''}`:`${seconds} 秒`;
    const range=record.active?`${time(record.started_at)} 开始`:`${time(record.started_at)}–${time(record.ended_at)}`;
-   const label=record.active?`正在睡眠 · 已持续 ${elapsed}`:`持续 ${elapsed}`;
+   const wake=record.wake_source?` · 唤醒：${record.wake_source}`:'';
+   const label=record.active?`正在睡眠 · 已持续 ${elapsed}`:`持续 ${elapsed}${wake}`;
    return `<div class="sleep-record"><span class="sleep-record-time">${esc(range)}</span><span class="sleep-record-state">${esc(label)}</span></div>`;
   }).join(''):'<div class="sleep-record-empty">暂无睡眠记录</div>';
   sleepRecordsKey=nextSleepRecordsKey;

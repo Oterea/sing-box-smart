@@ -74,6 +74,7 @@ type SleepRecord struct {
 	DurationSeconds float64    `json:"duration_seconds"`
 	Reason          string     `json:"reason"`
 	WakeReason      string     `json:"wake_reason,omitempty"`
+	WakeSource      string     `json:"wake_source,omitempty"`
 	Active          bool       `json:"active"`
 }
 type Snapshot struct {

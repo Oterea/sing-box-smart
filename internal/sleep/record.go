@@ -47,6 +47,12 @@ func (r *Recorder) Start(at time.Time, reason string) {
 // End closes the current interval. Ending without an active interval is a
 // no-op, which keeps wake paths safe when state changes race at a boundary.
 func (r *Recorder) End(at time.Time, wakeReason string) {
+	r.EndWithSource(at, wakeReason, "")
+}
+
+// EndWithSource closes the current interval and preserves the connection
+// that supplied enough real traffic to wake the monitor.
+func (r *Recorder) EndWithSource(at time.Time, wakeReason, wakeSource string) {
 	if r.active == nil {
 		return
 	}
@@ -60,6 +66,7 @@ func (r *Recorder) End(at time.Time, wakeReason string) {
 	record.EndedAt = &at
 	record.DurationSeconds = at.Sub(record.StartedAt).Seconds()
 	record.WakeReason = wakeReason
+	record.WakeSource = wakeSource
 	record.Active = false
 	r.records = append(r.records, record)
 	if len(r.records) > r.limit {

@@ -29,11 +29,11 @@ func TestAutomaticSleepStopsProbesAndUserActivityResumesObservation(t *testing.T
 	if records := a.sleepRecords.Snapshot(time.Now()); len(records) != 1 || !records[0].Active || records[0].Reason != "idle" {
 		t.Fatalf("sleep record was not started: %+v", records)
 	}
-	a.handleActivity(activity.Event{Kind: activity.ConnectionNew, At: time.Now(), DownlinkDelta: 32 * 1024})
+	a.handleActivity(activity.Event{Kind: activity.ConnectionNew, At: time.Now(), Domain: "example.com", Destination: "203.0.113.10:443", DownlinkDelta: 32 * 1024})
 	if a.sleeping || a.phase != "startup" || !a.resumeWindow {
 		t.Fatalf("activity did not start resume observation: sleeping=%v phase=%q resume=%v", a.sleeping, a.phase, a.resumeWindow)
 	}
-	if records := a.sleepRecords.Snapshot(time.Now()); len(records) != 1 || records[0].Active || records[0].EndedAt == nil || records[0].WakeReason != "connection" {
+	if records := a.sleepRecords.Snapshot(time.Now()); len(records) != 1 || records[0].Active || records[0].EndedAt == nil || records[0].WakeReason != "connection" || records[0].WakeSource != "example.com → 203.0.113.10:443" {
 		t.Fatalf("sleep record was not closed: %+v", records)
 	}
 }

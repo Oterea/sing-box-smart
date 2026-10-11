@@ -25,6 +25,17 @@ func TestRecorderKeepsOnlyLatestRecords(t *testing.T) {
 	}
 }
 
+func TestRecorderStoresWakeSource(t *testing.T) {
+	base := time.Date(2026, 10, 10, 0, 0, 0, 0, time.UTC)
+	r := NewRecorder(3)
+	r.Start(base, "idle")
+	r.EndWithSource(base.Add(time.Minute), "connection", "example.com → 203.0.113.10:443")
+	records := r.Snapshot(base.Add(2 * time.Minute))
+	if len(records) != 1 || records[0].WakeSource != "example.com → 203.0.113.10:443" {
+		t.Fatalf("unexpected wake source: %+v", records)
+	}
+}
+
 func TestRecorderActiveDurationAndDuplicateTransitions(t *testing.T) {
 	base := time.Date(2026, 10, 10, 0, 0, 0, 0, time.UTC)
 	r := NewRecorder(3)

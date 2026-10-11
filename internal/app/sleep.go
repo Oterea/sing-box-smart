@@ -2,8 +2,10 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"sing-box-smart/internal/activity"
 	"sing-box-smart/internal/sleep"
+	"strings"
 	"time"
 )
 
@@ -12,7 +14,7 @@ func (a *App) handleActivity(event activity.Event) {
 		return
 	}
 	if a.sleepController.Observe(activityToSleepEvent(event)) && a.sleeping {
-		a.wakeFromSleep()
+		a.wakeFromSleep(event)
 	}
 }
 
@@ -37,12 +39,13 @@ func (a *App) enterSleep() {
 	a.events.Record("sleep", "检测到长时间无用户活动，自动暂停节点检测")
 }
 
-func (a *App) wakeFromSleep() {
+func (a *App) wakeFromSleep(event activity.Event) {
 	if !a.sleeping {
 		return
 	}
 	now := time.Now()
-	a.sleepRecords.End(now, "connection")
+	source := activitySource(event)
+	a.sleepRecords.EndWithSource(now, "connection", source)
 	a.sleepController.WakeAt(now)
 	a.sleeping = false
 	a.probeCtx, a.probeCancel = context.WithCancel(a.rootCtx)
@@ -58,5 +61,28 @@ func (a *App) wakeFromSleep() {
 		n.Plan.NormalDue = time.Time{}
 	}
 	a.observeWindow.Begin(a.cfg.Resume, ids, now)
-	a.events.Record("sleep", "检测到用户活动，恢复检测并开始快速观察")
+	message := "检测到用户活动，恢复检测并开始快速观察"
+	if source != "" {
+		message = fmt.Sprintf("检测到用户活动（%s），恢复检测并开始快速观察", source)
+	}
+	a.events.Record("sleep", message)
+}
+
+// activitySource returns a compact, privacy-conscious label for the first
+// real connection that crossed the wake threshold. It intentionally excludes
+// URL paths and query strings because the gRPC connection event does not need
+// to expose them in the UI.
+func activitySource(event activity.Event) string {
+	domain := strings.TrimSpace(event.Domain)
+	destination := strings.TrimSpace(event.Destination)
+	switch {
+	case domain != "" && destination != "":
+		return domain + " → " + destination
+	case domain != "":
+		return domain
+	case destination != "":
+		return destination
+	default:
+		return ""
+	}
 }

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"sing-box-smart/internal/activity"
 	"sing-box-smart/internal/sleep"
 	"time"
 )
@@ -32,7 +33,7 @@ func (a *App) pauseDetection() {
 }
 func (a *App) resumeDetection() {
 	if a.sleeping {
-		a.wakeFromSleep()
+		a.wakeFromSleep(activity.Event{})
 		return
 	}
 	if !a.paused {
