@@ -45,6 +45,15 @@ test('无记录和无分数正确显示，最多保留20条，没有占位假数
  assert.doesNotMatch(html, /NaN|Infinity/);
 });
 
+test('超过一万的分数显示横杠，但历史柱仍按真实分数绘制', () => {
+ const state = {current_id:'other',api_healthy:true,phase:'normal'};
+ const row = context.nodeRow({id:'n',name:'节点',checks:1,score:10001,delay_ms:100,last_success:true,history:[]},100,state);
+ assert.match(row, /metric-cell tone-[^"]+">—<\/span>/);
+ const historyHtml = context.history([sample(10001)], 'score', 100);
+ assert.match(historyHtml, /height="36"/);
+ assert.match(historyHtml, /分数 —/);
+});
+
 test('当前两个数值共享相同字号，移除旧柱子的层叠样式', () => {
  const css = fs.readFileSync('web/styles.css', 'utf8');
  assert.match(css, /\.node-table \.check-count,.node-table \.metric-cell\{font-size:13px/);

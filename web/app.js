@@ -2,6 +2,9 @@ const $ = id => document.getElementById(id);
 let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
+// Large scores are useful internally for ranking, but are not meaningful in
+// the compact table. Keep the exact value in state and show a quiet marker.
+const scoreNum = value => value == null || !Number.isFinite(value) || value > 10000 ? '—' : Math.round(value).toString();
 function animateNumber(el, value, formatter=num) {
  const next=Number.isFinite(value)?Math.round(value):null;
  const prev=Number(el.dataset.value);
@@ -56,7 +59,7 @@ function history(samples, kind, best, motion=false) {
  const value=kind==='score'?s.score:s.delay_ms;
  const x=6+index*15;
   const newest=motion&&index===tail.length-1;
-  const title=time(s.at)+' · '+(kind==='score'?'分数 '+num(value):s.success?'实际延迟 '+num(value)+' ms':'失败：'+s.error)+(kind==='score'&&!s.success?' · 本次探测失败':'');
+  const title=time(s.at)+' · '+(kind==='score'?'分数 '+scoreNum(value):s.success?'实际延迟 '+num(value)+' ms':'失败：'+s.error)+(kind==='score'&&!s.success?' · 本次探测失败':'');
   let shape;
   if(!s.success){
    // A failed probe has no delay value. Use the same quiet solid marker for
@@ -95,7 +98,7 @@ function nodeRow(n,best,s) {
  const disabled=busy||Boolean(s.pending_id)||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
  const delayColor=n.checks&&!n.last_success?'bad':delayTone(n.delay_ms);
  const buttonText=n.id?n.name:'等待首次选择';
- return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}">${esc(buttonText)}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${n.score_overflow?'∞':num(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td></tr>`;
+ return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}">${esc(buttonText)}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${scoreNum(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td></tr>`;
 }
 function patchRow(row,n,best,s,selected=false) {
  const current=Boolean(n.id)&&n.id===s.current_id;
@@ -108,7 +111,7 @@ function patchRow(row,n,best,s,selected=false) {
  button.className=`node-choice tier-${nodeTier(n,s)}${current?' selected':''}`;
  if(n.id)button.dataset.node=n.id;else delete button.dataset.node;
  animateNumber(row.cells[1].firstElementChild,n.checks);
- animateNumber(row.cells[2].firstElementChild,n.score_overflow?null:n.score,v=>n.score_overflow?'∞':num(v));
+ animateNumber(row.cells[2].firstElementChild,n.score_overflow?null:n.score,scoreNum);
  row.cells[2].firstElementChild.className=`metric-cell tone-${tone(n.score,best)}`;
  const delayColor=n.checks&&!n.last_success?'bad':delayTone(n.delay_ms);
  if(n.delay_ms!=null)animateNumber(row.cells[3].firstElementChild,n.delay_ms);else{row.cells[3].firstElementChild.textContent=n.checks?'失败':'—';delete row.cells[3].firstElementChild.dataset.value;}
