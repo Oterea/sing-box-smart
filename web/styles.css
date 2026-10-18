@@ -324,11 +324,13 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .legend i.tier-ordinary{background:#e6ebef}
 .legend i.tier-recovery{background:#fff0c6}
 
-/* Numeric backgrounds wrap their text; the table cell centers each block.
-   Charts retain their own height independently of these text controls. */
+/* Keep the three numeric cells on one visual axis with the node control and charts. */
+.node-table .node-choice,
+.node-table .check-count,
+.node-table .metric-cell,
 .node-table .history-chart{height:40px;min-height:40px}
 .node-table .check-count,
-.node-table .metric-cell{display:inline-block;vertical-align:middle;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:8px;background:#edf3f5;box-shadow:none}
+.node-table .metric-cell{display:flex;align-items:center;justify-content:center;padding:0 8px;background:#edf3f5;box-shadow:none}
 .node-table .check-count{color:#536a7b}
 .node-table .metric-cell.tone-good{background:#e1f4eb}
 .node-table .metric-cell.tone-medium{background:#fff3d1}

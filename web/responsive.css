@@ -13,7 +13,6 @@
   --ui-control-y: clamp(7px, .7vw, 10px);
   --ui-control-x: clamp(10px, 1.12vw, 16px);
   --ui-row: clamp(2.125rem, 2.78vw, 2.5rem);
-  --ui-metric-pad: clamp(.375rem, .56vw, .5rem);
   --ui-cell-y: clamp(9px, .97vw, 14px);
   --ui-cell-x: clamp(7px, .83vw, 12px);
 }
@@ -51,19 +50,15 @@ header {height:auto;min-height:clamp(80px, 6.95vw, 100px);gap:var(--ui-space)}
 .node-table {min-width:clamp(41.25rem, calc(25.5375rem + 32.74vw), 55rem)}
 .node-table .col-node {width:clamp(9.375rem, calc(3.0875rem + 13.1vw), 14.875rem)}
 .node-table .col-action {width:clamp(4.375rem, calc(3.0875rem + 2.68vw), 5.5rem)}
-.node-table .col-score {width:clamp(4.125rem, calc(2.8375rem + 2.68vw), 5.25rem)}
+.node-table .col-score {width:clamp(4rem, calc(2.56875rem + 2.98vw), 5.25rem)}
 .node-table .col-delay {width:clamp(5rem, calc(3.85625rem + 2.38vw), 6rem)}
 .node-table th,.node-table td {padding:var(--ui-cell-y) var(--ui-cell-x)}
 .node-table th {font-size:var(--ui-small)}
 .node-table th:first-child,.node-table td:first-child {padding-left:var(--ui-pad-x)}
 .node-table th:last-child,.node-table td:last-child {padding-right:var(--ui-pad-x)}
-/* One line box and equal four-sided padding keep the four text controls
-   equally tall. Only node names fill their column; numeric blocks fit text. */
-.node-table .node-choice,.node-table .check-count,.node-table .metric-cell {
-  font-size:var(--ui-small);line-height:1.5;
-  padding:var(--ui-metric-pad);height:auto;min-height:0;
-}
-.node-table .history-chart {height:var(--ui-row);min-height:var(--ui-row)}
+.node-table .node-choice,.node-table .check-count,.node-table .metric-cell {font-size:var(--ui-small)}
+.node-table .node-choice,.node-table .check-count,.node-table .metric-cell,.node-table .history-chart {height:var(--ui-row);min-height:var(--ui-row)}
+.node-table .node-choice {padding:7px 9px}
 
 .api-settings>summary,.settings-group>summary,.api-settings label,.runtime-field>label {font-size:var(--ui-body)}
 .api-settings form {gap:var(--ui-space)}
