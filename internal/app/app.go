@@ -3,6 +3,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sing-box-smart/internal/activity"
 	"sing-box-smart/internal/config"
@@ -11,6 +12,7 @@ import (
 	"sing-box-smart/internal/events"
 	"sing-box-smart/internal/gateway"
 	"sing-box-smart/internal/observewindow"
+	"sing-box-smart/internal/preferences"
 	"sing-box-smart/internal/probe"
 	"sing-box-smart/internal/recovery"
 	"sing-box-smart/internal/sleep"
@@ -20,6 +22,7 @@ import (
 )
 
 type request struct {
+	settings       preferences.Settings
 	action, target string
 	root, pattern  string
 	client         gateway.Client
@@ -28,6 +31,7 @@ type request struct {
 	ctx            context.Context
 }
 type response struct {
+	config   config.Config
 	snapshot domain.Snapshot
 	err      error
 }
@@ -42,6 +46,8 @@ type changed struct {
 	result       switching.Result
 }
 type App struct {
+	activityCancel                         context.CancelFunc
+	activityDone                           chan struct{}
 	cfg                                    config.Config
 	apiAddress, groupRoot, groupPattern    string
 	client                                 gateway.Client
@@ -134,7 +140,7 @@ func (a *App) reset(airport domain.Airport) {
 	a.selectionInitialized = false
 	a.selectionEpoch++
 	a.pendingManual = false
-	a.events.Record("startup", airport.Name+"：开始约 10 秒启动检查，期间不选择节点")
+	a.events.Record("startup", fmt.Sprintf("%s：开始约 %.0f 秒启动检查，期间不选择节点", airport.Name, a.cfg.Startup.Seconds()))
 }
 func (a *App) request(ctx context.Context, r request) (response, error) {
 	r.ctx = ctx
@@ -166,7 +172,25 @@ func (a *App) snapshot() domain.Snapshot {
 		lastActivity = &v
 	}
 	now := time.Now()
-	return domain.Snapshot{Revision: a.revision, Paused: a.paused, Sleeping: a.sleeping, SleepEnabled: a.sleepController.Enabled(), LastActivity: lastActivity, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: now, StartupSeconds: a.cfg.Startup.Seconds(), ObservationSeconds: a.observeWindow.Duration().Seconds(), Nodes: a.store.Views(a.current, a.phase), Events: a.events.RecentSnapshot(), SleepRecords: a.sleepRecords.Snapshot(now)}
+	nodes := a.store.Views(a.current, a.phase)
+	for i := range nodes {
+		n := &nodes[i]
+		switch {
+		case a.phase == "startup":
+			n.Frequency = "连续检查"
+		case a.phase == "unavailable":
+			n.Frequency = a.cfg.Recovery.String() + "重试"
+		case n.Current:
+			n.Frequency = a.cfg.Current.String()
+		case n.RecoveryRemaining > 0:
+			n.Frequency = "恢复复查"
+		case n.Tier == domain.TierCandidate:
+			n.Frequency = a.cfg.Candidate.String()
+		default:
+			n.Frequency = a.cfg.Ordinary.String()
+		}
+	}
+	return domain.Snapshot{Settings: a.cfg.Preferences(), Revision: a.revision, Paused: a.paused, Sleeping: a.sleeping, SleepEnabled: a.sleepController.Enabled(), LastActivity: lastActivity, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: now, StartupSeconds: a.cfg.Startup.Seconds(), ObservationSeconds: a.observeWindow.Duration().Seconds(), Nodes: nodes, Events: a.events.RecentSnapshot(), SleepRecords: a.sleepRecords.Snapshot(now)}
 }
 
 func recoveryLabel(kind recovery.Kind) string {

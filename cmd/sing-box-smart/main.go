@@ -7,17 +7,18 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sing-box-smart/internal/app"
 	"sing-box-smart/internal/config"
 	"sing-box-smart/internal/demo"
 	"sing-box-smart/internal/events"
 	"sing-box-smart/internal/gateway"
-	"sing-box-smart/internal/grpcactivity"
 	"sing-box-smart/internal/httpapi"
+	"sing-box-smart/internal/preferences"
 	"sing-box-smart/internal/real"
+	"sing-box-smart/internal/serviceconfig"
 	"sing-box-smart/internal/settings"
 	"syscall"
 	"time"
@@ -30,6 +31,12 @@ func main() {
 	}
 }
 func run() error {
+	if len(os.Args) > 1 && os.Args[1] == "service-settings" {
+		if len(os.Args) != 3 {
+			return fmt.Errorf("需要 read 或 apply")
+		}
+		return serviceconfig.Command(os.Args[2], serviceconfig.Path, serviceconfig.Pending, "/etc/sing-box-smart.conf", os.Stdout)
+	}
 	cfg := config.Default()
 	var pins string
 	flag.StringVar(&cfg.Mode, "mode", cfg.Mode, "demo or real")
@@ -61,6 +68,27 @@ func run() error {
 		}
 		cfg.Pins = parsed
 	}
+	if cfg.SettingsPath != "" {
+		serviceSettings, err := serviceconfig.Load(filepath.Join(filepath.Dir(cfg.SettingsPath), "service.json"), serviceconfig.Settings{Listen: cfg.Listen, GRPCAddress: cfg.GRPCAddress, GRPCSecret: cfg.GRPCSecret, LogDir: cfg.LogDir})
+		if err != nil {
+			return fmt.Errorf("读取服务设置: %w", err)
+		}
+		cfg.Listen = serviceSettings.Listen
+		cfg.GRPCAddress = serviceSettings.GRPCAddress
+		cfg.GRPCSecret = serviceSettings.GRPCSecret
+		cfg.LogDir = serviceSettings.LogDir
+	}
+	if path := cfg.PreferencesPath(); path != "" {
+		if _, err := os.Stat(path); err == nil {
+			savedRuntime, err := preferences.Load(path, cfg.Preferences())
+			if err != nil {
+				return fmt.Errorf("读取运行设置: %w", err)
+			}
+			cfg.ApplyPreferences(savedRuntime)
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+	}
 	if err := cfg.Validate(); err != nil {
 		return err
 	}
@@ -85,14 +113,7 @@ func run() error {
 		return err
 	}
 	go service.Run(ctx)
-	if cfg.SleepEnabled && cfg.GRPCAddress != "" {
-		probeHost := ""
-		if parsed, e := url.Parse(cfg.TestURL); e == nil {
-			probeHost = parsed.Hostname()
-		}
-		source := grpcactivity.New(grpcactivity.Config{Address: cfg.GRPCAddress, Secret: cfg.GRPCSecret, Interval: time.Second, ProbeDomains: []string{probeHost}, ManagementPort: grpcactivity.PortFromListenAddress(cfg.Listen), Logger: service})
-		go func() { _ = source.Run(ctx, service.ActivitySink()) }()
-	}
+
 	server := &http.Server{Addr: cfg.Listen, Handler: httpapi.Handler(service), ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second, BaseContext: func(net.Listener) context.Context { return ctx }}
 	failures := make(chan error, 1)
 	go func() { failures <- server.ListenAndServe() }()

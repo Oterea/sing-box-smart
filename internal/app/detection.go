@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"sing-box-smart/internal/activity"
 	"sing-box-smart/internal/sleep"
 	"time"
@@ -33,7 +34,7 @@ func (a *App) pauseDetection() {
 }
 func (a *App) resumeDetection() {
 	if a.sleeping {
-		a.wakeFromSleep(activity.Event{})
+		a.wakeFromSleepWithReason(activity.Event{}, "manual")
 		return
 	}
 	if !a.paused {
@@ -57,5 +58,5 @@ func (a *App) resumeDetection() {
 		n.Plan.ClearRecovery()
 		n.Plan.NormalDue = time.Time{}
 	}
-	a.events.Record("manual", "继续检测，开始约 5 秒快速观察，期间不自动切换")
+	a.events.Record("manual", fmt.Sprintf("继续检测，开始约 %.0f 秒快速观察，期间不自动切换", a.cfg.Resume.Seconds()))
 }

@@ -151,7 +151,11 @@ func (c *Client) Airports(ctx context.Context) ([]domain.Airport, error) {
 	}
 	return out, nil
 }
+func (c *Client) SetTestURL(value string) { c.mu.Lock(); c.testURL = value; c.mu.Unlock() }
 func (c *Client) Probe(ctx context.Context, node string) (domain.Probe, error) {
+	c.mu.RLock()
+	testURL := c.testURL
+	c.mu.RUnlock()
 	timeout := 4 * time.Second
 	if d, ok := ctx.Deadline(); ok {
 		timeout = time.Until(d)
@@ -166,7 +170,7 @@ func (c *Client) Probe(ctx context.Context, node string) (domain.Probe, error) {
 	if innerTimeout < 500*time.Millisecond {
 		innerTimeout = 500 * time.Millisecond
 	}
-	q := url.Values{"url": {c.testURL}, "timeout": {strconv.FormatInt(innerTimeout.Milliseconds(), 10)}}
+	q := url.Values{"url": {testURL}, "timeout": {strconv.FormatInt(innerTimeout.Milliseconds(), 10)}}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint("/proxies/")+url.PathEscape(node)+"/delay?"+q.Encode(), nil)
 	if err != nil {
 		return domain.Probe{}, err

@@ -26,6 +26,7 @@ type Service interface {
 
 func Handler(service Service) http.Handler {
 	mux := http.NewServeMux()
+	registerSettings(mux, service)
 	hub := newSnapshotHub(service)
 	var nonce [16]byte
 	if _, err := rand.Read(nonce[:]); err != nil {

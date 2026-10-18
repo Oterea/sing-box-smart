@@ -19,7 +19,7 @@ func (a *App) handleActivity(event activity.Event) {
 }
 
 func activityToSleepEvent(event activity.Event) sleep.Event {
-	return sleep.Event{At: event.At, Probe: event.Probe, Active: event.Kind == activity.ConnectionNew, UplinkDelta: event.UplinkDelta, DownlinkDelta: event.DownlinkDelta}
+	return sleep.Event{At: event.At, ID: event.ID, Probe: event.Probe, Active: event.Kind == activity.ConnectionNew, UplinkDelta: event.UplinkDelta, DownlinkDelta: event.DownlinkDelta}
 }
 
 func (a *App) enterSleep() {
@@ -40,12 +40,15 @@ func (a *App) enterSleep() {
 }
 
 func (a *App) wakeFromSleep(event activity.Event) {
+	a.wakeFromSleepWithReason(event, "connection")
+}
+func (a *App) wakeFromSleepWithReason(event activity.Event, reason string) {
 	if !a.sleeping {
 		return
 	}
 	now := time.Now()
 	source := activitySource(event)
-	a.sleepRecords.EndWithSource(now, "connection", source)
+	a.sleepRecords.EndWithSource(now, reason, source)
 	a.sleepController.WakeAt(now)
 	a.sleeping = false
 	a.probeCtx, a.probeCancel = context.WithCancel(a.rootCtx)
@@ -64,6 +67,12 @@ func (a *App) wakeFromSleep(event activity.Event) {
 	message := "检测到用户活动，恢复检测并开始快速观察"
 	if source != "" {
 		message = fmt.Sprintf("检测到用户活动（%s），恢复检测并开始快速观察", source)
+	}
+	if reason == "settings" {
+		message = "已关闭自动睡眠，恢复检测并开始快速观察"
+	}
+	if reason == "manual" {
+		message = "手动继续检测，结束睡眠并开始快速观察"
 	}
 	a.events.Record("sleep", message)
 }

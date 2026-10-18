@@ -61,11 +61,12 @@ func levelForKind(kind string) Level {
 
 // Log writes a structured JSON record. Fields keep their native JSON types.
 func (r *Recorder) Log(level Level, module, event, message string, fields map[string]any) {
+	r.mu.Lock()
 	if level < r.MinLevel {
+		r.mu.Unlock()
 		return
 	}
 	name := map[Level]string{Debug: "DEBUG", Info: "INFO", Warn: "WARN", Error: "ERROR"}[level]
-	r.mu.Lock()
 	r.Recent = append(r.Recent, domain.Event{At: time.Now(), Kind: module, Level: name, Module: module, Event: event, Message: message, Fields: fields})
 	if len(r.Recent) > 100 {
 		r.Recent = r.Recent[len(r.Recent)-100:]
@@ -88,6 +89,8 @@ func (r *Recorder) Log(level Level, module, event, message string, fields map[st
 	}
 	r.Logger.Print(string(b))
 }
+
+func (r *Recorder) SetLevel(level Level) { r.mu.Lock(); r.MinLevel = level; r.mu.Unlock() }
 
 func (r *Recorder) RecentSnapshot() []domain.Event {
 	r.mu.Lock()

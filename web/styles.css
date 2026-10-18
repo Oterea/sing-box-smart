@@ -355,3 +355,17 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .selection-controls .button:hover{background:#e6ebef;color:#536a7b}
 .selection-controls .button.active{background:var(--blue);color:var(--blue-text);box-shadow:0 0 14px rgba(81,162,255,.35)}
 @media(max-width:700px){.selection-controls{gap:5px}.selection-controls .button{padding:6px 8px;font-size:11px;min-width:80px}}
+
+/* Runtime settings are compact, collapsed sections; help text is opt-in. */
+.runtime-settings #runtime-form {display:block;margin-top:16px}
+.settings-group {border-top:1px solid var(--line,#dce5eb);padding:14px 0}
+.settings-group>summary {cursor:pointer;font-weight:600}
+.runtime-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:18px}
+.runtime-field>label {display:block;margin-bottom:8px;font-size:14px}
+.runtime-field input:not([type=checkbox]),.runtime-field select {box-sizing:border-box;width:100%;padding:10px;border:1px solid #d5e0e7;border-radius:6px;background:#f1f5f7;color:#294355;font:inherit}
+.runtime-field input[type=checkbox] {width:20px;height:20px;accent-color:#51a2ff}
+.setting-help {margin-top:6px;color:#778b9b;font-size:12px}
+.setting-help>summary {cursor:pointer;font-weight:400;font-size:12px}
+.setting-help p {margin:6px 0;line-height:1.6}
+@media(max-width:900px){.runtime-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.runtime-grid{grid-template-columns:1fr}}

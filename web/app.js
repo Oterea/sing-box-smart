@@ -17,7 +17,7 @@ function animateNumber(el, value, formatter=num) {
 }
 const time = value => new Date(value).toLocaleTimeString('zh-CN', {hour12:false});
 const tone = (value,best) => value == null ? 'none' : value <= best*1.4 ? 'good' : value <= best*2.5 ? 'medium' : 'bad';
-const delayTone = value => value == null ? 'none' : value <= 200 ? 'good' : value <= 600 ? 'medium' : 'bad';
+const delayTone = value => value == null ? 'none' : value <= (state?.settings?.delay_green_ms??200) ? 'good' : value <= (state?.settings?.delay_yellow_ms??600) ? 'medium' : 'bad';
 const sampleKey = sample => JSON.stringify([sample.at,sample.success,sample.score,sample.delay_ms,sample.error]);
 function historyFrames(previous, next) {
  const oldList=previous??[], newList=next??[];
@@ -88,7 +88,7 @@ function nodeKey(n,best,s,selected=false) {
  // A changing best score matters only when it changes a visible color.
  // Including the raw best value would redraw every node's SVG on each update.
  const colors=(n.history??[]).slice(-20).map(sample=>tone(sample.score,best)).join(',');
- return JSON.stringify({id:n.id,name:n.name,tier:nodeTier(n,s),checks:n.checks,score:n.score,delay:n.delay_ms,overflow:n.score_overflow,last:n.last_success,current:selected||n.id===s.current_id,history:n.history,colors,rowColor:tone(n.score,best),busy,pending:s.pending_id,phase:s.phase,paused:s.paused,sleeping:s.sleeping,api:s.api_healthy,selection_mode:s.selection_mode,control_active:s.control_active});
+ return JSON.stringify({id:n.id,name:n.name,tier:nodeTier(n,s),checks:n.checks,score:n.score,delay:n.delay_ms,overflow:n.score_overflow,last:n.last_success,current:selected||n.id===s.current_id,history:n.history,delayColors:[s.settings?.delay_green_ms,s.settings?.delay_yellow_ms],colors,rowColor:tone(n.score,best),busy,pending:s.pending_id,phase:s.phase,paused:s.paused,sleeping:s.sleeping,api:s.api_healthy,selection_mode:s.selection_mode,control_active:s.control_active});
 }
 function historyKey(n) {
  return JSON.stringify((n.history??[]).slice(-20).map(sample=>[sample.at,sample.success,sample.score,sample.delay_ms,sample.error]));
@@ -159,6 +159,15 @@ function render(s){
  if(s.instance_id)stateInstance=s.instance_id;
  if(Number.isFinite(Number(s.revision)))stateRevision=Number(s.revision);
  state=s;
+ if(typeof SmartSettings!=='undefined')SmartSettings.update(s.settings);
+ const prefs=s.settings;
+ if(prefs?.delay_green_ms){
+ if($('legend-green'))$('legend-green').textContent=`延迟 ≤${prefs.delay_green_ms}ms`;
+ if($('legend-yellow'))$('legend-yellow').textContent=`${prefs.delay_green_ms}–${prefs.delay_yellow_ms}ms`;
+ if($('legend-red'))$('legend-red').textContent=`>${prefs.delay_yellow_ms}ms`;
+ if($('switch-rule'))$('switch-rule').textContent=`${prefs.switch_ratio} 倍时切换`;
+ if($('frequency-note'))$('frequency-note').textContent=`当前 ${prefs.current_seconds}s · 候选 ${prefs.candidate_seconds}s · 普通 ${prefs.ordinary_seconds}s · 恢复复查逐步放慢`;
+ }
  $('detection-toggle').textContent=(s.paused||s.sleeping)?'继续检测':'暂停检测';
  $('detection-toggle').disabled=busy;
  $('recheck').disabled=busy||s.paused||s.sleeping;
@@ -187,16 +196,16 @@ function render(s){
  const current=s.nodes.find(n=>n.id===s.current_id);
  const elapsed=(new Date(s.now)-new Date(s.started_at))/1000;
  const observationSeconds=s.observation_seconds||s.startup_seconds;
- $('status-line').textContent=s.paused?'检测已暂停，分数和历史保留。':s.sleeping?'长时间无用户活动，已自动暂停检测；产生新连接后自动恢复。':!s.api_healthy?'管理接口不可用：暂停选择，不将接口错误记为节点失败。':s.control_active===false?`根策略组当前选择 ${s.root_selection||'尚未同步'}，smart 暂不自动切换。`:s.pending_id?'正在确认切换目标，读取接口结果后更新当前选择。':s.phase==='startup'?`启动/恢复观察中：${Math.min(elapsed,observationSeconds).toFixed(1)} / ${observationSeconds} 秒 · 观察结束后开始自动判断。`:s.phase==='unavailable'?'暂时全部不可用：每 3 秒重新检查，保留已有选择。':s.selection_mode==='manual'?'手动选择模式：继续检测并更新数据，smart 不会自动切换节点。':'';
+ $('status-line').textContent=s.paused?'检测已暂停，分数和历史保留。':s.sleeping?'长时间低流量，已自动暂停检测；达到唤醒流量阈值后自动恢复。':!s.api_healthy?'管理接口不可用：暂停选择，不将接口错误记为节点失败。':s.control_active===false?`根策略组当前选择 ${s.root_selection||'尚未同步'}，smart 暂不自动切换。`:s.pending_id?'正在确认切换目标，读取接口结果后更新当前选择。':s.phase==='startup'?`启动/恢复观察中：${Math.min(elapsed,observationSeconds).toFixed(1)} / ${observationSeconds} 秒 · 观察结束后开始自动判断。`:s.phase==='unavailable'?`暂时全部不可用：每 ${s.settings?.retry_seconds??3} 秒重新检查，保留已有选择。`:s.selection_mode==='manual'?'手动选择模式：继续检测并更新数据，smart 不会自动切换节点。':'';
  const valid=s.nodes.filter(n=>n.score!=null), best=valid.length?Math.min(...valid.map(n=>n.score)):Infinity;
  const sorted=[...s.nodes].sort((a,b)=>(a.score??Infinity)-(b.score??Infinity)||a.id.localeCompare(b.id));
  const selected=current??{id:'',name:'等待首次选择',checks:0,history:[],score:null,delay_ms:null,last_success:false};
  syncRows($('selected-node'),[selected],best,s,true);
  syncRows($('nodes'),sorted,best,s,false);
- const kinds={startup:'启动',phase:'状态',switch:'切换',recovery:'复查',sleep:'睡眠',manual:'手动',decision:'判断',api:'接口',error:'错误',unavailable:'故障',grpc:'gRPC'};
+ const kinds={startup:'启动',phase:'状态',switch:'切换',recovery:'复查',sleep:'睡眠',manual:'手动',decision:'判断',api:'接口',error:'错误',unavailable:'故障',grpc:'gRPC',settings:'设置'};
  const nextEventsKey=JSON.stringify(s.events);
  if(nextEventsKey!==eventsKey){
-  $('events').innerHTML=[...s.events].reverse().slice(0,8).map(e=>{const kind=kinds[e.module||e.kind]??'记录';const eventNames={connected:'已连接',disconnected:'已断开',connect_failed:'连接失败',connect:'连接中',entered:'进入睡眠',woke:'已唤醒'};const event=e.event&&e.event!=='state'?` · ${eventNames[e.event]||e.event}`:'';const level=['DEBUG','INFO','WARN','ERROR'].includes(e.level)?e.level:'INFO';const cls=(e.module||e.kind)==='sleep'?' sleep-event':'';return `<div class="event${cls}"><time>${time(e.at)}</time><span class="event-level level-${level.toLowerCase()}">${level}</span><span class="event-kind">${esc(kind)}</span><span class="event-event">${esc(event)}</span><span class="event-text" title="${esc(e.message)}">${esc(e.message)}</span></div>`;}).join('');
+  $('events').innerHTML=[...s.events].reverse().slice(0,8).map(e=>{const kind=kinds[e.module||e.kind]??'记录';const eventNames={connected:'已连接',disconnected:'已断开',connect_failed:'连接失败',connect:'连接中',entered:'进入睡眠',woke:'已唤醒',applied:'已应用'};const event=e.event&&e.event!=='state'?` · ${eventNames[e.event]||e.event}`:'';const level=['DEBUG','INFO','WARN','ERROR'].includes(e.level)?e.level:'INFO';const cls=(e.module||e.kind)==='sleep'?' sleep-event':'';return `<div class="event${cls}"><time>${time(e.at)}</time><span class="event-level level-${level.toLowerCase()}">${level}</span><span class="event-kind">${esc(kind)}</span><span class="event-event">${esc(event)}</span><span class="event-text" title="${esc(e.message)}">${esc(e.message)}</span></div>`;}).join('');
   eventsKey=nextEventsKey;
  }
  const sleepRecords=s.sleep_records??[];
@@ -208,7 +217,7 @@ function render(s){
    const minutes=Math.floor(duration/60), seconds=Math.floor(duration%60);
    const elapsed=minutes?`${minutes} 分钟${seconds?` ${seconds} 秒`:''}`:`${seconds} 秒`;
    const range=record.active?`${time(record.started_at)} 开始`:`${time(record.started_at)}–${time(record.ended_at)}`;
-   const wake=record.wake_source?` · 唤醒：${record.wake_source}`:'';
+   const wake=record.wake_source?` · 唤醒：${record.wake_source}`:record.wake_reason==='settings'?' · 关闭自动睡眠':record.wake_reason==='manual'?' · 手动继续':'';
    const label=record.active?`正在睡眠 · 已持续 ${elapsed}`:`持续 ${elapsed}${wake}`;
    return `<div class="sleep-record"><span class="sleep-record-time">${esc(range)}</span><span class="sleep-record-state">${esc(label)}</span></div>`;
   }).join(''):'<div class="sleep-record-empty">暂无睡眠记录</div>';

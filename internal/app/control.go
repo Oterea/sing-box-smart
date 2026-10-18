@@ -22,6 +22,9 @@ func (a *App) configureAPI(r request) error {
 	a.apiAddress = r.target
 	a.groupRoot, a.groupPattern = root, pattern
 	selected := a.airport.ID
+	if setter, ok := r.client.(interface{ SetTestURL(string) }); ok {
+		setter.SetTestURL(a.cfg.TestURL)
+	}
 	a.client = r.client
 	a.runner.Client = r.client
 	a.airports = r.airports

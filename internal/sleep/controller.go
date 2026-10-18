@@ -21,6 +21,7 @@ const (
 
 type Event struct {
 	At            time.Time
+	ID            string
 	Probe         bool
 	Active        bool
 	UplinkDelta   int64
@@ -36,6 +37,7 @@ type Controller struct {
 }
 
 type trafficSample struct {
+	id    string
 	at    time.Time
 	bytes int64
 }
@@ -51,9 +53,30 @@ func New(cfg Config, now time.Time) *Controller {
 		cfg.WakeWindow = 5 * time.Second
 	}
 	if cfg.WakeBytes <= 0 {
-		cfg.WakeBytes = 32 * 1024
+		cfg.WakeBytes = 1024 * 1024
 	}
 	return &Controller{cfg: cfg, windowStart: now, lastActivity: now}
+}
+
+// Reconfigure preserves accumulated traffic and sleep state when thresholds
+// change. Enabling monitoring begins a fresh idle observation window.
+func (c *Controller) Reconfigure(cfg Config, now time.Time) {
+	wasEnabled, oldIdle := c.cfg.Enabled, c.cfg.IdleAfter
+	c.cfg = New(cfg, now).cfg
+	if !wasEnabled && cfg.Enabled {
+		c.state = Active
+		c.windowStart = now
+		c.lastActivity = now
+		c.traffic = nil
+	}
+	if !cfg.Enabled {
+		c.state = Active
+		c.traffic = nil
+	}
+	if cfg.IdleAfter > oldIdle {
+		c.windowStart = now
+	}
+	c.prune(now)
 }
 
 func (c *Controller) Enabled() bool           { return c.cfg.Enabled }
@@ -62,7 +85,8 @@ func (c *Controller) LastActivity() time.Time { return c.lastActivity }
 
 // Observe records only non-probe traffic. A connection event without bytes is
 // deliberately ignored: idle keep-alive connections must not keep smart
-// awake, and the caller can wake quickly once a real traffic burst arrives.
+// awake. Wake traffic is accumulated per connection, so several small
+// background connections cannot wake smart merely by being added together.
 func (c *Controller) Observe(e Event) bool {
 	if !c.cfg.Enabled || e.Probe {
 		return false
@@ -75,10 +99,14 @@ func (c *Controller) Observe(e Event) bool {
 	if when.IsZero() {
 		when = time.Now()
 	}
-	c.traffic = append(c.traffic, trafficSample{at: when, bytes: bytes})
+	id := e.ID
+	if id == "" {
+		id = "unknown"
+	}
+	c.traffic = append(c.traffic, trafficSample{id: id, at: when, bytes: bytes})
 	c.prune(when)
 	c.lastActivity = when
-	if c.state == Sleeping && c.sumSince(when, c.cfg.WakeWindow) >= c.cfg.WakeBytes {
+	if c.state == Sleeping && c.maxConnectionSince(when, c.cfg.WakeWindow) >= c.cfg.WakeBytes {
 		c.state = Active
 		return true
 	}
@@ -139,4 +167,21 @@ func (c *Controller) sumSince(now time.Time, window time.Duration) int64 {
 		}
 	}
 	return total
+}
+
+func (c *Controller) maxConnectionSince(now time.Time, window time.Duration) int64 {
+	cutoff := now.Add(-window)
+	byConnection := make(map[string]int64)
+	for _, sample := range c.traffic {
+		if !sample.at.Before(cutoff) && !sample.at.After(now) {
+			byConnection[sample.id] += sample.bytes
+		}
+	}
+	var maximum int64
+	for _, total := range byConnection {
+		if total > maximum {
+			maximum = total
+		}
+	}
+	return maximum
 }

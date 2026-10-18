@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"sing-box-smart/internal/domain"
 	"sing-box-smart/internal/recovery"
 	"sing-box-smart/internal/score"
@@ -10,6 +11,8 @@ import (
 )
 
 func (a *App) Run(ctx context.Context) {
+	a.restartActivity(ctx)
+	defer a.stopActivity()
 	ticker := time.NewTicker(25 * time.Millisecond)
 	defer ticker.Stop()
 	for {
@@ -21,7 +24,11 @@ func (a *App) Run(ctx context.Context) {
 				r.reply <- response{err: r.ctx.Err()}
 				continue
 			}
-			if r.action == "snapshot" {
+			if r.action == "runtime-config" {
+				r.reply <- response{config: a.cfg}
+			} else if r.action == "runtime-settings" {
+				r.reply <- response{err: a.applySettings(ctx, r.settings)}
+			} else if r.action == "snapshot" {
 				r.reply <- response{snapshot: a.snapshot()}
 			} else if r.action == "api" {
 				r.reply <- response{err: a.configureAPI(r)}
@@ -67,9 +74,9 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 		if !a.healthBusy && now.Sub(a.lastHealth) >= a.cfg.Recovery {
 			a.healthBusy = true
 			a.lastHealth = now
-			client := a.client
+			client, timeout := a.client, a.cfg.Timeout
 			go func() {
-				c, cancel := context.WithTimeout(ctx, a.cfg.Timeout)
+				c, cancel := context.WithTimeout(ctx, timeout)
 				defer cancel()
 				err := client.Health(c)
 				select {
@@ -98,7 +105,7 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 			}
 		}
 		if resumeWindow {
-			a.events.Record("phase", "恢复后的 5 秒观察结束，开始按分数选择")
+			a.events.Record("phase", "恢复观察结束，开始按分数选择")
 		} else {
 			a.events.Record("phase", "启动观察结束，开始按分数选择")
 		}
@@ -186,7 +193,7 @@ func (a *App) observe(ctx context.Context, o observation) {
 		n.Plan.NormalDue = now.Add(a.cfg.Recovery)
 	} else if !wasCurrent && reason == "normal" && signal.Kind != recovery.None && wasOrdinary {
 		if n.Plan.StartRecovery(now, a.cfg.RecoverySteps) {
-			a.events.Record("recovery", n.Info.Name+"：发现"+recoveryLabel(signal.Kind)+"，3 秒后开始恢复复查")
+			a.events.Record("recovery", fmt.Sprintf("%s：发现%s，%.0f 秒后开始恢复复查", n.Info.Name, recoveryLabel(signal.Kind), a.cfg.RecoverySteps[0].Seconds()))
 		}
 	} else {
 		n.Plan.ClearRecovery()
@@ -220,7 +227,7 @@ func (a *App) observe(ctx context.Context, o observation) {
 				x.Plan.ClearRecovery()
 				x.Plan.NormalDue = now.Add(a.cfg.Recovery)
 			}
-			a.events.Record("unavailable", "当前机场暂时全部不可用，保留原选择，每 3 秒重试")
+			a.events.Record("unavailable", fmt.Sprintf("当前机场暂时全部不可用，保留原选择，每 %.0f 秒重试", a.cfg.Recovery.Seconds()))
 		}
 	}
 	if a.phase == "unavailable" && a.store.AnyAvailable() {

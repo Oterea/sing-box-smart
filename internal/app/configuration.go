@@ -22,7 +22,10 @@ func (a *App) prepareAPI(ctx context.Context, api string) (gateway.Client, []dom
 	if err != nil {
 		return nil, nil, "", err
 	}
-	cfg := a.cfg
+	cfg, err := a.runtimeConfig(ctx)
+	if err != nil {
+		return nil, nil, "", err
+	}
 	cfg.API, cfg.Root, cfg.Pattern = api, snapshot.GroupRoot, snapshot.GroupPattern
 	client := real.New(cfg)
 	airports, err := discovery.Load(ctx, client)
@@ -49,7 +52,10 @@ func (a *App) ConfigureConnection(ctx context.Context, api, root, pattern string
 	if err != nil {
 		return err
 	}
-	cfg := a.cfg
+	cfg, err := a.runtimeConfig(ctx)
+	if err != nil {
+		return err
+	}
 	cfg.API, cfg.Root, cfg.Pattern = api, root, pattern
 	client := real.New(cfg)
 	airports, err := discovery.Load(ctx, client)
@@ -83,7 +89,10 @@ func (a *App) ConfigureFilters(ctx context.Context, root, pattern string) error 
 	if err != nil {
 		return err
 	}
-	cfg := a.cfg
+	cfg, err := a.runtimeConfig(ctx)
+	if err != nil {
+		return err
+	}
 	cfg.Root = root
 	cfg.Pattern = pattern
 	cfg.API = snapshot.APIAddress

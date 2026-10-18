@@ -19,19 +19,20 @@ start_service() {
         -test-url "$TEST_URL" \
         -listen "$LISTEN" \
         -log-dir "$LOG_DIR"
-    # Keep older /etc/sing-box-smart.conf files compatible.  Passing an empty
-    # value to a boolean Go flag can accidentally enable sleep monitoring.
+    # Always pass transport and sleep defaults; the runtime settings file can
+    # enable monitoring later without changing startup flags.
+    sleep_enabled=false
     if [ "${SLEEP_MONITOR:-0}" = "1" ] || [ "${SLEEP_MONITOR:-0}" = "true" ]; then
-        [ -n "${GRPC_ADDR:-}" ] || return 1
-        set -- "$@" \
-            -grpc "$GRPC_ADDR" \
-            -grpc-secret "${GRPC_SECRET:-}" \
-			-sleep-monitor=true \
-			-sleep-idle "${SLEEP_IDLE:-10m}" \
-			-sleep-quiet-bytes "${SLEEP_QUIET_BYTES:-65536}" \
-			-sleep-wake-window "${SLEEP_WAKE_WINDOW:-5s}" \
-			-sleep-wake-bytes "${SLEEP_WAKE_BYTES:-32768}"
+        sleep_enabled=true
     fi
+    set -- "$@" \
+        -grpc "${GRPC_ADDR:-}" \
+        -grpc-secret "${GRPC_SECRET:-}" \
+        -sleep-monitor="$sleep_enabled" \
+        -sleep-idle "${SLEEP_IDLE:-10m}" \
+        -sleep-quiet-bytes "${SLEEP_QUIET_BYTES:-65536}" \
+        -sleep-wake-window "${SLEEP_WAKE_WINDOW:-5s}" \
+        -sleep-wake-bytes "${SLEEP_WAKE_BYTES:-1048576}"
     procd_open_instance
     procd_set_param command "$@"
     procd_set_param respawn 3600 5 0

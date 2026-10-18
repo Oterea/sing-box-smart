@@ -11,18 +11,22 @@ sing-box gRPC SubscribeConnections
         ↓
 统计最近窗口内的真实流量
         ↓
-最近 10 分钟低于 64 KB
+最近 10 分钟低于 64 KiB
         ↓
 暂停 smart 探测
         ↓ 用户重新产生连接
-出现 5 秒内至少 32 KB 流量
+单个连接在 5 秒内累计至少 1 MiB 流量
         ↓
 恢复当前节点检查和 5 秒快速观察
 ```
 
-gRPC 连接断开时不会被当作“没有用户活动”，smart 会保持现有探测策略并等待重连，避免 API 故障导致误睡眠。
+唤醒流量按连接 ID 分开累计。多个后台连接各自产生少量流量时不会合并触发唤醒；同一个连接持续传输达到阈值才会唤醒检测。没有连接 ID 的流量归入同一个未知连接。
+
+gRPC 断开时活动源会自动重连，不主动发送睡眠指令。空闲判定仍基于已收到的流量；断线期间无法完整统计用户活动，不能将缺失的统计当作已验证的无人使用。
 
 ## 配置
+
+推荐在 LuCI 服务设置中填写 gRPC 地址与密钥，在 9797 运行设置中启用并调整睡眠参数。下面是兼容的命令行初始值，面板保存值优先；详见 [面板设置](settings.md)。
 
 ```sh
 -grpc 127.0.0.1:9090 \
@@ -31,7 +35,7 @@ gRPC 连接断开时不会被当作“没有用户活动”，smart 会保持现
 -sleep-idle=10m \
 -sleep-quiet-bytes=65536 \
 -sleep-wake-window=5s \
--sleep-wake-bytes=32768
+-sleep-wake-bytes=1048576
 ```
 
 OpenWrt 的配置文件对应 `GRPC_ADDR`、`GRPC_SECRET`、`SLEEP_MONITOR`、`SLEEP_IDLE`、`SLEEP_QUIET_BYTES`、`SLEEP_WAKE_WINDOW` 和 `SLEEP_WAKE_BYTES`。

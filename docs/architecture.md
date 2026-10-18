@@ -24,6 +24,8 @@ sing-box gRPC → grpcactivity → activity → app → sleep controller → obs
 - `control.go`：配置应用、手动节点/策略组选择、重新检查、暂停/继续入口。
 - `internal/observewindow`：维护启动或恢复后的连续观察窗口，记录窗口时长和本轮尚未完成首次检查的节点。
 - `detection.go`：取消探测及恢复检测计划。
+- `preferences.go`：在事件循环内校验、保存并应用运行设置。
+- `activity_source.go`：启动、替换和取消 gRPC 活动源。
 - `switching.go`：选择比较、候选确认安排、写入前复核、异步写入和回读结果。
 - `selection_mode.go`：自动/手动模式控制；模式只影响切换，不影响探测和计分。
 - `selection_sync.go`：单实例读取根策略组和当前策略组的 `now`，处理外部 Dashboard 切换和运行状态重建。
@@ -44,8 +46,8 @@ HTTP 快照通过请求通道从事件循环取得。SSE 连接共享一个快�
 
 ## OpenWrt 服务和连接设置
 
-`internal/settings` 验证地址/正则并通过临时文件、Sync、rename 保存连接 JSON。完整连接设置通过一次 discovery 成功后再安装客户端和保存；`-settings` 内容优先覆盖 API/root/pattern；OpenWrt 使用 `/etc/sing-box-smart/connection.json`。服务启动配置是 `/etc/sing-box-smart.conf`。
+`internal/settings` 验证地址/正则并通过临时文件、Sync、rename 保存连接 JSON。完整连接设置通过一次 discovery 成功后再安装客户端和保存；`-settings` 内容优先覆盖 API/root/pattern；OpenWrt 使用 `/etc/sing-box-smart/connection.json`。服务启动配置是 `/etc/sing-box-smart.conf`，面板保存的 `runtime.json` 和 `service.json` 分别覆盖对应运行参数与服务参数。详见 [面板设置](settings.md)。
 
-LuCI JavaScript 通过 rpcd `file.exec` 调固定 init 命令；`service.list` 每 3 秒读取服务状态。开机自动启动状态在页面加载时读取，页面停止服务后仍可用。监控面板只支持修改连接和策略组过滤，不支持编辑探测间隔等全部检测参数。
+LuCI JavaScript 通过 rpcd `file.exec` 调固定 init 命令；`service.list` 每 3 秒读取服务状态。开机自动启动状态在页面加载时读取，页面停止服务后仍可用。监控面板提供连接设置与运行设置；运行设置可热更新检测、睡眠、日志级别和延迟颜色。LuCI 通过固定命令校验并保存服务设置，重启 smart 后生效；设置文件不作为 shell 脚本执行。
 
 `python3 scripts/build-ipk.py` 生成 ARM64 `aarch64_generic` 后端包和 `all` LuCI 包到 `dist/`，版本为脚本内的 0.2.0。这是构建步骤，修改源码或直接替换路由器二进制不会更新已有 ipk；使用前应重新构建。脚本和 SDK Makefile 都保留 `/etc/sing-box-smart/` 与 `/etc/sing-box-smart.conf`，升级时保留运行配置。请核对目标设备架构与 opkg 支持，不将 ipk 当 APK 使用。

@@ -4,6 +4,7 @@
 'require fs';
 'require poll';
 'require ui';
+'require sing-box-smart.settings as serviceSettings';
 const serviceName = 'sing-box-smart';
 const initPath = '/etc/init.d/' + serviceName;
 const updateCheckPath = '/usr/libexec/sing-box-smart-update-check';
@@ -11,7 +12,7 @@ const updateStartPath = '/usr/libexec/sing-box-smart-update-start';
 const updateStatusPath = '/usr/libexec/sing-box-smart-update-status';
 const list = rpc.declare({object:'service',method:'list',params:['name'],expect:{'':{}}});
 return view.extend({
- load: function() { return Promise.all([list(serviceName), fs.exec(initPath,['enabled'])]); },
+ load: function() { return Promise.all([list(serviceName), fs.exec(initPath,['enabled']), fs.exec('/usr/bin/sing-box-smart',['service-settings','read'])]); },
  render: function(data) {
   const style = E('link',{rel:'stylesheet',href:L.resource('sing-box-smart/style.css')});
   if (!document.querySelector('link[href*="sing-box-smart/style.css"]')) document.head.appendChild(style);
@@ -21,7 +22,12 @@ return view.extend({
   const auto = E('input',{type:'checkbox',checked:data[1].code === 0});
   const autoTrack = E('button',{type:'button',class:'sbs-switch-track',ariaLabel:'开机自动启动'});
   const autoLabel = E('div',{class:'sbs-switch'},[auto,autoTrack,E('span',{class:'sbs-switch-text'},['开机自动启动'])]);
+  let savedService={};
+  try {if(data[2].code!==0)throw Error(data[2].stderr||'读取服务设置失败');savedService=JSON.parse(data[2].stdout||'{}');}
+  catch(error){ui.addNotification(null,E('p',{},[error.message]));}
   const monitorLink = E('a',{class:'sbs-open',href:window.location.protocol+'//'+window.location.hostname+':9797/',target:'_blank',rel:'noopener'},['打开监控面板']);
+  function setMonitorAddress(settings){const port=(settings.listen||'').match(/:(\d+)$/);if(port)monitorLink.href=window.location.protocol+'//'+window.location.hostname+':'+port[1]+'/';}
+  setMonitorAddress(savedService);
   const actions = [];
   const updateText = E('span',{class:'sbs-update-text'},['正在检查更新…']);
    const updateButton = E('button',{type:'button',class:'cbi-button sbs-update-button'},['检查更新']);
@@ -141,6 +147,12 @@ return view.extend({
      E('div',{class:'sbs-divider'}),
      E('div',{class:'sbs-auto-row'},[autoLabel,monitorLink]),
      updateRow,
+     serviceSettings.render(savedService,function(settings){
+      if(busy)throw Error('服务正忙，请稍后重试');
+      setMonitorAddress(settings);
+      setBusy(true);
+      return fs.exec(initPath,['restart']).then(function(result){if(result.code!==0)throw Error(result.stderr||'重启失败，设置已保存');return list(serviceName).then(update);}).finally(function(){setBusy(false);});
+     },function(){return !busy && !updating;}),
      E('p',{class:'sbs-hint'},['开机后自动启动并监控服务。'])
     ]),
 

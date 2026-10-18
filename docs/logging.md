@@ -8,7 +8,7 @@ sing-box-smart 使用统一的 JSON Lines 日志。日志文件默认是 `logs/e
 {"time":"2026-10-11T10:00:00Z","level":"INFO","module":"sleep","event":"entered","message":"检测到长时间无用户活动，自动暂停节点检测","fields":{"idle_seconds":600}}
 ```
 
-日志级别通过 `-log-level` 设置，默认是 `info`：
+日志级别默认是 `info`。可在 9797 → 运行设置 → 日志中修改，保存后立即生效并持久保存；`-log-level` 设置没有面板配置时的初始级别：
 
 - `debug`：包含详细探测和诊断记录。
 - `info`：记录正常运行的重要状态变化。

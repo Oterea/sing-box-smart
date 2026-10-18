@@ -1,7 +1,10 @@
 // Package domain defines data exchanged between modules; it contains no I/O.
 package domain
 
-import "time"
+import (
+	"sing-box-smart/internal/preferences"
+	"time"
+)
 
 type Node struct {
 	ID   string `json:"id"`
@@ -82,30 +85,31 @@ type SleepRecord struct {
 	Active          bool       `json:"active"`
 }
 type Snapshot struct {
-	InstanceID         string        `json:"instance_id"`
-	Revision           uint64        `json:"revision"`
-	Paused             bool          `json:"paused"`
-	Sleeping           bool          `json:"sleeping"`
-	SleepEnabled       bool          `json:"sleep_enabled"`
-	LastActivity       *time.Time    `json:"last_activity,omitempty"`
-	Mode               string        `json:"mode"`
-	SelectionMode      SelectionMode `json:"selection_mode"`
-	RootSelection      string        `json:"root_selection"`
-	ControlActive      bool          `json:"control_active"`
-	Phase              string        `json:"phase"`
-	AirportID          string        `json:"airport_id"`
-	Airports           []Airport     `json:"airports"`
-	CurrentID          string        `json:"current_id"`
-	PendingID          string        `json:"pending_id"`
-	APIAddress         string        `json:"api_address"`
-	GroupRoot          string        `json:"group_root"`
-	GroupPattern       string        `json:"group_pattern"`
-	APIHealthy         bool          `json:"api_healthy"`
-	StartedAt          time.Time     `json:"started_at"`
-	Now                time.Time     `json:"now"`
-	StartupSeconds     float64       `json:"startup_seconds"`
-	ObservationSeconds float64       `json:"observation_seconds"`
-	Nodes              []NodeView    `json:"nodes"`
-	Events             []Event       `json:"events"`
-	SleepRecords       []SleepRecord `json:"sleep_records"`
+	Settings           preferences.Settings `json:"settings"`
+	InstanceID         string               `json:"instance_id"`
+	Revision           uint64               `json:"revision"`
+	Paused             bool                 `json:"paused"`
+	Sleeping           bool                 `json:"sleeping"`
+	SleepEnabled       bool                 `json:"sleep_enabled"`
+	LastActivity       *time.Time           `json:"last_activity,omitempty"`
+	Mode               string               `json:"mode"`
+	SelectionMode      SelectionMode        `json:"selection_mode"`
+	RootSelection      string               `json:"root_selection"`
+	ControlActive      bool                 `json:"control_active"`
+	Phase              string               `json:"phase"`
+	AirportID          string               `json:"airport_id"`
+	Airports           []Airport            `json:"airports"`
+	CurrentID          string               `json:"current_id"`
+	PendingID          string               `json:"pending_id"`
+	APIAddress         string               `json:"api_address"`
+	GroupRoot          string               `json:"group_root"`
+	GroupPattern       string               `json:"group_pattern"`
+	APIHealthy         bool                 `json:"api_healthy"`
+	StartedAt          time.Time            `json:"started_at"`
+	Now                time.Time            `json:"now"`
+	StartupSeconds     float64              `json:"startup_seconds"`
+	ObservationSeconds float64              `json:"observation_seconds"`
+	Nodes              []NodeView           `json:"nodes"`
+	Events             []Event              `json:"events"`
+	SleepRecords       []SleepRecord        `json:"sleep_records"`
 }
