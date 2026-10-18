@@ -306,11 +306,11 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 /* Share card content edges and keep labeled settings readable on mobile. */
 .api-settings{padding:20px 24px}
 .api-settings form{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:16px}
-.api-settings label{display:flex;flex-direction:column;gap:7px;font-size:12px;color:#617486;min-width:0}
+.api-settings label{display:flex;flex-direction:column;gap:7px;justify-content:space-between;font-size:12px;color:#617486;min-width:0}
 .api-settings input{width:100%;font:13px/1.5 inherit;padding:10px 12px}
 .settings-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:10px}
 .connection-state{display:flex;align-items:center;gap:9px;margin:14px 0 18px;padding:9px 11px;background:#f3f7f8;color:#617486;font-size:12px;width:max-content;max-width:100%}.connection-state #mode-note{color:#7c8c99}.connection-state .live-dot{flex:0 0 7px}
-.header-actions #detection-toggle,.header-actions #recheck{background:var(--blue);color:var(--blue-text);box-shadow:0 0 6px rgba(81,162,255,.18)}
+.header-actions #detection-toggle,.header-actions #recheck,.header-actions #settings-open{background:var(--blue);color:var(--blue-text);box-shadow:0 0 6px rgba(81,162,255,.18)}
 .header-actions #detection-toggle:disabled,.header-actions #recheck:disabled{cursor:default}
 @media(max-width:700px){.api-settings{padding:18px 16px}.api-settings form{grid-template-columns:1fr;gap:12px}.header-actions{flex-wrap:wrap}.connection-state{width:100%}.header-actions #detection-toggle{padding:8px 10px;font-size:11px}}
 
@@ -367,18 +367,21 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .settings-tab:focus-visible {outline:2px solid #51A2FF;outline-offset:3px}
 .api-settings [hidden] {display:none!important}
 .runtime-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px 18px;margin-top:18px}
-.runtime-field>label {display:block;margin-bottom:0;font-size:14px}
+/* Share title, help and control tracks across each row of settings. */
+.runtime-field:not(fieldset) {display:grid;grid-template-rows:auto 1fr auto;gap:6px;min-width:0}
+@supports(grid-template-rows:subgrid) {
+ .runtime-field:not(fieldset) {grid-template-rows:subgrid;grid-row:span 3}
+}
+.runtime-field>label {display:block;margin:0;font-size:14px;line-height:1.5}
 .runtime-field input:not([type=checkbox]):not([type=radio]),.runtime-field select {box-sizing:border-box;width:100%;padding:10px;border:1px solid #d5e0e7;border-radius:6px;background:#f1f5f7;color:#294355;font:inherit}
-.runtime-field input[type=checkbox] {width:20px;height:20px;accent-color:#51a2ff}
+.runtime-field input[type=checkbox] {width:20px;height:20px;min-height:20px;margin:0;padding:0;align-self:start;accent-color:#51a2ff}
 .api-settings .button,.api-settings .button:hover,.api-settings .button:active {box-shadow:none}
-.api-settings p.setting-help {margin:4px 0 10px;color:#778b9b;font-size:12px;line-height:1.6}
+.api-settings p.setting-help {margin:0;color:#778b9b;font-size:12px;line-height:1.6}
 @media(max-width:900px){.runtime-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.runtime-grid{grid-template-columns:1fr}}
 
 /* Settings live in the native modal top layer; forms retain their drafts. */
-.brand-area {display:flex;align-items:stretch;gap:18px;min-width:0}
-#settings-open {align-self:stretch;min-height:0;padding-block:0}
-#settings-open,#settings-open:hover,.settings-dialog .button,.settings-dialog .button:hover {box-shadow:none}
+.settings-dialog .button,.settings-dialog .button:hover {box-shadow:none}
 body.settings-open {overflow:hidden}
 .settings-dialog {width:min(1040px,calc(100% - 32px));max-width:none;height:min(760px,calc(100dvh - 32px));max-height:calc(100dvh - 32px);margin:auto;padding:24px;border:0;border-radius:0;background:#f6f8f9;color:var(--ink);overflow:hidden}
 .settings-dialog[open] {display:flex;flex-direction:column}
@@ -389,6 +392,7 @@ body.settings-open {overflow:hidden}
 .settings-dialog .settings-tabs {flex-shrink:0}
 .settings-dialog #settings-panel-connection,.settings-dialog #runtime-form {flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;margin:0}
 .runtime-field:is(fieldset) {border:0;padding:0;margin:0;min-width:0}
+.runtime-field:is(fieldset) .setting-help {margin:6px 0 10px}
 .runtime-field>legend {font-size:14px;padding:0}
 .setting-choices {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .api-settings .setting-choice {display:inline-flex;flex-direction:row;align-items:center;gap:0;margin:0;font-size:13px;cursor:pointer}
@@ -398,7 +402,6 @@ body.settings-open {overflow:hidden}
 .setting-choice input:focus-visible+span {outline:2px solid #51A2FF;outline-offset:3px}
 .setting-choice input:disabled+span {opacity:.45;cursor:default}
 @media(max-width:560px) {
- .brand-area {gap:10px}
  .settings-dialog {padding:16px;width:calc(100% - 20px);height:min(760px,calc(100dvh - 20px));max-height:calc(100dvh - 20px)}
  .settings-dialog .runtime-grid,.settings-dialog #api-form {grid-template-columns:1fr}
  .settings-dialog .runtime-grid {gap:18px}
