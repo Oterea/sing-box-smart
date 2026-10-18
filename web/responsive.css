@@ -62,7 +62,7 @@ header {height:auto;min-height:clamp(80px, 6.95vw, 100px);gap:var(--ui-space)}
 
 .settings-tab,.api-settings label,.runtime-field>label {font-size:var(--ui-body)}
 .api-settings form {gap:var(--ui-space)}
-.api-settings input,.runtime-field input:not([type=checkbox]),.runtime-field select {
+.api-settings input,.runtime-field input:not([type=checkbox]):not([type=radio]),.runtime-field select {
   font-family:inherit;font-size:var(--ui-body);line-height:1.5;
   padding:var(--ui-control-y) var(--ui-control-x);min-height:38px;
 }
@@ -87,6 +87,6 @@ footer {font-size:var(--ui-note);padding:var(--ui-space) 0}
   .connection-state {width:100%}
   .connection-state #mode-note {flex-basis:100%;padding-left:16px}
   /* Keep form text legible and avoid focus zoom in iOS Safari. */
-  .api-settings input,.runtime-field input:not([type=checkbox]),.runtime-field select {font-size:1rem;min-height:40px}
+  .api-settings input,.runtime-field input:not([type=checkbox]):not([type=radio]),.runtime-field select {font-size:1rem;min-height:40px}
   footer {flex-wrap:wrap}
 }

@@ -18,7 +18,7 @@ const SmartSettings = (() => {
  ['wake_bytes','唤醒流量（MiB）','number','单个连接在唤醒窗口达到此流量时恢复探测，不合并不同连接。',1/1048576,1024,1048576]
  ]],
  ['日志',[
- ['log_level','日志级别','select','INFO 记录日常运行；DEBUG 额外记录探测细节。日志自动轮转，不会无限保留。']
+ ['log_level','日志级别','radio','INFO 记录日常运行；DEBUG 额外记录探测细节。日志自动轮转，不会无限保留。']
  ]],
  ['显示',[
  ['delay_green_ms','绿色延迟上限（ms）','number','小于或等于此值显示绿色。仅影响显示，不改变评分。',1,59999],
@@ -55,11 +55,14 @@ const SmartSettings = (() => {
  tab.setAttribute('role','tab');tab.setAttribute('aria-selected','false');tab.setAttribute('aria-controls',section.id);tabs.append(tab);
  const grid=document.createElement('div');grid.className='runtime-grid';
  for(const [key,label,type,help,min,max,scale] of items){
- const field=document.createElement('div');field.className='runtime-field';
- const name=document.createElement('label');name.htmlFor='setting-'+key;name.textContent=label;field.append(name);
- const input=document.createElement(type==='select'?'select':'input');input.id='setting-'+key;input.name=key;
- if(type==='select'){for(const level of ['info','debug','warn','error']){const option=document.createElement('option');option.value=level;option.textContent=level.toUpperCase();input.append(option);}}
- else {input.type=type; if(type!=='checkbox')input.required=true;}
+ const field=document.createElement(type==='radio'?'fieldset':'div');field.className='runtime-field';
+ const name=document.createElement(type==='radio'?'legend':'label');if(type!=='radio')name.htmlFor='setting-'+key;name.textContent=label;field.append(name);
+ const input=document.createElement(type==='radio'?'div':'input');input.id='setting-'+key;
+ if(type==='radio'){
+ input.className='setting-choices';
+ for(const level of ['info','debug','warn','error']){const option=document.createElement('input');option.type='radio';option.name=key;option.value=level;option.required=true;const choice=document.createElement('label');choice.className='setting-choice';const text=document.createElement('span');text.textContent=level.toUpperCase();choice.append(option,text);input.append(choice);}
+ }
+ else {input.type=type;input.name=key;if(type!=='checkbox')input.required=true;}
  if(type==='number'){input.min=min;input.max=max;input.step=(scale||key.includes('ratio'))?'any':'1';}
  input.addEventListener('input',()=>{dirty=true;});
  const text=document.createElement('p');text.id='setting-help-'+key;text.className='setting-help';text.textContent=help;
@@ -81,14 +84,14 @@ const SmartSettings = (() => {
  form.addEventListener('submit',async event=>{
  event.preventDefault();if(saving||!current)return;
  const body={...current};
- for(const [key,,type,,,,scale] of fields){const input=byID('setting-'+key);body[key]=type==='checkbox'?input.checked:type==='number'?(scale?Math.round(Number(input.value)*scale):Number(input.value)):key==='recovery_steps_seconds'?input.value.split(/[,，\s]+/).filter(Boolean).map(Number):input.value;}
+ for(const [key,,type,,,,scale] of fields){const input=byID('setting-'+key);body[key]=type==='radio'?input.querySelector('input:checked')?.value:type==='checkbox'?input.checked:type==='number'?(scale?Math.round(Number(input.value)*scale):Number(input.value)):key==='recovery_steps_seconds'?input.value.split(/[,，\s]+/).filter(Boolean).map(Number):input.value;}
  saving=true;form.querySelectorAll('input,select,button').forEach(el=>el.disabled=true);
  try {const response=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const result=await response.json();if(!response.ok)throw Error(result.error||'保存失败');current=body;dirty=false;fill();toast('运行设置已生效');}
  catch(error){toast(error.message);}
  finally {saving=false;form.querySelectorAll('input,select,button').forEach(el=>el.disabled=false);}
  });
  }
- function fill(){if(!current)return;for(const [key,,type,,,,scale] of fields){const input=byID('setting-'+key);if(!input)continue;if(type==='checkbox')input.checked=current[key];else input.value=key==='recovery_steps_seconds'?current[key].join(','):type==='number'?current[key]/(scale||1):current[key];}}
+ function fill(){if(!current)return;for(const [key,,type,,,,scale] of fields){const input=byID('setting-'+key);if(!input)continue;if(type==='radio'){for(const option of input.querySelectorAll('input'))option.checked=option.value===current[key];}else if(type==='checkbox')input.checked=current[key];else input.value=key==='recovery_steps_seconds'?current[key].join(','):type==='number'?current[key]/(scale||1):current[key];}}
  function update(settings){if(!settings?.delay_green_ms)return;const changed=JSON.stringify(current)!==JSON.stringify(settings);current=settings;if(changed&&!dirty&&!saving)fill();}
  mount();return {update};
 })();
