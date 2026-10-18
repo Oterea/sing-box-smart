@@ -51,12 +51,27 @@ func (s *sequenceService) ConfigureConnection(context.Context, string, string, s
 }
 func (s *sequenceService) TestAPI(context.Context, string) error { return nil }
 
+// Observe delivery at the HTTP flush boundary, rather than snapshot creation.
+// Snapshot() returning does not imply the handler has written that snapshot.
+type deliveryRecorder struct {
+	*httptest.ResponseRecorder
+	delivered chan struct{}
+	once      sync.Once
+}
+
+func (r *deliveryRecorder) Flush() {
+	r.ResponseRecorder.Flush()
+	if strings.Contains(r.Body.String(), `"airport_id":"airport-b"`) {
+		r.once.Do(func() { close(r.delivered) })
+	}
+}
+
 func TestEventsSendRemovedNodesAndFullSnapshotOnAirportChange(t *testing.T) {
 	service := &sequenceService{done: make(chan struct{})}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	req := httptest.NewRequest("GET", "/api/events", nil).WithContext(ctx)
-	rec := httptest.NewRecorder()
+	rec := &deliveryRecorder{ResponseRecorder: httptest.NewRecorder(), delivered: make(chan struct{})}
 	finished := make(chan struct{})
 	go func() {
 		Handler(service).ServeHTTP(rec, req)
@@ -64,9 +79,9 @@ func TestEventsSendRemovedNodesAndFullSnapshotOnAirportChange(t *testing.T) {
 	}()
 
 	select {
-	case <-service.done:
-	case <-time.After(2 * time.Second):
-		t.Fatal("SSE did not produce three snapshots")
+	case <-rec.delivered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("SSE did not deliver the airport-change snapshot")
 	}
 	cancel()
 	select {
