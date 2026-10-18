@@ -6,10 +6,10 @@ return L.Class.extend({
   const form=E('div',{class:'sbs-service-settings'});
   const controls={};
   const fields=[
-   ['listen','监听地址','例如 0.0.0.0:9797；端口变更后请用新地址打开监控面板。'],
-   ['grpc_address','gRPC 地址','sing-box 原生 API 地址，供睡眠监控使用，例如 127.0.0.1:9090。'],
-   ['grpc_secret','gRPC 密钥','与 sing-box 原生 API 的密钥一致；未设置密钥时留空。'],
-   ['log_dir','日志目录','运行日志保存目录；自动轮转保留当前文件和一个旧文件。']
+   ['listen','监听地址','端口变更后，使用新地址打开监控面板。'],
+   ['grpc_address','gRPC 地址','睡眠监控使用的 sing-box 原生 API 地址。'],
+   ['grpc_secret','gRPC 密钥','与 sing-box 原生 API 一致，无密钥则留空。'],
+   ['log_dir','日志目录','自动轮转保留当前日志和一个旧文件。']
   ];
   fields.forEach(function(field){
    const input=E('input',{id:'sbs-service-'+field[0],'aria-describedby':'sbs-help-'+field[0],type:field[0]==='grpc_secret'?'password':'text',value:initial[field[0]]||'',autocomplete:'off',class:'cbi-input-text'});controls[field[0]]=input;
@@ -18,7 +18,7 @@ return L.Class.extend({
     E('p',{id:'sbs-help-'+field[0],class:'sbs-setting-help'},[field[2]]),input
    ]));
   });
-  const save=E('button',{type:'button',class:'cbi-button sbs-update-button'},['保存并重启']);
+  const save=E('button',{type:'button',class:'cbi-button sbs-button sbs-update-button sbs-settings-save'},['保存并重启']);
   save.addEventListener('click',function(){
    if(!canSave()){ui.addNotification(null,E('p',{},['服务正忙，请稍后保存。']));return;}
    const settings={};Object.keys(controls).forEach(k=>settings[k]=controls[k].value.trim());

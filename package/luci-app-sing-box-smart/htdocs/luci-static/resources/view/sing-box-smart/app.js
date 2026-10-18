@@ -24,13 +24,13 @@ return view.extend({
   let savedService={};
   try {if(data[2].code!==0)throw Error(data[2].stderr||'读取服务设置失败');savedService=JSON.parse(data[2].stdout||'{}');}
   catch(error){ui.addNotification(null,E('p',{},[error.message]));}
-  const monitorLink = E('a',{class:'sbs-open',href:window.location.protocol+'//'+window.location.hostname+':9797/',target:'_blank',rel:'noopener'},['打开监控面板']);
+  const monitorLink = E('a',{class:'sbs-button sbs-open',href:window.location.protocol+'//'+window.location.hostname+':9797/',target:'_blank',rel:'noopener'},['打开监控面板']);
   function setMonitorAddress(settings){const port=(settings.listen||'').match(/:(\d+)$/);if(port)monitorLink.href=window.location.protocol+'//'+window.location.hostname+':'+port[1]+'/';}
   setMonitorAddress(savedService);
   const actions = [];
   const updateText = E('span',{class:'sbs-update-text'},['正在检查更新…']);
-   const updateButton = E('button',{type:'button',class:'cbi-button sbs-update-button'},['检查更新']);
-  const updateRow = E('div',{class:'sbs-update-row'},[E('span',{},['面板更新']),updateText,updateButton]);
+  const updateButton = E('button',{type:'button',class:'cbi-button sbs-button sbs-update-button'},['检查更新']);
+  const updateRow = E('div',{class:'sbs-update-row'},[updateText,updateButton]);
   const update = function(result) {
    const service = result && result[serviceName];
    const instances = service && service.instances && typeof service.instances === 'object' ? service.instances : {};
@@ -122,7 +122,7 @@ return view.extend({
    .finally(function() { setBusy(false); });
   };
   ['启动','停止','重启'].forEach(function(label,i) {
-   actions.push(E('button',{class:'cbi-button sbs-action '+(['start','stop','restart'][i]),click:function(){return run(['start','stop','restart'][i]);}},[label]));
+   actions.push(E('button',{type:'button',class:'cbi-button sbs-button sbs-action '+(['start','stop','restart'][i]),click:function(){return run(['start','stop','restart'][i]);}},[label]));
   });
   auto.addEventListener('change', function() {
    if (busy) return;
@@ -141,7 +141,6 @@ return view.extend({
     E('section',{class:'sbs-card sbs-main-card'},[
      E('div',{class:'sbs-card-title'},[E('span',{},['服务控制']),statusLine]),
      E('div',{class:'sbs-actions'},actions),
-     E('div',{class:'sbs-divider'}),
      E('div',{class:'sbs-auto-row'},[autoLabel,monitorLink]),
      updateRow,
      serviceSettings.render(savedService,function(settings){
@@ -149,12 +148,9 @@ return view.extend({
       setMonitorAddress(settings);
       setBusy(true);
       return fs.exec(initPath,['restart']).then(function(result){if(result.code!==0)throw Error(result.stderr||'重启失败，设置已保存');return list(serviceName).then(update);}).finally(function(){setBusy(false);});
-     },function(){return !busy && !updating;}),
-     E('p',{class:'sbs-hint'},['开机后自动启动并监控服务。'])
+     },function(){return !busy && !updating;})
     ]),
-
-   ]),
-   E('div',{class:'sbs-note'},['API 地址、根策略组和匹配正则在 smart 面板中修改。'])
+   ])
   ]);
  },
  handleSave:null, handleSaveApply:null, handleReset:null
