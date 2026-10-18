@@ -37,6 +37,13 @@ write_status installing '正在安装 smart 核心' 65
 opkg install --force-reinstall "$tmp/core.ipk" || fail 'smart 核心安装失败'
 write_status installing '正在安装 LuCI 面板' 78
 opkg install --force-reinstall "$tmp/luci.ipk" || fail 'LuCI 面板安装失败'
+# opkg can return success after extraction errors. Verify the menu target and
+# every packaged frontend file before reporting a completed update.
+view_path="$(jsonfilter -i /usr/share/luci/menu.d/luci-app-sing-box-smart.json -e '@["admin/services/sing-box-smart"].action.path')"
+[ -n "$view_path" ] && [ -s "/www/luci-static/resources/view/$view_path.js" ] || fail 'LuCI 页面文件缺失，安装未完成'
+for asset in $(opkg files luci-app-sing-box-smart | sed -n '\|^/www/luci-static/resources/|p'); do
+    [ -s "$asset" ] || fail 'LuCI 资源文件缺失，安装未完成'
+done
 write_status restarting '正在重启服务' 90
 /etc/init.d/sing-box-smart restart || fail 'smart 服务重启失败'
 /etc/init.d/rpcd restart || fail 'LuCI 服务重启失败'

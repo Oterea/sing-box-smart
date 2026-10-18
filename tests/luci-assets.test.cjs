@@ -27,3 +27,24 @@ print(json.dumps(result))
  assert.ok(current.names.includes('www/luci-static/resources/sing-box-smart/v0_2_40/style.css'));
  assert.ok(current.names.filter(n=>n.startsWith('www/')).every(n=>!old.names.includes(n)));
 });
+
+test('IPK extraction can create files without implicitly creating missing directories',()=>{
+ const script=`
+import sys,io,tarfile,posixpath
+sys.path.insert(0,'scripts')
+from ipk_archive import archive
+names=['www/luci-static/resources/view/sing-box-smart/v0_2_41/app.js','www/luci-static/resources/sing-box-smart/v0_2_41/style.css']
+content=archive([(name,b'content',0o644) for name in names])
+known={'.'}
+with tarfile.open(fileobj=io.BytesIO(content)) as tar:
+ for entry in tar:
+  parent=posixpath.dirname(entry.name) or '.'
+  assert parent in known, (entry.name,'missing parent',parent)
+  if entry.isdir(): known.add(entry.name)
+  else:
+   assert entry.name in names
+   assert tar.extractfile(entry).read()==b'content'
+print('ok')
+`;
+ assert.equal(execFileSync('python3',['-c',script],{encoding:'utf8'}).trim(),'ok');
+});

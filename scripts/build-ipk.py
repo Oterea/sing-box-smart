@@ -2,16 +2,10 @@
 """Create opkg packages from staged files; no OpenWrt SDK is required for the Go build."""
 import io, pathlib, subprocess, tarfile, time
 from luci_assets import collect_luci_files
+from ipk_archive import archive
 ROOT=pathlib.Path(__file__).resolve().parent.parent
 OUT=ROOT/'dist';OUT.mkdir(exist_ok=True)
 VERSION=__import__('os').environ.get('PACKAGE_VERSION','0.2.0')
-def archive(files):
- b=io.BytesIO()
- with tarfile.open(fileobj=b,mode='w:gz') as t:
-  for name,value,mode in files:
-   v=value if isinstance(value,bytes) else value.encode()
-   info=tarfile.TarInfo(name);info.size=len(v);info.mode=mode;info.mtime=int(time.time());t.addfile(info,io.BytesIO(v))
- return b.getvalue()
 def write_ipk(path, members):
  """Write the tar.gz IPK container used by the target ImmortalWrt opkg."""
  with tarfile.open(path, mode='w:gz') as t:
