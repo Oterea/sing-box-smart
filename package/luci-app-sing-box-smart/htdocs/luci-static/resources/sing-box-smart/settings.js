@@ -35,6 +35,6 @@ return L.Class.extend({
    .finally(function(){save.disabled=false;});
   });
   form.appendChild(save);
-  return E('details',{class:'sbs-service-details'},[E('summary',{},['服务设置']),form]);
+  return E('section',{class:'sbs-service-details','aria-labelledby':'sbs-service-title'},[E('h3',{id:'sbs-service-title',class:'sbs-service-title'},['服务设置']),form]);
  }
 });
