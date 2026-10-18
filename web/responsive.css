@@ -1,0 +1,93 @@
+/* Fluid sizing has one owner. Layout breakpoints still control wrapping;
+   sizes interpolate within bounds without scaling the document or its text. */
+:root {
+  --ui-body: clamp(.8125rem, calc(.74rem + .15vw), .875rem);
+  --ui-small: clamp(.75rem, calc(.6786rem + .1488vw), .8125rem);
+  --ui-note: clamp(.6875rem, calc(.6161rem + .1488vw), .75rem);
+  --ui-heading: clamp(.9375rem, calc(.7946rem + .2976vw), 1.0625rem);
+  --ui-brand: clamp(1.125rem, calc(1.1071rem + .2976vw), 1.375rem);
+  --ui-gutter: clamp(12px, 2.78vw, 40px);
+  --ui-space: clamp(16px, 1.67vw, 24px);
+  --ui-pad-x: clamp(14px, 1.67vw, 24px);
+  --ui-pad-y: clamp(16px, 1.53vw, 22px);
+  --ui-control-y: clamp(7px, .7vw, 10px);
+  --ui-control-x: clamp(10px, 1.12vw, 16px);
+  --ui-row: clamp(2.125rem, 2.78vw, 2.5rem);
+  --ui-cell-y: clamp(9px, .97vw, 14px);
+  --ui-cell-x: clamp(7px, .83vw, 12px);
+}
+
+body {font-size:var(--ui-body)}
+.shell {padding-inline:var(--ui-gutter)}
+header {height:auto;min-height:clamp(80px, 6.95vw, 100px);gap:var(--ui-space)}
+.brand {min-width:0;font-size:var(--ui-brand)}
+.brand small {font-size:clamp(.5625rem, .7vw, .625rem)}
+.header-actions {gap:clamp(8px, 1.53vw, 22px);flex-shrink:0}
+.button,.header-actions #detection-toggle,.header-actions #recheck {
+  padding:var(--ui-control-y) var(--ui-control-x);
+  font-size:var(--ui-small);
+  min-height:36px;
+  white-space:nowrap;
+}
+
+.card,.api-settings {padding:var(--ui-pad-y) var(--ui-pad-x)}
+.api-settings,.top-card,.selected-card {margin-bottom:var(--ui-space)}
+.top-card {margin-top:var(--ui-space);gap:var(--ui-space)}
+.panel-heading {padding:var(--ui-pad-y) var(--ui-pad-x);gap:var(--ui-space);min-width:0}
+.panel-heading h2,.top-airports .card-label {font-size:var(--ui-heading)}
+.nodes-panel .panel-heading {flex-wrap:wrap}
+.legend {font-size:var(--ui-note);gap:clamp(8px, .97vw, 14px)}
+.node-summary {font-size:var(--ui-small);gap:var(--ui-space)}
+.status-line {font-size:var(--ui-small);padding:10px var(--ui-pad-x)}
+.table-footer {font-size:var(--ui-note);padding:12px var(--ui-pad-x)}
+.airport-options {grid-template-columns:repeat(auto-fit,minmax(min(100%,clamp(100px,9vw,130px)),1fr));gap:clamp(6px,.56vw,8px)}
+.airport-option {min-height:var(--ui-row);padding:8px 10px;font-size:var(--ui-small)}
+.selection-controls {gap:clamp(5px,.56vw,8px);flex-wrap:wrap}
+.selection-controls .button {font-size:var(--ui-small);min-width:80px;padding:7px 10px}
+
+/* Leading columns shrink together; history retains usable width. On phones
+   the table scrolls within its own panel instead of shrinking text further. */
+.node-table {min-width:clamp(41.25rem, calc(25.5375rem + 32.74vw), 55rem)}
+.node-table .col-node {width:clamp(9.375rem, calc(3.0875rem + 13.1vw), 14.875rem)}
+.node-table .col-action {width:clamp(4.375rem, calc(3.0875rem + 2.68vw), 5.5rem)}
+.node-table .col-score {width:clamp(4rem, calc(2.56875rem + 2.98vw), 5.25rem)}
+.node-table .col-delay {width:clamp(5rem, calc(3.85625rem + 2.38vw), 6rem)}
+.node-table th,.node-table td {padding:var(--ui-cell-y) var(--ui-cell-x)}
+.node-table th {font-size:var(--ui-small)}
+.node-table th:first-child,.node-table td:first-child {padding-left:var(--ui-pad-x)}
+.node-table th:last-child,.node-table td:last-child {padding-right:var(--ui-pad-x)}
+.node-table .node-choice,.node-table .check-count,.node-table .metric-cell {font-size:var(--ui-small)}
+.node-table .node-choice,.node-table .check-count,.node-table .metric-cell,.node-table .history-chart {height:var(--ui-row);min-height:var(--ui-row)}
+.node-table .node-choice {padding:7px 9px}
+
+.api-settings>summary,.settings-group>summary,.api-settings label,.runtime-field>label {font-size:var(--ui-body)}
+.api-settings form {gap:var(--ui-space)}
+.api-settings input,.runtime-field input:not([type=checkbox]),.runtime-field select {
+  font-family:inherit;font-size:var(--ui-body);line-height:1.5;
+  padding:var(--ui-control-y) var(--ui-control-x);min-height:38px;
+}
+.api-settings p,.api-settings p.setting-help {font-size:var(--ui-note)}
+.settings-group {margin-inline-start:clamp(12px,1.12vw,16px);padding-block:clamp(12px,.97vw,14px)}
+.runtime-grid {gap:var(--ui-space) clamp(12px,1.25vw,18px);margin-top:var(--ui-space)}
+.settings-actions {margin-top:var(--ui-space);gap:10px;flex-wrap:wrap}
+.connection-state {font-size:var(--ui-small);width:fit-content;flex-wrap:wrap;row-gap:4px}
+
+.events-panel {margin-top:var(--ui-space)}
+.events-panel .panel-heading {padding-bottom:var(--ui-space)}
+.events-list {padding:0 var(--ui-pad-x) var(--ui-space);column-gap:var(--ui-space)}
+.event {font-size:var(--ui-small);gap:clamp(6px,.7vw,10px);padding-block:clamp(9px,.77vw,11px)}
+.event time,.event-level,.event-kind,.event-event,.subtle,.sleep-history {font-size:var(--ui-note)}
+.sleep-history {margin-inline:var(--ui-pad-x)}
+footer {font-size:var(--ui-note);padding:var(--ui-space) 0}
+
+@media(max-width:560px) {
+  header {flex-wrap:wrap;padding-block:16px;row-gap:14px}
+  .header-actions {margin-left:auto}
+  .panel-heading {align-items:flex-start;flex-wrap:wrap}
+  .connection-state {width:100%}
+  .connection-state #mode-note {flex-basis:100%;padding-left:16px}
+  /* Keep form text legible and avoid focus zoom in iOS Safari. */
+  .api-settings input,.runtime-field input:not([type=checkbox]),.runtime-field select {font-size:1rem;min-height:40px}
+  .button,.header-actions #detection-toggle,.header-actions #recheck,.selection-controls .button {min-height:40px}
+  footer {flex-wrap:wrap}
+}
