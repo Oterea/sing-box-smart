@@ -20,16 +20,16 @@ cleanup() { rm -rf "$tmp" "$lock"; }
 trap cleanup EXIT INT TERM
 mkdir -p "$tmp"
 write_status downloading '正在下载更新清单' 5
-uclient-fetch -q -O "$tmp/manifest.json" "$manifest_url" || fail '无法下载更新清单'
+uclient-fetch -q -O "$tmp/manifest.json" "$manifest_url?check=$(date +%s)-$$" || fail '无法下载更新清单'
 core_url="$(jsonfilter -i "$tmp/manifest.json" -e '@.core_url')"
 luci_url="$(jsonfilter -i "$tmp/manifest.json" -e '@.luci_url')"
 core_sha="$(jsonfilter -i "$tmp/manifest.json" -e '@.core_sha256')"
 luci_sha="$(jsonfilter -i "$tmp/manifest.json" -e '@.luci_sha256')"
 [ -n "$core_url" ] && [ -n "$luci_url" ] && [ -n "$core_sha" ] && [ -n "$luci_sha" ] || fail '更新清单缺少必要字段'
 write_status downloading '正在下载 smart 核心包' 20
-uclient-fetch -q -O "$tmp/core.ipk" "$core_url" || fail 'smart 核心包下载失败'
+uclient-fetch -q -O "$tmp/core.ipk" "$core_url?sha256=$core_sha" || fail 'smart 核心包下载失败'
 write_status downloading '正在下载 LuCI 面板包' 35
-uclient-fetch -q -O "$tmp/luci.ipk" "$luci_url" || fail 'LuCI 面板包下载失败'
+uclient-fetch -q -O "$tmp/luci.ipk" "$luci_url?sha256=$luci_sha" || fail 'LuCI 面板包下载失败'
 write_status verifying '正在校验软件包' 50
 [ "$(sha256sum "$tmp/core.ipk" | awk '{print $1}')" = "$core_sha" ] || fail '核心包校验失败'
 [ "$(sha256sum "$tmp/luci.ipk" | awk '{print $1}')" = "$luci_sha" ] || fail 'LuCI 包校验失败'

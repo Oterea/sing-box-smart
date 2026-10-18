@@ -14,8 +14,11 @@ const list = rpc.declare({object:'service',method:'list',params:['name'],expect:
 return view.extend({
  load: function() { return Promise.all([list(serviceName), fs.exec(initPath,['enabled']), fs.exec('/usr/bin/sing-box-smart',['service-settings','read'])]); },
  render: function(data) {
-  const style = E('link',{rel:'stylesheet',href:L.resource('sing-box-smart/style.css')});
-  if (!document.querySelector('link[href*="sing-box-smart/style.css"]')) document.head.appendChild(style);
+  // Use LuCI's package resource version for CSS as well as JavaScript modules.
+  const styleURL = L.resource('sing-box-smart/style.css')+'?v='+encodeURIComponent((L.env && L.env.resource_version) || Date.now());
+  const style = document.querySelector('link[href*="sing-box-smart/style.css"]');
+  if (style) style.href = styleURL;
+  else document.head.appendChild(E('link',{rel:'stylesheet',href:styleURL}));
   const status = E('span', {class:'sbs-status-text'}, ['读取状态…']);
   const dot = E('i', {class:'sbs-status-dot'});
   const statusLine = E('div',{class:'sbs-status'},[dot,status]);

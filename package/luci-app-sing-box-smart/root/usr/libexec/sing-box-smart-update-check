@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 manifest_url='https://github.com/Oterea/sing-box-smart/releases/download/latest/sing-box-smart-release.json'
-tmp='/tmp/sing-box-smart-update-check.json'
+tmp="$(mktemp /tmp/sing-box-smart-update-check.XXXXXX)"
 trap 'rm -f "$tmp"' EXIT
-uclient-fetch -q -O "$tmp" "$manifest_url" || { printf '%s\n' '无法连接更新源' >&2; exit 1; }
+uclient-fetch -q -O "$tmp" "$manifest_url?check=$(date +%s)-$$" || { printf '%s\n' '无法连接更新源' >&2; exit 1; }
 version="$(jsonfilter -i "$tmp" -e '@.version')" || version=''
 current="$(opkg status sing-box-smart 2>/dev/null | sed -n 's/^Version: //p' | head -n 1)"
 [ -n "$version" ] || { printf '%s\n' '更新清单无效' >&2; exit 1; }
