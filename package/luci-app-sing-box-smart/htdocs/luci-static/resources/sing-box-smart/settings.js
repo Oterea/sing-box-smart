@@ -12,9 +12,10 @@ return L.Class.extend({
    ['log_dir','日志目录','运行日志保存目录；自动轮转保留当前文件和一个旧文件。']
   ];
   fields.forEach(function(field){
-   const input=E('input',{type:field[0]==='grpc_secret'?'password':'text',value:initial[field[0]]||'',autocomplete:'off',class:'cbi-input-text'});controls[field[0]]=input;
+   const input=E('input',{id:'sbs-service-'+field[0],'aria-describedby':'sbs-help-'+field[0],type:field[0]==='grpc_secret'?'password':'text',value:initial[field[0]]||'',autocomplete:'off',class:'cbi-input-text'});controls[field[0]]=input;
    form.appendChild(E('div',{class:'sbs-service-field'},[
-    E('label',{},[field[1],input]),E('p',{class:'sbs-setting-help'},[field[2]])
+    E('label',{'for':'sbs-service-'+field[0]},[field[1]]),
+    E('p',{id:'sbs-help-'+field[0],class:'sbs-setting-help'},[field[2]]),input
    ]));
   });
   const save=E('button',{type:'button',class:'cbi-button sbs-update-button'},['保存并重启']);

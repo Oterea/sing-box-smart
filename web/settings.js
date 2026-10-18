@@ -51,8 +51,9 @@ const SmartSettings = (() => {
  if(type==='select'){for(const level of ['info','debug','warn','error']){const option=document.createElement('option');option.value=level;option.textContent=level.toUpperCase();input.append(option);}}
  else {input.type=type; if(type!=='checkbox')input.required=true;}
  if(type==='number'){input.min=min;input.max=max;input.step=(scale||key.includes('ratio'))?'any':'1';}
- input.addEventListener('input',()=>{dirty=true;});field.append(input);
- const text=document.createElement('p');text.className='setting-help';text.textContent=help;field.append(text);grid.append(field);
+ input.addEventListener('input',()=>{dirty=true;});
+ const text=document.createElement('p');text.id='setting-help-'+key;text.className='setting-help';text.textContent=help;
+ input.setAttribute('aria-describedby',text.id);field.append(text,input);grid.append(field);
  }section.append(grid);form.append(section);
  }
  const actions=document.createElement('div');actions.className='settings-actions';

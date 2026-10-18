@@ -360,11 +360,11 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .runtime-settings #runtime-form {display:block;margin-top:16px}
 .settings-group {border-top:1px solid var(--line,#dce5eb);padding:14px 0}
 .settings-group>summary {cursor:pointer;font-weight:600}
-.runtime-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:18px}
-.runtime-field>label {display:block;margin-bottom:8px;font-size:14px}
+.runtime-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px 18px;margin-top:18px}
+.runtime-field>label {display:block;margin-bottom:0;font-size:14px}
 .runtime-field input:not([type=checkbox]),.runtime-field select {box-sizing:border-box;width:100%;padding:10px;border:1px solid #d5e0e7;border-radius:6px;background:#f1f5f7;color:#294355;font:inherit}
 .runtime-field input[type=checkbox] {width:20px;height:20px;accent-color:#51a2ff}
 .api-settings .button,.api-settings .button:hover,.api-settings .button:active {box-shadow:none}
-.api-settings p.setting-help {margin:6px 0 0;color:#778b9b;font-size:12px;line-height:1.6}
+.api-settings p.setting-help {margin:4px 0 10px;color:#778b9b;font-size:12px;line-height:1.6}
 @media(max-width:900px){.runtime-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.runtime-grid{grid-template-columns:1fr}}
