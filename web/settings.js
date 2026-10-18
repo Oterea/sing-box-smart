@@ -39,10 +39,20 @@ const SmartSettings = (() => {
  const fields=groups.flatMap(g=>g[1]);
  const byID=id=>document.getElementById(id);
  function mount(){
- const form=byID('runtime-form');if(!form)return;
- for(const [title,items] of groups){
- const section=document.createElement('details');section.className='settings-group';
- const summary=document.createElement('summary');summary.textContent=title;section.append(summary);
+ const form=byID('runtime-form'),tabs=byID('settings-tabs');if(!form||!tabs)return;
+ function activate(tab,focus=false){
+ for(const button of tabs.querySelectorAll('[role=tab]')){
+ const selected=button===tab;button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;
+ byID(button.getAttribute('aria-controls')).hidden=!selected;
+ }
+ form.hidden=tab.id==='settings-tab-connection';
+ if(focus)tab.focus();
+ }
+ for(const [index,[title,items]] of groups.entries()){
+ const section=document.createElement('section');section.className='settings-group';section.id='settings-panel-'+index;section.hidden=true;
+ section.setAttribute('role','tabpanel');section.setAttribute('aria-labelledby','settings-tab-'+index);
+ const tab=document.createElement('button');tab.id='settings-tab-'+index;tab.type='button';tab.className='settings-tab';tab.textContent=title;tab.tabIndex=-1;
+ tab.setAttribute('role','tab');tab.setAttribute('aria-selected','false');tab.setAttribute('aria-controls',section.id);tabs.append(tab);
  const grid=document.createElement('div');grid.className='runtime-grid';
  for(const [key,label,type,help,min,max,scale] of items){
  const field=document.createElement('div');field.className='runtime-field';
@@ -56,6 +66,14 @@ const SmartSettings = (() => {
  input.setAttribute('aria-describedby',text.id);field.append(text,input);grid.append(field);
  }section.append(grid);form.append(section);
  }
+ tabs.addEventListener('click',event=>{const tab=event.target.closest('[role=tab]');if(tab&&tabs.contains(tab))activate(tab);});
+ tabs.addEventListener('keydown',event=>{
+ const buttons=[...tabs.querySelectorAll('[role=tab]')],index=buttons.indexOf(event.target);if(index<0)return;
+ let next;if(event.key==='ArrowRight')next=(index+1)%buttons.length;else if(event.key==='ArrowLeft')next=(index+buttons.length-1)%buttons.length;else if(event.key==='Home')next=0;else if(event.key==='End')next=buttons.length-1;else return;
+ event.preventDefault();activate(buttons[next],true);
+ });
+ // Invalid fields in another category must be revealed before browser focus.
+ form.addEventListener('invalid',event=>{const panel=event.target.closest('[role=tabpanel]');if(panel)activate(byID(panel.getAttribute('aria-labelledby')));},true);
  const actions=document.createElement('div');actions.className='settings-actions';
  const reset=document.createElement('button');reset.type='button';reset.className='button secondary';reset.textContent='撤销修改';
  reset.addEventListener('click',()=>{dirty=false;fill();});

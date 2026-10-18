@@ -289,7 +289,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
  .health-progress-row{gap:12px}
  .top-health .health-caption{font-size:12px}
 }
-.api-settings{margin:0 0 24px;padding:14px 18px;background:#f6f8f9;box-shadow:0 0 14px rgba(31,53,70,.07);color:#617486}.api-settings summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--ink)}.api-settings form{display:flex;gap:10px;margin-top:12px}.api-settings input{flex:1;min-width:0;padding:9px 10px;background:#f3f6f7;color:var(--ink);font:13px inherit}.api-settings p{margin:9px 0 0;font-size:11px}.api-settings button{flex-shrink:0}
+.api-settings{margin:0 0 24px;padding:14px 18px;background:#f6f8f9;box-shadow:0 0 14px rgba(31,53,70,.07);color:#617486}.api-settings form{display:flex;gap:10px;margin-top:12px}.api-settings input{flex:1;min-width:0;padding:9px 10px;background:#f3f6f7;color:var(--ink);font:13px inherit}.api-settings p{margin:9px 0 0;font-size:11px}.api-settings button{flex-shrink:0}
 
 /* The manual check belongs to the brand row; the node summary belongs to its table. */
 .header-actions{display:flex;align-items:center;gap:22px}
@@ -356,10 +356,16 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .selection-controls .button.active{background:var(--blue);color:var(--blue-text);box-shadow:0 0 14px rgba(81,162,255,.35)}
 @media(max-width:700px){.selection-controls{gap:5px}.selection-controls .button{padding:6px 8px;font-size:11px;min-width:80px}}
 
-/* Runtime settings use collapsed groups and concise inline field help. */
-.runtime-settings #runtime-form {display:block;margin-top:16px}
-.settings-group {margin-inline-start:16px;border-top:1px solid var(--line,#dce5eb);padding:14px 0}
-.settings-group>summary {cursor:pointer;font-weight:600}
+/* One settings area, with horizontal categories and inline field help. */
+#runtime-form {display:block;margin-top:16px}
+.settings-group {margin:0;padding:0}
+.settings-tabs {display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.settings-tab {border:0;padding:8px 14px;background:var(--control,#e6ebef);color:#536a7b;font:inherit;font-size:13px;line-height:1.5;white-space:nowrap;cursor:pointer;box-shadow:none}
+.settings-tab[aria-selected=true] {background:#51A2FF;color:#fff}
+.settings-tab:hover {background:#E3F6FF;color:#0E4354}
+.settings-tab[aria-selected=true]:hover {background:#3D8FE9;color:#fff}
+.settings-tab:focus-visible {outline:2px solid #51A2FF;outline-offset:3px}
+.api-settings [hidden] {display:none!important}
 .runtime-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px 18px;margin-top:18px}
 .runtime-field>label {display:block;margin-bottom:0;font-size:14px}
 .runtime-field input:not([type=checkbox]),.runtime-field select {box-sizing:border-box;width:100%;padding:10px;border:1px solid #d5e0e7;border-radius:6px;background:#f1f5f7;color:#294355;font:inherit}

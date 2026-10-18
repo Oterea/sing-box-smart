@@ -60,14 +60,14 @@ header {height:auto;min-height:clamp(80px, 6.95vw, 100px);gap:var(--ui-space)}
 .node-table .node-choice,.node-table .check-count,.node-table .metric-cell,.node-table .history-chart {height:var(--ui-row);min-height:var(--ui-row)}
 .node-table .node-choice {padding:7px 9px}
 
-.api-settings>summary,.settings-group>summary,.api-settings label,.runtime-field>label {font-size:var(--ui-body)}
+.settings-tab,.api-settings label,.runtime-field>label {font-size:var(--ui-body)}
 .api-settings form {gap:var(--ui-space)}
 .api-settings input,.runtime-field input:not([type=checkbox]),.runtime-field select {
   font-family:inherit;font-size:var(--ui-body);line-height:1.5;
   padding:var(--ui-control-y) var(--ui-control-x);min-height:38px;
 }
 .api-settings p,.api-settings p.setting-help {font-size:var(--ui-note)}
-.settings-group {margin-inline-start:clamp(12px,1.12vw,16px);padding-block:clamp(12px,.97vw,14px)}
+.settings-tabs {gap:8px;margin-bottom:var(--ui-space)}
 .runtime-grid {gap:var(--ui-space) clamp(12px,1.25vw,18px);margin-top:var(--ui-space)}
 .settings-actions {margin-top:var(--ui-space);gap:10px;flex-wrap:wrap}
 .connection-state {font-size:var(--ui-small);width:fit-content;flex-wrap:wrap;row-gap:4px}
