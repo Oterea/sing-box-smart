@@ -20,8 +20,7 @@ return view.extend({
   const dot = E('i', {class:'sbs-status-dot'});
   const statusLine = E('div',{class:'sbs-status'},[dot,status]);
   const auto = E('input',{type:'checkbox',checked:data[1].code === 0});
-  const autoTrack = E('button',{type:'button',class:'sbs-switch-track',ariaLabel:'开机自动启动'});
-  const autoLabel = E('div',{class:'sbs-switch'},[auto,autoTrack,E('span',{class:'sbs-switch-text'},['开机自动启动'])]);
+  const autoLabel = E('label',{class:'sbs-autostart'},[auto,E('span',{},['开机自动启动'])]);
   let savedService={};
   try {if(data[2].code!==0)throw Error(data[2].stderr||'读取服务设置失败');savedService=JSON.parse(data[2].stdout||'{}');}
   catch(error){ui.addNotification(null,E('p',{},[error.message]));}
@@ -48,7 +47,6 @@ return view.extend({
    busy = value;
    actions.forEach(b => b.disabled = value);
    auto.disabled = value;
-   autoTrack.disabled = value;
    // Checking for updates is always available; service actions must not turn
    // this button into a misleading disabled control.
    updateButton.disabled = updating;
@@ -133,7 +131,6 @@ return view.extend({
     if(r.code!==0)throw new Error(r.stderr || '保存失败');
    }).catch(function(e){auto.checked=!auto.checked;ui.addNotification(null,E('p',{},[e.message]));}).finally(function(){setBusy(false);});
   });
-  autoTrack.addEventListener('click', function() { if (!busy) { auto.checked = !auto.checked; auto.dispatchEvent(new Event('change')); } });
   update(data[0]);
   pollUpdateStatus().then(function() { if (!updating) return readUpdate(); }).catch(function() { return readUpdate(); });
   poll.add(pollUpdateStatus,1);
