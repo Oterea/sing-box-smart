@@ -52,9 +52,7 @@ const SmartSettings = (() => {
  else {input.type=type; if(type!=='checkbox')input.required=true;}
  if(type==='number'){input.min=min;input.max=max;input.step=(scale||key.includes('ratio'))?'any':'1';}
  input.addEventListener('input',()=>{dirty=true;});field.append(input);
- const details=document.createElement('details');details.className='setting-help';
- const toggle=document.createElement('summary');toggle.textContent='说明';
- const text=document.createElement('p');text.textContent=help;details.append(toggle,text);field.append(details);grid.append(field);
+ const text=document.createElement('p');text.className='setting-help';text.textContent=help;field.append(text);grid.append(field);
  }section.append(grid);form.append(section);
  }
  const actions=document.createElement('div');actions.className='settings-actions';

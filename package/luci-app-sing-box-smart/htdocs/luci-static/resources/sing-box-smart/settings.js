@@ -14,7 +14,7 @@ return L.Class.extend({
   fields.forEach(function(field){
    const input=E('input',{type:field[0]==='grpc_secret'?'password':'text',value:initial[field[0]]||'',autocomplete:'off',class:'cbi-input-text'});controls[field[0]]=input;
    form.appendChild(E('div',{class:'sbs-service-field'},[
-    E('label',{},[field[1],input]),E('details',{class:'sbs-setting-help'},[E('summary',{},['说明']),E('p',{},[field[2]])])
+    E('label',{},[field[1],input]),E('p',{class:'sbs-setting-help'},[field[2]])
    ]));
   });
   const save=E('button',{type:'button',class:'cbi-button sbs-update-button'},['保存并重启']);
