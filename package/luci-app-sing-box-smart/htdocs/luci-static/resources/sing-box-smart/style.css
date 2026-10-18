@@ -8,3 +8,6 @@
 .sbs-service-field input{width:100%;box-sizing:border-box}
 .sbs-setting-help{font-size:12px;margin:4px 0 10px;color:#8295a3;line-height:1.6}
 @media(max-width:600px){.sbs-service-settings{grid-template-columns:1fr}}
+
+/* Keep smart controls square even when the surrounding LuCI theme is rounded. */
+.sbs-page,.sbs-page *,.sbs-page *::before,.sbs-page *::after{border-radius:0!important}
