@@ -26,7 +26,7 @@ header {height:auto;min-height:clamp(80px, 6.95vw, 100px);gap:var(--ui-space)}
 .button,.header-actions #detection-toggle,.header-actions #recheck {
   padding:var(--ui-control-y) var(--ui-control-x);
   font-size:var(--ui-small);
-  min-height:36px;
+  min-height:clamp(2rem, 2.5vw, 2.25rem);
   white-space:nowrap;
 }
 
@@ -88,6 +88,5 @@ footer {font-size:var(--ui-note);padding:var(--ui-space) 0}
   .connection-state #mode-note {flex-basis:100%;padding-left:16px}
   /* Keep form text legible and avoid focus zoom in iOS Safari. */
   .api-settings input,.runtime-field input:not([type=checkbox]),.runtime-field select {font-size:1rem;min-height:40px}
-  .button,.header-actions #detection-toggle,.header-actions #recheck,.selection-controls .button {min-height:40px}
   footer {flex-wrap:wrap}
 }
