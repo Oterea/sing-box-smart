@@ -358,7 +358,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 
 /* Runtime settings use collapsed groups and concise inline field help. */
 .runtime-settings #runtime-form {display:block;margin-top:16px}
-.settings-group {border-top:1px solid var(--line,#dce5eb);padding:14px 0}
+.settings-group {margin-inline-start:16px;border-top:1px solid var(--line,#dce5eb);padding:14px 0}
 .settings-group>summary {cursor:pointer;font-weight:600}
 .runtime-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px 18px;margin-top:18px}
 .runtime-field>label {display:block;margin-bottom:0;font-size:14px}
