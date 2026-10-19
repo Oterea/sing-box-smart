@@ -3,7 +3,6 @@
 .sbs-page {
   --sbs-blue:#51A2FF;
   --sbs-blue-text:#FFFFFF;
-  --sbs-blue-hover:#3D8FE9;
   --sbs-ink:#1b2c3c;
   --sbs-muted:#718091;
   --sbs-line:#e6ebef;
@@ -11,7 +10,6 @@
   --sbs-card-shadow:0 4px 16px rgba(31,53,70,.06);
   --sbs-control:#e6ebef;
   --sbs-control-text:#536a7b;
-  --sbs-hover:#E3F6FF;
   --sbs-hover-text:#0E4354;
   --sbs-field:#f1f5f7;
   --sbs-green:#04C766;
@@ -51,10 +49,10 @@
   font-family:inherit!important;font-size:var(--sbs-small)!important;font-weight:400!important;line-height:1.5!important;
   box-shadow:none!important;text-align:center;text-decoration:none!important;white-space:nowrap;cursor:pointer;
 }
-.sbs-page .sbs-button:hover:not(:disabled) {background:var(--sbs-hover)!important;color:var(--sbs-hover-text)!important;box-shadow:none!important}
+.sbs-page .sbs-button:hover:not(:disabled) {background:color-mix(in srgb,var(--sbs-control) 94%,#000)!important;box-shadow:none!important}
 .sbs-page .sbs-button:disabled {opacity:.5;cursor:default}
 .sbs-page .sbs-button.start {background:var(--sbs-blue)!important;color:var(--sbs-blue-text)!important}
-.sbs-page .sbs-button.start:hover:not(:disabled) {background:var(--sbs-blue-hover)!important}
+.sbs-page .sbs-button.start:hover:not(:disabled) {background:color-mix(in srgb,var(--sbs-blue) 94%,#000)!important}
 .sbs-actions {display:flex;flex-wrap:wrap;gap:8px;margin-top:var(--sbs-space)}
 .sbs-actions .sbs-button {min-width:0}
 .sbs-page .sbs-open,.sbs-page .sbs-update-button {width:88px;flex:0 0 88px}

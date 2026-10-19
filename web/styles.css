@@ -24,9 +24,8 @@ header{height:100px;display:flex;align-items:center;justify-content:space-betwee
 h1{font-size:30px;line-height:1.3;letter-spacing:-1px;font-weight:650;margin:0}
 p{font-size:12px;color:var(--muted);margin:7px 0 0}
 .button{padding:10px 16px;border-radius:8px;border:1px solid var(--green);background:var(--green);color:white;font-weight:550;font-size:12px}
-.button:hover:not(:disabled){background:#116d58}
 .button.secondary{background:white;color:#405264;border-color:#d6dfe5;box-shadow:0 2px 3px #172c3d04}
-.button.secondary:hover:not(:disabled){background:#f7faf9;border-color:#b3c9c1}
+
 .overview{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:18px;margin-bottom:24px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;min-width:0;box-shadow:0 3px 10px #20374b03}
 .card-label{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:550;color:var(--muted);margin-bottom:16px}
@@ -40,7 +39,6 @@ p{font-size:12px;color:var(--muted);margin:7px 0 0}
 select{width:100%;background:#fff;color:var(--ink);font-size:21px;font-weight:600;border:0;border-bottom:1px solid var(--line);padding:0 0 10px;cursor:pointer}
 .selector-note{font-size:11px;color:var(--muted);margin:9px 0 17px}
 .compact{display:flex;align-items:center;justify-content:space-between;width:100%;padding:8px 12px;background:#f2f8f5;color:#26765f;border-color:#dce9e2}
-.compact:hover:not(:disabled){background:#e9f3ed}
 .health-number{color:var(--muted);padding:0 0 3px}
 .health-number b{font-size:34px;line-height:1.2;font-weight:600;letter-spacing:-1px;color:var(--ink);margin-right:7px}
 .health-number span{font-size:16px;font-weight:500;color:#617486}
@@ -73,7 +71,7 @@ progress::-moz-progress-bar{background:var(--green)}
 .chart-missing{stroke:#aab5bf;stroke-width:2}
 .chart-failure{fill:#d7dfe4}
 .pick{border:1px solid #dbe3e8;background:white;border-radius:7px;color:#5c7181;padding:6px 11px;font-size:11px}
-.pick:hover:not(:disabled){border-color:#94baaa;color:var(--green);background:#f6faf7}
+
 .table-footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 24px;background:#fafbfc;border-top:1px solid var(--line);font-size:10px;color:#7c8b99}
 .events-panel{margin-top:24px}
 .events-panel .panel-heading{padding-bottom:16px}
@@ -149,13 +147,12 @@ footer>span:last-child{text-align:right}
 .demo-note{border:0!important;box-shadow:0 0 14px rgba(31,53,70,.06)}
 .button,.pick,.compact{border:0!important;border-radius:0!important;box-shadow:0 0 12px rgba(23,72,59,.16);transition:background-color .15s,box-shadow .15s,transform .15s}
 .button{background:var(--green);color:#fff}
-.button:hover:not(:disabled){background:#116d58;box-shadow:0 0 16px rgba(23,72,59,.22)}
+.button:hover:not(:disabled){box-shadow:0 0 16px rgba(23,72,59,.22)}
 .button.secondary{background:#e9eff2;color:#314b5d;box-shadow:0 0 12px rgba(36,57,72,.12)}
-.button.secondary:hover:not(:disabled){background:#dfe9ec;box-shadow:0 0 16px rgba(36,57,72,.18)}
+.button.secondary:hover:not(:disabled){box-shadow:0 0 16px rgba(36,57,72,.18)}
 .compact{background:var(--green);color:#fff}
-.compact:hover:not(:disabled){background:#116d58}
 .pick{background:#e9eff2;color:#405c6d;box-shadow:0 0 10px rgba(36,57,72,.1)}
-.pick:hover:not(:disabled){background:#dce8e8;color:#176e59;box-shadow:0 0 14px rgba(23,72,59,.16)}
+.pick:hover:not(:disabled){box-shadow:0 0 14px rgba(23,72,59,.16)}
 select{border:0!important;box-shadow:0 1px 0 #dce5e7;background:transparent}
 .table-footer{border:0!important}
 .status-line{border:0!important}
@@ -167,7 +164,7 @@ select{border:0!important;box-shadow:0 1px 0 #dce5e7;background:transparent}
 .airport-option{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:58px;padding:10px 12px;text-align:left;background:#e9eff2;color:#3d5667;box-shadow:0 0 10px rgba(36,57,72,.09);font-size:13px}
 .airport-option strong{font-weight:600}
 .airport-option small{font-size:10px;color:#7b8b99;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.airport-option:hover:not(:disabled){background:#dce8e8;color:#176e59;box-shadow:0 0 14px rgba(23,72,59,.16)}
+.airport-option:hover:not(:disabled){box-shadow:0 0 14px rgba(23,72,59,.16)}
 .airport-option.selected,.airport-option:disabled.selected{background:var(--green);color:#fff;box-shadow:0 0 14px rgba(4,199,102,.2)}
 .airport-option.selected small{color:#d7efe7}
 .selector-note-inline{font-size:10px;font-weight:400;color:#8997a3}
@@ -233,7 +230,7 @@ select{border:0!important;box-shadow:0 1px 0 #dce5e7;background:transparent}
 }
 
 /* Legacy top-card layout declarations; final overrides below show policy groups only. */
-.toolbar{display:flex;justify-content:flex-end;min-height:0;margin:22px 0 12px}.top-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center;margin-bottom:24px;padding:20px 24px}.top-airports{min-width:0}.top-airports .card-label{margin-bottom:10px}.top-health{min-width:0}.airport-options{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:0}.airport-option{min-height:48px;padding:9px 12px;background:transparent;color:#40576a;box-shadow:none!important}.airport-option:hover:not(:disabled){background:#edf2f5;color:#2d536f;box-shadow:none!important}.airport-option.selected,.airport-option:disabled.selected{background:var(--blue);color:var(--blue-text);opacity:1;box-shadow:0 0 14px rgba(81,162,255,.35)!important}.airport-option.selected small{color:#fff}.health-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.top-health .health-number{padding:0}.top-health .health-track{margin:10px 0 8px}.top-health .health-caption{font-size:11px}.top-health #recheck{flex-shrink:0;margin-top:2px}
+.toolbar{display:flex;justify-content:flex-end;min-height:0;margin:22px 0 12px}.top-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center;margin-bottom:24px;padding:20px 24px}.top-airports{min-width:0}.top-airports .card-label{margin-bottom:10px}.top-health{min-width:0}.airport-options{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:0}.airport-option{min-height:48px;padding:9px 12px;background:transparent;color:#40576a;box-shadow:none!important}.airport-option:hover:not(:disabled){box-shadow:none!important}.airport-option.selected,.airport-option:disabled.selected{background:var(--blue);color:var(--blue-text);opacity:1;box-shadow:0 0 14px rgba(81,162,255,.35)!important}.airport-option.selected small{color:#fff}.health-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.top-health .health-number{padding:0}.top-health .health-track{margin:10px 0 8px}.top-health .health-caption{font-size:11px}.top-health #recheck{flex-shrink:0;margin-top:2px}
 @media(max-width:900px){.top-card{grid-template-columns:1fr;gap:18px}.top-health{max-width:360px}}
 @media(max-width:700px){.toolbar{margin-top:16px}.top-card{padding:18px 16px}.airport-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
@@ -245,11 +242,10 @@ select{border:0!important;box-shadow:0 1px 0 #dce5e7;background:transparent}
 @media(max-width:700px){.mode-inline{display:none}.top-card{margin-top:16px;gap:18px}.airport-options{justify-content:stretch}.airport-option{flex-basis:auto;width:auto;max-width:none}.health-head{align-items:center;gap:10px}.top-health #recheck{padding:8px 10px}}
 
 /* Node names are the selection controls; the adjacent cell contains only the count. */
-.node-table .node-choice{display:block;width:100%;min-height:36px;margin:0;padding:8px 12px;border:0!important;background:#e6ebef;color:#536a7b;text-align:center;font-size:13px;font-weight:600;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:none!important;cursor:pointer}.node-table .node-choice:hover:not(:disabled){background:#E3F6FF;color:#0E4354;box-shadow:none!important}.node-table .node-choice.selected,.node-table .node-choice:disabled.selected{background:var(--blue);color:var(--blue-text);opacity:1;box-shadow:0 0 8px rgba(81,162,255,.24)!important}.node-table .check-count{display:block;text-align:center;color:#536a7b;font-variant-numeric:tabular-nums}
+.node-table .node-choice{display:block;width:100%;min-height:36px;margin:0;padding:8px 12px;border:0!important;background:#e6ebef;color:#536a7b;text-align:center;font-size:13px;font-weight:600;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:none!important;cursor:pointer}.node-table .node-choice:hover:not(:disabled){box-shadow:none!important}.node-table .node-choice.selected,.node-table .node-choice:disabled.selected{background:var(--blue);color:var(--blue-text);opacity:1;box-shadow:0 0 8px rgba(81,162,255,.24)!important}.node-table .check-count{display:block;text-align:center;color:#536a7b;font-variant-numeric:tabular-nums}
 
 /* Bright palette for indicators and charts; deeper related tones keep small text readable. */
 .brand strong{color:var(--ink)}
-.airport-option:hover:not(:disabled),.node-table .node-choice:hover:not(:disabled){background:#E3F6FF;color:#0E4354}
 progress,progress::-webkit-progress-bar{background:#E6FCF1}
 
 /* Keep the policy group and health summary in one column on narrow screens.
@@ -260,7 +256,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .health-number b{font-size:34px;line-height:1.2;font-weight:600;letter-spacing:-1px}
 .health-number span{font-size:16px;font-weight:500;color:#617486}
 .top-health #recheck{background:var(--blue);color:var(--blue-text);box-shadow:0 0 6px rgba(81,162,255,.18)!important}
-.top-health #recheck:hover:not(:disabled){background:#3D8FE9;box-shadow:0 0 8px rgba(81,162,255,.22)!important}
+.top-health #recheck:hover:not(:disabled){box-shadow:0 0 8px rgba(81,162,255,.22)!important}
 @media(max-width:700px){.health-number b{font-size:32px}.health-number span{font-size:15px}}
 
 /* Match the table's visual axis and the section heading hierarchy. */
@@ -414,31 +410,37 @@ body.settings-open {overflow:hidden}
 .node-list-controls[hidden] {display:none}
 .node-list-controls .button,.node-list-controls .button:hover {box-shadow:none}
 
-/* Use the node controls' hover palette throughout the dashboard. Disabled
-   controls stay unchanged; selection shadows belong to the selected state. */
-.button:hover:not(:disabled),
-.button.secondary:hover:not(:disabled),
-.selection-controls .button:hover:not(:disabled),
-.header-actions :is(#detection-toggle,#recheck,#settings-open):hover:not(:disabled),
-.airport-option:hover:not(:disabled),
-.node-table .node-choice:hover:not(:disabled),
-.settings-tab:hover:not(:disabled),
-.setting-choice input:not(:disabled)+span:hover {
- background:#E3F6FF;color:#0E4354;
+/* Hover stays within each control's own palette; selected choices stay still. */
+.button,.compact {--control-base:var(--green);--control-ink:#fff}
+.button.secondary,.pick {--control-base:#e9eff2;--control-ink:#314b5d}
+.selection-controls .button,.airport-option,.settings-tab,.setting-choice span {
+ --control-base:#e6ebef;--control-ink:#536a7b;
 }
-.button,.button.secondary,
+.header-actions :is(#detection-toggle,#recheck,#settings-open) {
+ --control-base:var(--blue);--control-ink:var(--blue-text);
+}
+.node-table .node-choice {--control-base:#e6ebef;--control-ink:#536a7b}
+.node-table .node-choice.tier-candidate {--control-base:#d5f5e4;--control-ink:var(--green-text)}
+.node-table .node-choice.tier-recovery {--control-base:#fff0c6;--control-ink:var(--amber-text)}
+.button:hover:not(:disabled):not(.active),
+.button.secondary:hover:not(:disabled):not(.active),
+.header-actions :is(#detection-toggle,#recheck,#settings-open):hover:not(:disabled),
+.airport-option:hover:not(:disabled):not(.selected),
+.node-table .node-choice:hover:not(:disabled):not(.selected),
+.settings-tab:hover:not(:disabled):not([aria-selected=true]),
+.setting-choice input:not(:disabled):not(:checked)+span:hover {
+ background:color-mix(in srgb,var(--control-base) 94%,#000);
+ color:var(--control-ink);
+}
+.button,.button.secondary,.button:hover:not(:disabled),.button.secondary:hover:not(:disabled),
 .header-actions :is(#detection-toggle,#recheck,#settings-open),
-.button:hover:not(:disabled),.button.secondary:hover:not(:disabled),
 .header-actions :is(#detection-toggle,#recheck,#settings-open):hover:not(:disabled) {
  box-shadow:none!important;
 }
-.selection-controls .button.active,
-.selection-controls .button.active:hover:not(:disabled) {
+.selection-controls .button.active,.selection-controls .button.active:disabled {
+ background:var(--blue);color:var(--blue-text);opacity:1;cursor:default;
  box-shadow:0 0 14px rgba(81,162,255,.35)!important;
 }
-.airport-option.selected:hover:not(:disabled) {
- box-shadow:0 0 14px rgba(81,162,255,.35)!important;
-}
-.node-table .node-choice.selected:hover:not(:disabled) {
- box-shadow:0 0 8px rgba(81,162,255,.24)!important;
-}
+.settings-tab[aria-selected=true],.setting-choice input:checked+span {cursor:default}
+
+.airport-option:disabled,.node-table .node-choice:disabled {cursor:default}

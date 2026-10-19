@@ -182,9 +182,9 @@ function render(s){
  $('detection-toggle').textContent=(s.paused||s.sleeping)?'继续检测':'暂停检测';
  $('detection-toggle').disabled=busy;
  $('recheck').disabled=busy||s.paused||s.sleeping;
- $('selection-auto').disabled=busy||Boolean(s.pending_id);
+ $('selection-auto').disabled=busy||Boolean(s.pending_id)||s.selection_mode!=='manual';
  $('selection-auto').setAttribute?.('aria-pressed',s.selection_mode!=='manual');
- $('selection-manual').disabled=busy;
+ $('selection-manual').disabled=busy||s.selection_mode==='manual';
  $('selection-manual').setAttribute?.('aria-pressed',s.selection_mode==='manual');
  $('selection-auto').classList.toggle('active',s.selection_mode!=='manual');
  $('selection-manual').classList.toggle('active',s.selection_mode==='manual');
