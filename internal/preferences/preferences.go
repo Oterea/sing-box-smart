@@ -12,6 +12,7 @@ import (
 )
 
 type Settings struct {
+	NodeDisplayLimit  int     `json:"node_display_limit"`
 	TestURL           string  `json:"test_url"`
 	Current           int     `json:"current_seconds"`
 	Candidate         int     `json:"candidate_seconds"`
@@ -48,7 +49,7 @@ func (s Settings) Validate() error {
 		{"当前节点间隔", s.Current, 1, 86400}, {"候选节点间隔", s.Candidate, 1, 86400}, {"普通节点间隔", s.Ordinary, 1, 86400},
 		{"探测超时", s.Timeout, 1, 120}, {"启动观察", s.Startup, 1, 300}, {"恢复观察", s.Resume, 1, 300}, {"故障重试", s.Recovery, 1, 3600},
 		{"睡眠时长", s.SleepIdle, 60, 86400}, {"唤醒窗口", s.WakeWindow, 1, 60}, {"历史数量", s.HistoryLimit, 1, 200},
-		{"绿色延迟上限", s.DelayGreen, 1, 59999}, {"黄色延迟上限", s.DelayYellow, 2, 60000},
+		{"默认显示节点数", s.NodeDisplayLimit, 1, 1000}, {"绿色延迟上限", s.DelayGreen, 1, 59999}, {"黄色延迟上限", s.DelayYellow, 2, 60000},
 	} {
 		if v.v < v.lo || v.v > v.hi {
 			return fmt.Errorf("%s需在 %d–%d 之间", v.name, v.lo, v.hi)

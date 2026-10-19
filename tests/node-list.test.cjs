@@ -26,3 +26,12 @@ test('switching airports resets expansion, including returning to the previous a
  assert.equal(list.view(nodes,'b').visible,30);list.toggle();assert.equal(list.view(nodes,'b').visible,70);
  assert.equal(list.view(nodes,'a').expanded,false);
 });
+
+test('configured limits take effect immediately and preserve explicit expansion',()=>{
+ const list=create();assert.equal(list.view(nodes,'a',12).visible,12);
+ assert.equal(list.view(nodes,'a',5).visible,5);assert.equal(list.view(nodes,'a',70).canToggle,false);
+ list.toggle();assert.equal(list.view(nodes,'a',10).visible,70);
+ list.toggle();assert.equal(list.view(nodes,'a',10).visible,10);
+ for(const invalid of [0,-1,1.5,1001,NaN])assert.equal(list.view(nodes,'a',invalid).limit,30);
+ assert.equal(list.view(nodes,'b',8).visible,8);
+});

@@ -11,7 +11,7 @@ import (
 
 type Pin struct{ ID, Name, Selector string }
 type Config struct {
-	DelayGreen, DelayYellow                                                   int
+	DelayGreen, DelayYellow, NodeDisplayLimit                                 int
 	Mode, API, Root, Pattern, TestURL, Listen, LogDir, SettingsPath, LogLevel string
 	GRPCAddress, GRPCSecret                                                   string
 	Pins                                                                      []Pin
@@ -27,7 +27,7 @@ type Config struct {
 }
 
 func Default() Config {
-	return Config{DelayGreen: 200, DelayYellow: 600, Mode: "demo", API: "http://127.0.0.1:9695", Root: "proxy", Pattern: "PIN$", TestURL: "https://www.gstatic.com/generate_204", Listen: "127.0.0.1:8787", LogDir: "logs", LogLevel: "info", Startup: 10 * time.Second, Resume: 5 * time.Second, Current: 3 * time.Second, Candidate: 30 * time.Second, Ordinary: 5 * time.Minute, Recovery: 3 * time.Second, Timeout: 4 * time.Second, SleepIdleAfter: 10 * time.Minute, SleepQuietBytes: 64 * 1024, SleepWakeWindow: 5 * time.Second, SleepWakeBytes: 1024 * 1024, RecoverySteps: []time.Duration{3 * time.Second, 6 * time.Second, 12 * time.Second, 20 * time.Second}, RecoveryDropRatio: .75, RecoveryDropMinMS: 100, RecoveryGoodMaxMS: 400, SwitchRatio: 1.4, HistoryLimit: 24}
+	return Config{NodeDisplayLimit: 30, DelayGreen: 200, DelayYellow: 600, Mode: "demo", API: "http://127.0.0.1:9695", Root: "proxy", Pattern: "PIN$", TestURL: "https://www.gstatic.com/generate_204", Listen: "127.0.0.1:8787", LogDir: "logs", LogLevel: "info", Startup: 10 * time.Second, Resume: 5 * time.Second, Current: 3 * time.Second, Candidate: 30 * time.Second, Ordinary: 5 * time.Minute, Recovery: 3 * time.Second, Timeout: 4 * time.Second, SleepIdleAfter: 10 * time.Minute, SleepQuietBytes: 64 * 1024, SleepWakeWindow: 5 * time.Second, SleepWakeBytes: 1024 * 1024, RecoverySteps: []time.Duration{3 * time.Second, 6 * time.Second, 12 * time.Second, 20 * time.Second}, RecoveryDropRatio: .75, RecoveryDropMinMS: 100, RecoveryGoodMaxMS: 400, SwitchRatio: 1.4, HistoryLimit: 24}
 }
 func ParsePins(raw string) ([]Pin, error) {
 	var out []Pin

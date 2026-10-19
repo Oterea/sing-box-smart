@@ -212,10 +212,10 @@ function render(s){
  const selected=current??{id:'',name:'等待首次选择',checks:0,history:[],score:null,delay_ms:null,last_success:false};
  syncRows($('selected-node'),[selected],best,s,true);
  nodeList??=SmartNodeList.create(30);
- const list=nodeList.view(sorted,s.airport_id);
+ const list=nodeList.view(sorted,s.airport_id,prefs?.node_display_limit??30);
  $('node-count').textContent=list.canToggle?`${list.visible} / ${list.total}`:list.total;
  $('node-list-controls').hidden=!list.canToggle;
- $('nodes-toggle').textContent=list.expanded?'收起至前 30 个':`显示全部（还有 ${list.remaining} 个）`;
+ $('nodes-toggle').textContent=list.expanded?`收起至前 ${list.limit} 个`:`显示全部（还有 ${list.remaining} 个）`;
  $('nodes-toggle').setAttribute('aria-expanded',String(list.expanded));
  syncRows($('nodes'),list.nodes,best,s,false);
  const kinds={startup:'启动',phase:'状态',switch:'切换',recovery:'复查',sleep:'睡眠',manual:'手动',decision:'判断',api:'接口',error:'错误',unavailable:'故障',grpc:'gRPC',settings:'设置'};

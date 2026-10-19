@@ -17,13 +17,14 @@ func TestRoundTripAndFutureDefaults(t *testing.T) {
 	if err != nil || got.WakeBytes != 1048576 {
 		t.Fatalf("missing file: %+v %v", got, err)
 	}
+	defaults.NodeDisplayLimit = 12
 	defaults.DelayGreen = 150
 	defaults.LogLevel = "debug"
 	if err = preferences.Save(path, defaults); err != nil {
 		t.Fatal(err)
 	}
 	got, err = preferences.Load(path, config.Default().Preferences())
-	if err != nil || got.DelayGreen != 150 || got.LogLevel != "debug" {
+	if err != nil || got.NodeDisplayLimit != 12 || got.DelayGreen != 150 || got.LogLevel != "debug" {
 		t.Fatalf("roundtrip: %+v %v", got, err)
 	}
 	info, _ := os.Stat(path)
@@ -34,22 +35,24 @@ func TestRoundTripAndFutureDefaults(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err = preferences.Load(path, config.Default().Preferences())
-	if err != nil || got.DelayGreen != 100 || got.WakeBytes != 1048576 {
+	if err != nil || got.NodeDisplayLimit != 30 || got.DelayGreen != 100 || got.WakeBytes != 1048576 {
 		t.Fatalf("new defaults lost: %+v %v", got, err)
 	}
 }
 func TestInvalidValuesCannotReplaceSavedSettings(t *testing.T) {
 	cases := map[string]func(*preferences.Settings){
-		"reversed colors":   func(s *preferences.Settings) { s.DelayGreen = s.DelayYellow },
-		"zero timeout":      func(s *preferences.Settings) { s.Timeout = 0 },
-		"overflow duration": func(s *preferences.Settings) { s.Ordinary = 1 << 60 },
-		"empty steps":       func(s *preferences.Settings) { s.RecoverySteps = nil },
-		"negative step":     func(s *preferences.Settings) { s.RecoverySteps = []int{-1} },
-		"bad URL":           func(s *preferences.Settings) { s.TestURL = "file:///etc/passwd" },
-		"bad level":         func(s *preferences.Settings) { s.LogLevel = "trace" },
-		"NaN":               func(s *preferences.Settings) { s.SwitchRatio = math.NaN() },
-		"infinity":          func(s *preferences.Settings) { s.RecoveryDropRatio = math.Inf(1) },
-		"negative bytes":    func(s *preferences.Settings) { s.WakeBytes = -1 },
+		"zero node limit":      func(s *preferences.Settings) { s.NodeDisplayLimit = 0 },
+		"excessive node limit": func(s *preferences.Settings) { s.NodeDisplayLimit = 1001 },
+		"reversed colors":      func(s *preferences.Settings) { s.DelayGreen = s.DelayYellow },
+		"zero timeout":         func(s *preferences.Settings) { s.Timeout = 0 },
+		"overflow duration":    func(s *preferences.Settings) { s.Ordinary = 1 << 60 },
+		"empty steps":          func(s *preferences.Settings) { s.RecoverySteps = nil },
+		"negative step":        func(s *preferences.Settings) { s.RecoverySteps = []int{-1} },
+		"bad URL":              func(s *preferences.Settings) { s.TestURL = "file:///etc/passwd" },
+		"bad level":            func(s *preferences.Settings) { s.LogLevel = "trace" },
+		"NaN":                  func(s *preferences.Settings) { s.SwitchRatio = math.NaN() },
+		"infinity":             func(s *preferences.Settings) { s.RecoveryDropRatio = math.Inf(1) },
+		"negative bytes":       func(s *preferences.Settings) { s.WakeBytes = -1 },
 	}
 	path := filepath.Join(t.TempDir(), "runtime.json")
 	base := config.Default().Preferences()
@@ -74,6 +77,7 @@ func TestInvalidValuesCannotReplaceSavedSettings(t *testing.T) {
 func TestConfigMappingPreservesAllFields(t *testing.T) {
 	c := config.Default()
 	s := c.Preferences()
+	s.NodeDisplayLimit = 15
 	s.Current = 7
 	s.RecoverySteps = []int{2, 4}
 	c.ApplyPreferences(s)

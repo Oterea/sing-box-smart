@@ -38,6 +38,7 @@ func TestDisplaySettingsPreserveDetectionRecoveryAndScores(t *testing.T) {
 	beforeMetrics := n.Metrics
 	generation := a.generation
 	s := a.cfg.Preferences()
+	s.NodeDisplayLimit = 12
 	s.DelayGreen = 100
 	s.DelayYellow = 400
 	s.LogLevel = "debug"
@@ -48,13 +49,13 @@ func TestDisplaySettingsPreserveDetectionRecoveryAndScores(t *testing.T) {
 		t.Fatal("display change disturbed detection")
 	}
 	saved, err := preferences.Load(a.cfg.PreferencesPath(), config.Default().Preferences())
-	if err != nil || saved.DelayYellow != 400 {
+	if err != nil || saved.NodeDisplayLimit != 12 || saved.DelayYellow != 400 {
 		t.Fatalf("not persisted: %+v %v", saved, err)
 	}
 	if a.events.MinLevel != events.Debug {
 		t.Fatal("log level not applied")
 	}
-	if a.snapshot().Settings.DelayGreen != 100 {
+	if a.snapshot().Settings.NodeDisplayLimit != 12 || a.snapshot().Settings.DelayGreen != 100 {
 		t.Fatal("settings missing from snapshot")
 	}
 }
