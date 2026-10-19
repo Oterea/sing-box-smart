@@ -91,3 +91,13 @@ footer {font-size:var(--ui-note);padding:var(--ui-space) 0}
   .api-settings input,.runtime-field input:not([type=checkbox]):not([type=radio]),.runtime-field select {font-size:1rem;min-height:40px}
   footer {flex-wrap:wrap}
 }
+
+/* Reserve the focus border inside the field; scroll containers cannot clip it. */
+.api-settings input:not([type=checkbox]):not([type=radio]),.api-settings select {
+  border:2px solid transparent!important;border-radius:0!important;
+  padding:calc(var(--ui-control-y) - 2px) calc(var(--ui-control-x) - 2px);
+  outline:none!important;box-shadow:none!important;
+}
+.api-settings input:not([type=checkbox]):not([type=radio]):focus,.api-settings select:focus {
+  border-color:var(--blue)!important;
+}

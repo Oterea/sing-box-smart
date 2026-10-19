@@ -72,13 +72,14 @@
 .sbs-service-field label {display:block;margin:0;color:var(--sbs-control-text);font-size:var(--sbs-font);font-weight:500}
 .sbs-setting-help {margin:0;color:var(--sbs-muted);font-size:12px;line-height:1.6;overflow-wrap:anywhere}
 .sbs-service-field input {
-  width:100%;height:auto;min-width:0;min-height:32px;margin:0;padding:6px 10px;
-  background:var(--sbs-field)!important;color:var(--sbs-ink)!important;border:0!important;
-  box-shadow:none!important;font-family:inherit;font-size:var(--sbs-font);line-height:1.5;
+  width:100%;height:auto;min-width:0;min-height:32px;margin:0;padding:4px 8px;
+  background:var(--sbs-field)!important;color:var(--sbs-ink)!important;border:2px solid transparent!important;
+  outline:none!important;box-shadow:none!important;font-family:inherit;font-size:var(--sbs-font);line-height:1.5;
 }
+.sbs-service-field input:focus {border-color:var(--sbs-blue)!important}
 .sbs-service-footer {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 16px;margin-top:var(--sbs-space)}
 .sbs-page .sbs-settings-save {flex-shrink:0;margin-left:auto!important}
-.sbs-page .sbs-button:focus-visible,.sbs-autostart input:focus-visible,.sbs-service-field input:focus-visible {outline:2px solid var(--sbs-blue);outline-offset:3px}
+.sbs-page .sbs-button:focus-visible,.sbs-autostart input:focus-visible {outline:2px solid var(--sbs-blue);outline-offset:3px}
 @media(max-width:560px) {
   .sbs-page {padding-top:0;--sbs-pad-x:14px;--sbs-pad-y:14px;--sbs-button-width:104px}
   .sbs-service-field input {font-size:16px;min-height:36px}
