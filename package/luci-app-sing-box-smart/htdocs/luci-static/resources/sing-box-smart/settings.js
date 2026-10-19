@@ -2,7 +2,7 @@
 'require fs';
 'require ui';
 return L.Class.extend({
- render: function(initial,onApply,canSave,footerLeft) {
+ render: function(initial,onApply,canSave) {
   const form=E('div',{class:'sbs-service-settings'});
   const controls={};
   const fields=[
@@ -34,7 +34,7 @@ return L.Class.extend({
    .catch(function(error){ui.addNotification(null,E('p',{},[error.message]));})
    .finally(function(){save.disabled=false;});
   });
-  const footer=E('div',{class:'sbs-service-footer'},footerLeft?[footerLeft,save]:[save]);
+  const footer=E('div',{class:'sbs-service-footer'},[save]);
   return E('section',{class:'sbs-service-details','aria-labelledby':'sbs-service-title'},[E('h3',{id:'sbs-service-title',class:'sbs-service-title'},['服务设置']),form,footer]);
  }
 });

@@ -33,7 +33,7 @@ return view.extend({
   const actions = [];
   const updateText = E('span',{class:'sbs-update-text'},['正在检查更新…']);
   const updateButton = E('button',{type:'button',class:'cbi-button sbs-button sbs-update-button'},['检查更新']);
-  const updateRow = E('div',{class:'sbs-update-row'},[updateText,updateButton]);
+  const versionBlock = E('section',{class:'sbs-version-block','aria-labelledby':'sbs-version-title'},[E('div',{class:'sbs-card-title'},[E('h3',{id:'sbs-version-title',class:'sbs-service-title'},['版本']),updateButton]),updateText]);
   const update = function(result) {
    const service = result && result[serviceName];
    const instances = service && service.instances && typeof service.instances === 'object' ? service.instances : {};
@@ -142,15 +142,18 @@ return view.extend({
    E('div',{class:'sbs-heading'},[E('h2',{},['sing-box-smart']),statusLine]),
    E('div',{class:'sbs-grid'},[
     E('section',{class:'sbs-card sbs-main-card'},[
-     E('div',{class:'sbs-card-title'},[E('span',{},['服务控制'])]),
-     E('div',{class:'sbs-actions'},[...actions,monitorLink]),
-     E('div',{class:'sbs-auto-row'},[autoLabel]),
+     E('section',{class:'sbs-control-block','aria-labelledby':'sbs-control-title'},[
+      E('div',{class:'sbs-card-title'},[E('span',{id:'sbs-control-title'},['服务控制'])]),
+      E('div',{class:'sbs-actions'},[...actions,monitorLink]),
+      E('div',{class:'sbs-auto-row'},[autoLabel])
+     ]),
      serviceSettings.render(savedService,function(settings){
       if(busy)throw Error('服务正忙，请稍后重试');
       setMonitorAddress(settings);
       setBusy(true);
       return fs.exec(initPath,['restart']).then(function(result){if(result.code!==0)throw Error(result.stderr||'重启失败，设置已保存');return list(serviceName).then(update);}).finally(function(){setBusy(false);});
-     },function(){return !busy && !updating;},updateRow)
+     },function(){return !busy && !updating;}),
+     versionBlock
     ]),
    ])
   ]);

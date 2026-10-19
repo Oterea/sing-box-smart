@@ -33,6 +33,7 @@
 .sbs-page .sbs-heading h2 {flex:1;min-width:0;overflow-wrap:anywhere;margin:0!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;color:var(--sbs-ink);font-size:18px;line-height:1.4;font-weight:500;letter-spacing:0}
 .sbs-grid {display:grid;grid-template-columns:minmax(0,1fr)}
 .sbs-card {min-width:0}
+.sbs-main-card {display:flex;flex-direction:column;gap:24px}
 .sbs-card-title {display:flex;align-items:center;justify-content:space-between;gap:16px;color:var(--sbs-ink);font-size:var(--sbs-heading-size);font-weight:500}
 .sbs-status {display:inline-flex;align-items:center;gap:8px;padding:0;background:transparent;color:var(--sbs-control-text);font-size:var(--sbs-small);font-weight:500;white-space:nowrap}
 .sbs-page .sbs-status-dot {display:block;width:8px;height:8px;flex:0 0 8px;border-radius:50%!important;background:var(--sbs-muted);box-shadow:none}
@@ -58,16 +59,13 @@
 .sbs-actions .sbs-button {min-width:0}
 .sbs-page .sbs-open,.sbs-page .sbs-update-button {width:88px;flex:0 0 88px}
 .sbs-auto-row {display:flex;align-items:center;gap:12px;margin-top:var(--sbs-space)}
-.sbs-page .sbs-update-button,.sbs-page .sbs-update-button:hover:not(:disabled) {background:transparent!important}
-.sbs-page .sbs-update-button:hover:not(:disabled) {text-decoration:underline!important;text-underline-offset:3px}
 .sbs-autostart {display:inline-flex;align-items:center;gap:10px;min-height:24px;margin:0;color:var(--sbs-control-text);font-size:var(--sbs-font);font-weight:400;cursor:pointer}
 .sbs-autostart input[type=checkbox] {appearance:auto!important;position:static;opacity:1;width:16px;height:16px;margin:0;flex:0 0 16px;accent-color:var(--sbs-blue);cursor:pointer}
 .sbs-autostart input:disabled {cursor:default}
-.sbs-update-row {display:flex;align-items:center;flex-wrap:wrap;flex:1 1 260px;min-width:0;gap:8px 12px;color:var(--sbs-control-text);font-size:var(--sbs-font)}
-.sbs-update-text {min-width:0;color:var(--sbs-muted);overflow-wrap:anywhere}
+.sbs-update-text {display:block;min-width:0;margin-top:12px;color:var(--sbs-muted);font-size:var(--sbs-font);line-height:1.6;overflow-wrap:anywhere}
 .sbs-update-text.is-available {color:var(--sbs-hover-text);font-weight:500}
 
-.sbs-page .sbs-service-details {margin-top:var(--sbs-space);padding:0;border:0;background:transparent;box-shadow:none}
+.sbs-page .sbs-control-block,.sbs-page .sbs-service-details,.sbs-page .sbs-version-block {min-width:0;margin:0;padding:0;border:0;background:transparent;box-shadow:none}
 .sbs-page .sbs-service-title {margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;color:var(--sbs-ink);font-size:var(--sbs-heading-size);line-height:1.5;font-weight:500}
 .sbs-service-settings {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,max(260px,calc(50% - 9px))),1fr));gap:14px 18px;margin-top:12px}
 .sbs-service-field {display:grid;grid-template-rows:auto 1fr auto;gap:6px;min-width:0}
