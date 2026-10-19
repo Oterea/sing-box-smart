@@ -143,8 +143,8 @@ return view.extend({
    E('div',{class:'sbs-grid'},[
     E('section',{class:'sbs-card sbs-main-card'},[
      E('div',{class:'sbs-card-title'},[E('span',{},['服务控制'])]),
-     E('div',{class:'sbs-actions'},actions),
-     E('div',{class:'sbs-auto-row'},[autoLabel,monitorLink]),
+     E('div',{class:'sbs-actions'},[...actions,monitorLink]),
+     E('div',{class:'sbs-auto-row'},[autoLabel]),
      serviceSettings.render(savedService,function(settings){
       if(busy)throw Error('服务正忙，请稍后重试');
       setMonitorAddress(settings);
