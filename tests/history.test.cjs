@@ -63,10 +63,11 @@ test('当前两个数值共享相同字号，移除旧柱子的层叠样式', ()
 test('选中区域与列表生成完全相同的表头与六个单元格', () => {
  const elements = new Map();
  const getElementById = id => {
-  if (!elements.has(id)) elements.set(id, { textContent:'', innerHTML:'', parentElement:{dataset:{}}, classList:{toggle(){}} });
+  if (!elements.has(id)) elements.set(id, { textContent:'', innerHTML:'', parentElement:{dataset:{}}, classList:{toggle(){}}, setAttribute(){} });
   return elements.get(id);
  };
  const renderContext = vm.createContext({document:{getElementById}});
+ vm.runInContext(fs.readFileSync('web/node-list.js','utf8'),renderContext);
  vm.runInContext(source.slice(0, source.indexOf('function toast(')), renderContext);
  const node = {id:'a',name:'Hong Kong 22',checks:20,score:300,delay_ms:200,last_success:true,current:true,history:[sample(200)]};
  const snapshot = {mode:'real',airports:[{id:'airport',name:'ToLink',selector:'tolink PIN'}],airport_id:'airport',current_id:'a',nodes:[node],api_healthy:true,phase:'normal',now:'2026-09-28T00:01:00Z',started_at:'2026-09-28T00:00:00Z',events:[]};
