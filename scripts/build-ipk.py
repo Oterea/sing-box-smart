@@ -22,7 +22,7 @@ def package(name,arch,files,depends,conffiles=None):
   root=pathlib.Path(td); control=root/'control'; data=root/'data'; control.mkdir(); data.mkdir()
   (control/'control').write_text(f'Package: {name}\nVersion: {VERSION}\nArchitecture: {arch}\nMaintainer: Oterea\nSection: net\nPriority: optional\nDepends: {depends}\nDescription: sing-box-smart monitoring and service management\n')
   if conffiles:(control/'conffiles').write_text('\n'.join(conffiles)+'\n')
-  if name.startswith('luci-app-'):(control/'postinst').write_text('#!/bin/sh\n[ -n "$IPKG_INSTROOT" ] && exit 0\n/etc/init.d/rpcd restart\nrm -f /tmp/luci-indexcache /tmp/luci-indexcache.* /tmp/luci-modulecache/*\nexit 0\n');(control/'postinst').chmod(0o755)
+  if name.startswith('luci-app-'):(control/'postinst').write_text('#!/bin/sh\n[ -n "$IPKG_INSTROOT" ] && exit 0\n/usr/libexec/sing-box-smart-cleanup-luci\n/etc/init.d/rpcd restart\nrm -f /tmp/luci-indexcache /tmp/luci-indexcache.* /tmp/luci-modulecache/*\nexit 0\n');(control/'postinst').chmod(0o755)
   for n,v,m in files:
    q=data/n;q.parent.mkdir(parents=True,exist_ok=True);q.write_bytes(v if isinstance(v,bytes) else v.encode());q.chmod(m)
   control_files=[]

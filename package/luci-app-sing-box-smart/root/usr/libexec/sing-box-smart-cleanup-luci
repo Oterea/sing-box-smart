@@ -1,0 +1,11 @@
+#!/bin/sh
+# opkg removes obsolete versioned files but may leave their empty directories.
+# rmdir never deletes a file or a directory that still contains resources.
+set -eu
+resource_root="${IPKG_INSTROOT:-}/www/luci-static/resources"
+for base in "$resource_root/sing-box-smart" "$resource_root/view/sing-box-smart"; do
+    for directory in "$base"/v[0-9]*; do
+        [ -d "$directory" ] || continue
+        rmdir "$directory" 2>/dev/null || :
+    done
+done
