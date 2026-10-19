@@ -1,6 +1,17 @@
 'use strict';
 'require fs';
 'require ui';
+function secretControl(input) {
+ const toggle=E('button',{type:'button',class:'cbi-button sbs-button sbs-secret-toggle','aria-controls':input.id,'aria-pressed':'false','aria-label':'显示 gRPC 密钥'},['显示']);
+ toggle.addEventListener('click',function(){
+  const visible=input.type==='password';
+  input.type=visible?'text':'password';
+  toggle.textContent=visible?'隐藏':'显示';
+  toggle.setAttribute('aria-pressed',String(visible));
+  toggle.setAttribute('aria-label',visible?'隐藏 gRPC 密钥':'显示 gRPC 密钥');
+ });
+ return E('div',{class:'sbs-secret-control'},[input,toggle]);
+}
 return L.Class.extend({
  render: function(initial,onApply,canSave) {
   const form=E('div',{class:'sbs-service-settings'});
@@ -15,7 +26,7 @@ return L.Class.extend({
    const input=E('input',{id:'sbs-service-'+field[0],'aria-describedby':'sbs-help-'+field[0],type:field[0]==='grpc_secret'?'password':'text',value:initial[field[0]]||'',autocomplete:'off',class:'cbi-input-text'});controls[field[0]]=input;
    form.appendChild(E('div',{class:'sbs-service-field'},[
     E('label',{'for':'sbs-service-'+field[0]},[field[1]]),
-    E('p',{id:'sbs-help-'+field[0],class:'sbs-setting-help'},[field[2]]),input
+    E('p',{id:'sbs-help-'+field[0],class:'sbs-setting-help'},[field[2]]),field[0]==='grpc_secret'?secretControl(input):input
    ]));
   });
   const save=E('button',{type:'button',class:'cbi-button sbs-button sbs-settings-save'},['保存并重启']);

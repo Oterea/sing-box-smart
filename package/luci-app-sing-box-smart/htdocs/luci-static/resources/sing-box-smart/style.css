@@ -74,6 +74,9 @@
   background:var(--sbs-field)!important;color:var(--sbs-ink)!important;border:2px solid transparent!important;
   outline:none!important;box-shadow:none!important;font-family:inherit;font-size:var(--sbs-font);line-height:1.5;
 }
+.sbs-secret-control {display:flex;gap:8px;min-width:0}
+.sbs-secret-control input {flex:1;min-width:0}
+.sbs-page .sbs-secret-toggle {width:56px;flex:0 0 56px;height:auto!important;padding:0 8px!important}
 .sbs-service-field input:focus {border-color:var(--sbs-blue)!important}
 .sbs-service-footer {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 16px;margin-top:var(--sbs-space)}
 .sbs-page .sbs-settings-save {flex-shrink:0;margin-left:auto!important}
