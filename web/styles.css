@@ -390,7 +390,9 @@ body.settings-open {overflow:hidden}
 .settings-dialog-heading h2 {margin:0;font-size:18px;font-weight:550}
 .settings-dialog .api-settings {display:flex;flex-direction:column;flex:1;min-height:0;padding:0;margin:0;box-shadow:none;overflow:hidden}
 .settings-dialog .settings-tabs {flex-shrink:0}
-.settings-dialog #settings-panel-connection,.settings-dialog #runtime-form {flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;margin:0}
+.settings-dialog #settings-panel-connection,.settings-dialog #runtime-form {display:flex;flex-direction:column;flex:1;min-height:0;gap:0;overflow:hidden;margin:0}
+.settings-dialog .settings-scroll {flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-bottom:8px}
+.settings-dialog .settings-dialog-actions {flex-shrink:0;margin-top:var(--ui-space);padding:0}
 .runtime-field:is(fieldset) {border:0;padding:0;margin:0;min-width:0}
 .runtime-field:is(fieldset) .setting-help {margin:6px 0 10px}
 .runtime-field>legend {font-size:14px;padding:0}

@@ -41,6 +41,7 @@ const SmartSettings = (() => {
  const byID=id=>document.getElementById(id);
  function mount(){
  const form=byID('runtime-form'),tabs=byID('settings-tabs');if(!form||!tabs)return;
+ const panels=document.createElement('div');panels.className='settings-scroll';form.append(panels);
  function activate(tab,focus=false){
  for(const button of tabs.querySelectorAll('[role=tab]')){
  const selected=button===tab;button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;
@@ -68,7 +69,7 @@ const SmartSettings = (() => {
  input.addEventListener('input',()=>{dirty=true;});
  const text=document.createElement('p');text.id='setting-help-'+key;text.className='setting-help';text.textContent=help;
  input.setAttribute('aria-describedby',text.id);field.append(text,input);grid.append(field);
- }section.append(grid);form.append(section);
+ }section.append(grid);panels.append(section);
  }
  tabs.addEventListener('click',event=>{const tab=event.target.closest('[role=tab]');if(tab&&tabs.contains(tab))activate(tab);});
  tabs.addEventListener('keydown',event=>{
@@ -78,7 +79,7 @@ const SmartSettings = (() => {
  });
  // Invalid fields in another category must be revealed before browser focus.
  form.addEventListener('invalid',event=>{const panel=event.target.closest('[role=tabpanel]');if(panel)activate(byID(panel.getAttribute('aria-labelledby')));},true);
- const actions=document.createElement('div');actions.className='settings-actions';
+ const actions=document.createElement('div');actions.className='settings-actions settings-dialog-actions';
  const reset=document.createElement('button');reset.type='button';reset.className='button secondary';reset.textContent='撤销修改';
  reset.addEventListener('click',()=>{dirty=false;fill();});
  const submit=document.createElement('button');submit.type='submit';submit.className='button secondary';submit.textContent='保存并应用';actions.append(reset,submit);form.append(actions);
