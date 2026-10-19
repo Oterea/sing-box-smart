@@ -16,6 +16,16 @@ function animateNumber(el, value, formatter=num) {
  el.dataset.raf=requestAnimationFrame(step);
 }
 const time = value => new Date(value).toLocaleTimeString('zh-CN', {hour12:false});
+const recordTime = value => {
+ const date=new Date(value);if(!Number.isFinite(date.getTime()))return '—';
+ const pad=value=>String(value).padStart(2,'0');
+ return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())} ${time(value)}`;
+};
+const elapsedTime = value => {
+ const total=Number.isFinite(Number(value))?Math.max(0,Math.floor(Number(value))):0;
+ const hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;
+ return [hours?`${hours} 小时`:'',minutes?`${minutes} 分钟`:'',seconds||!total?`${seconds} 秒`:''].filter(Boolean).join(' ');
+};
 const tone = (value,best) => value == null ? 'none' : value <= best*1.4 ? 'good' : value <= best*2.5 ? 'medium' : 'bad';
 const delayTone = value => value == null ? 'none' : value <= (state?.settings?.delay_green_ms??200) ? 'good' : value <= (state?.settings?.delay_yellow_ms??600) ? 'medium' : 'bad';
 const sampleKey = sample => JSON.stringify([sample.at,sample.success,sample.score,sample.delay_ms,sample.error]);
@@ -205,7 +215,7 @@ function render(s){
  const kinds={startup:'启动',phase:'状态',switch:'切换',recovery:'复查',sleep:'睡眠',manual:'手动',decision:'判断',api:'接口',error:'错误',unavailable:'故障',grpc:'gRPC',settings:'设置'};
  const nextEventsKey=JSON.stringify(s.events);
  if(nextEventsKey!==eventsKey){
-  $('events').innerHTML=[...s.events].reverse().slice(0,8).map(e=>{const kind=kinds[e.module||e.kind]??'记录';const eventNames={connected:'已连接',disconnected:'已断开',connect_failed:'连接失败',connect:'连接中',entered:'进入睡眠',woke:'已唤醒',applied:'已应用'};const event=e.event&&e.event!=='state'?` · ${eventNames[e.event]||e.event}`:'';const level=['DEBUG','INFO','WARN','ERROR'].includes(e.level)?e.level:'INFO';const cls=(e.module||e.kind)==='sleep'?' sleep-event':'';return `<div class="event${cls}"><time>${time(e.at)}</time><span class="event-level level-${level.toLowerCase()}">${level}</span><span class="event-kind">${esc(kind)}</span><span class="event-event">${esc(event)}</span><span class="event-text" title="${esc(e.message)}">${esc(e.message)}</span></div>`;}).join('');
+  $('events').innerHTML=[...s.events].reverse().slice(0,8).map(e=>{const kind=kinds[e.module||e.kind]??'记录';const eventNames={connected:'已连接',disconnected:'已断开',connect_failed:'连接失败',connect:'连接中',entered:'进入睡眠',woke:'已唤醒',applied:'已应用'};const event=e.event&&e.event!=='state'?` · ${eventNames[e.event]||e.event}`:'';const level=['DEBUG','INFO','WARN','ERROR'].includes(e.level)?e.level:'INFO';const cls=(e.module||e.kind)==='sleep'?' sleep-event':'';return `<div class="event${cls}"><time>${recordTime(e.at)}</time><span class="event-level level-${level.toLowerCase()}">${level}</span><span class="event-kind">${esc(kind)}</span><span class="event-event">${esc(event)}</span><span class="event-text" title="${esc(e.message)}">${esc(e.message)}</span></div>`;}).join('');
   eventsKey=nextEventsKey;
  }
  const sleepRecords=s.sleep_records??[];
@@ -213,10 +223,8 @@ function render(s){
  if(nextSleepRecordsKey!==sleepRecordsKey){
   $('sleep-count').textContent=sleepRecords.length;
   $('sleep-records').innerHTML=sleepRecords.length?[...sleepRecords].reverse().map(record=>{
-   const duration=Number(record.duration_seconds)||0;
-   const minutes=Math.floor(duration/60), seconds=Math.floor(duration%60);
-   const elapsed=minutes?`${minutes} 分钟${seconds?` ${seconds} 秒`:''}`:`${seconds} 秒`;
-   const range=record.active?`${time(record.started_at)} 开始`:`${time(record.started_at)}–${time(record.ended_at)}`;
+   const elapsed=elapsedTime(record.duration_seconds);
+   const range=record.active?`${recordTime(record.started_at)} 开始`:`${recordTime(record.started_at)} — ${recordTime(record.ended_at)}`;
    const wake=record.wake_source?` · 唤醒：${record.wake_source}`:record.wake_reason==='settings'?' · 关闭自动睡眠':record.wake_reason==='manual'?' · 手动继续':'';
    const label=record.active?`正在睡眠 · 已持续 ${elapsed}`:`持续 ${elapsed}${wake}`;
    return `<div class="sleep-record"><span class="sleep-record-time">${esc(range)}</span><span class="sleep-record-state">${esc(label)}</span></div>`;

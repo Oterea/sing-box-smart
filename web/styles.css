@@ -89,7 +89,7 @@ progress::-moz-progress-bar{background:var(--green)}
 .sleep-record-state{color:#536b7b}
 .sleep-record-empty{padding:0 0 10px;color:#9aa6af}
 .event{display:flex;align-items:baseline;gap:10px;border-top:1px solid #edf0f3;padding:12px 0;font-size:12px;color:#56697a;min-width:0}
-.event time{font-size:11px;color:#8b98a5;font-variant-numeric:tabular-nums;flex-shrink:0}
+.event time{white-space:nowrap;font-size:11px;color:#8b98a5;font-variant-numeric:tabular-nums;flex-shrink:0}
 .event-level{font-size:10px;flex-shrink:0;padding:2px 5px;background:#e9eef2;color:#627789}
 .level-warn{background:#fff0cb;color:#866419}
 .level-error{background:#ffe3e3;color:#b92e38}
@@ -405,4 +405,9 @@ body.settings-open {overflow:hidden}
  .settings-dialog {padding:16px;width:calc(100% - 20px);height:min(760px,calc(100dvh - 20px));max-height:calc(100dvh - 20px)}
  .settings-dialog .runtime-grid,.settings-dialog #api-form {grid-template-columns:1fr}
  .settings-dialog .runtime-grid {gap:18px}
+}
+
+@media(max-width:560px) {
+ .event {flex-wrap:wrap;gap:6px 8px}
+ .event-text {flex-basis:100%;min-width:0}
 }
