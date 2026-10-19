@@ -20,7 +20,8 @@
 body {font-size:var(--ui-body)}
 .shell {padding-inline:var(--ui-gutter)}
 header {height:auto;min-height:clamp(80px, 6.95vw, 100px);gap:var(--ui-space)}
-.brand {min-width:0;font-size:var(--ui-brand)}
+.brand {min-width:0;font-size:var(--ui-brand);gap:10px}
+.brand-logo {display:block;flex-shrink:0;width:clamp(36px,3.06vw,44px);height:clamp(40px,3.34vw,48px);object-fit:contain}
 .brand small {font-size:clamp(.5625rem, .7vw, .625rem)}
 .header-actions {gap:clamp(8px, 1.53vw, 22px);flex-shrink:0}
 .button,.header-actions #detection-toggle,.header-actions #recheck {
