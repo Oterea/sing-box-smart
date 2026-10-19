@@ -36,9 +36,9 @@
 .sbs-card-title {display:flex;align-items:center;justify-content:space-between;gap:16px;color:var(--sbs-ink);font-size:var(--sbs-heading-size);font-weight:500}
 .sbs-status {display:inline-flex;align-items:center;gap:8px;padding:0;background:transparent;color:var(--sbs-control-text);font-size:var(--sbs-small);font-weight:500;white-space:nowrap}
 .sbs-page .sbs-status-dot {display:block;width:8px;height:8px;flex:0 0 8px;border-radius:50%!important;background:var(--sbs-muted);box-shadow:none}
-.sbs-status-dot.is-running {background:var(--sbs-green);animation:sbs-status-breathe 2.6s ease-in-out infinite}
+.sbs-status-dot.is-running {background:var(--sbs-green);animation:sbs-status-breathe 1.8s ease-in-out infinite;box-shadow:0 0 0 0 rgba(4,199,102,.48)}
 .sbs-status-dot.is-stopped {background:var(--sbs-red)}
-@keyframes sbs-status-breathe {0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes sbs-status-breathe {0%,100%{opacity:.55;box-shadow:0 0 0 0 rgba(4,199,102,.45)}50%{opacity:1;box-shadow:0 0 0 5px rgba(4,199,102,0)}}
 @media(prefers-reduced-motion:reduce) {.sbs-status-dot.is-running {animation:none}}
 
 /* One sizing rule for service actions, links, update and settings save. */
@@ -56,13 +56,13 @@
 .sbs-page .sbs-button.start:hover:not(:disabled) {background:var(--sbs-blue-hover)!important}
 .sbs-actions {display:flex;flex-wrap:wrap;gap:8px;margin-top:var(--sbs-space)}
 .sbs-actions .sbs-button {min-width:0}
-.sbs-open,.sbs-update-button {width:var(--sbs-button-width);flex-shrink:0}
+.sbs-page .sbs-open,.sbs-page .sbs-update-button {width:88px;flex:0 0 88px}
 .sbs-auto-row {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:var(--sbs-space)}
 .sbs-page .sbs-open {margin-left:auto!important}
 .sbs-autostart {display:inline-flex;align-items:center;gap:10px;min-height:24px;margin:0;color:var(--sbs-control-text);font-size:var(--sbs-font);font-weight:400;cursor:pointer}
 .sbs-autostart input[type=checkbox] {appearance:auto!important;position:static;opacity:1;width:16px;height:16px;margin:0;flex:0 0 16px;accent-color:var(--sbs-blue);cursor:pointer}
 .sbs-autostart input:disabled {cursor:default}
-.sbs-update-row {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;margin-top:var(--sbs-space);color:var(--sbs-control-text);font-size:var(--sbs-font)}
+.sbs-update-row {display:flex;align-items:center;flex-wrap:wrap;flex:1 1 260px;min-width:0;gap:8px 12px;color:var(--sbs-control-text);font-size:var(--sbs-font)}
 .sbs-update-text {min-width:0;color:var(--sbs-muted);overflow-wrap:anywhere}
 .sbs-update-text.is-available {color:var(--sbs-hover-text);font-weight:500}
 
@@ -77,7 +77,8 @@
   background:var(--sbs-field)!important;color:var(--sbs-ink)!important;border:0!important;
   box-shadow:none!important;font-family:inherit;font-size:var(--sbs-font);line-height:1.5;
 }
-.sbs-settings-save {grid-column:1/-1;justify-self:end}
+.sbs-service-footer {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 16px;margin-top:var(--sbs-space)}
+.sbs-page .sbs-settings-save {flex-shrink:0;margin-left:auto!important}
 .sbs-page .sbs-button:focus-visible,.sbs-autostart input:focus-visible,.sbs-service-field input:focus-visible {outline:2px solid var(--sbs-blue);outline-offset:3px}
 @media(max-width:560px) {
   .sbs-page {padding-top:0;--sbs-pad-x:14px;--sbs-pad-y:14px;--sbs-button-width:104px}

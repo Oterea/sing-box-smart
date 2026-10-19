@@ -145,13 +145,12 @@ return view.extend({
      E('div',{class:'sbs-card-title'},[E('span',{},['服务控制'])]),
      E('div',{class:'sbs-actions'},actions),
      E('div',{class:'sbs-auto-row'},[autoLabel,monitorLink]),
-     updateRow,
      serviceSettings.render(savedService,function(settings){
       if(busy)throw Error('服务正忙，请稍后重试');
       setMonitorAddress(settings);
       setBusy(true);
       return fs.exec(initPath,['restart']).then(function(result){if(result.code!==0)throw Error(result.stderr||'重启失败，设置已保存');return list(serviceName).then(update);}).finally(function(){setBusy(false);});
-     },function(){return !busy && !updating;})
+     },function(){return !busy && !updating;},updateRow)
     ]),
    ])
   ]);

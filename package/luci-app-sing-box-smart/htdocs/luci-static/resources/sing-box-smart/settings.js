@@ -2,7 +2,7 @@
 'require fs';
 'require ui';
 return L.Class.extend({
- render: function(initial,onApply,canSave) {
+ render: function(initial,onApply,canSave,footerLeft) {
   const form=E('div',{class:'sbs-service-settings'});
   const controls={};
   const fields=[
@@ -18,7 +18,7 @@ return L.Class.extend({
     E('p',{id:'sbs-help-'+field[0],class:'sbs-setting-help'},[field[2]]),input
    ]));
   });
-  const save=E('button',{type:'button',class:'cbi-button sbs-button sbs-update-button sbs-settings-save'},['保存并重启']);
+  const save=E('button',{type:'button',class:'cbi-button sbs-button sbs-settings-save'},['保存并重启']);
   save.addEventListener('click',function(){
    if(!canSave()){ui.addNotification(null,E('p',{},['服务正忙，请稍后保存。']));return;}
    const settings={};Object.keys(controls).forEach(k=>settings[k]=controls[k].value.trim());
@@ -34,7 +34,7 @@ return L.Class.extend({
    .catch(function(error){ui.addNotification(null,E('p',{},[error.message]));})
    .finally(function(){save.disabled=false;});
   });
-  form.appendChild(save);
-  return E('section',{class:'sbs-service-details','aria-labelledby':'sbs-service-title'},[E('h3',{id:'sbs-service-title',class:'sbs-service-title'},['服务设置']),form]);
+  const footer=E('div',{class:'sbs-service-footer'},footerLeft?[footerLeft,save]:[save]);
+  return E('section',{class:'sbs-service-details','aria-labelledby':'sbs-service-title'},[E('h3',{id:'sbs-service-title',class:'sbs-service-title'},['服务设置']),form,footer]);
  }
 });
