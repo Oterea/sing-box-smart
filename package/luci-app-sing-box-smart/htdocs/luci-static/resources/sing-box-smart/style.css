@@ -15,9 +15,7 @@
   --sbs-hover-text:#0E4354;
   --sbs-field:#f1f5f7;
   --sbs-green:#04C766;
-  --sbs-green-bg:#e1f4eb;
   --sbs-red:#E9555B;
-  --sbs-red-bg:#ffe6e7;
   --sbs-font:13px;
   --sbs-small:13px;
   --sbs-heading-size:14px;
@@ -36,10 +34,12 @@
 .sbs-grid {display:grid;grid-template-columns:minmax(0,1fr)}
 .sbs-card {min-width:0}
 .sbs-card-title {display:flex;align-items:center;justify-content:space-between;gap:16px;color:var(--sbs-ink);font-size:var(--sbs-heading-size);font-weight:500}
-.sbs-status {display:inline-flex;align-items:center;gap:8px;padding:4px 8px;background:#f3f7f8;color:var(--sbs-control-text);font-size:var(--sbs-small);font-weight:500;white-space:nowrap}
-.sbs-status-dot {display:block;width:8px;height:8px;background:var(--sbs-muted);box-shadow:0 0 0 4px var(--sbs-control)}
-.sbs-status-dot.is-running {background:var(--sbs-green);box-shadow:0 0 0 4px var(--sbs-green-bg)}
-.sbs-status-dot.is-stopped {background:var(--sbs-red);box-shadow:0 0 0 4px var(--sbs-red-bg)}
+.sbs-status {display:inline-flex;align-items:center;gap:8px;padding:0;background:transparent;color:var(--sbs-control-text);font-size:var(--sbs-small);font-weight:500;white-space:nowrap}
+.sbs-page .sbs-status-dot {display:block;width:8px;height:8px;flex:0 0 8px;border-radius:50%!important;background:var(--sbs-muted);box-shadow:none}
+.sbs-status-dot.is-running {background:var(--sbs-green);animation:sbs-status-breathe 2.6s ease-in-out infinite}
+.sbs-status-dot.is-stopped {background:var(--sbs-red)}
+@keyframes sbs-status-breathe {0%,100%{opacity:1}50%{opacity:.4}}
+@media(prefers-reduced-motion:reduce) {.sbs-status-dot.is-running {animation:none}}
 
 /* One sizing rule for service actions, links, update and settings save. */
 .sbs-page .sbs-button {

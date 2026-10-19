@@ -24,7 +24,7 @@ test('LuCI view cannot execute user supplied commands and serializes controls', 
  assert.match(view, /service && service\.instances/);
  assert.doesNotMatch(view, /fs\.exec\([^,]+,\s*\[[^\]]*target/);
  assert.match(view, /sbs-auto-row/);
- assert.match(view, /打开监控面板/);
+ assert.match(view, /监控面板/);
  assert.match(view, /sing-box-smart-update-check/);
  assert.match(view, /sing-box-smart-update-start/);
  assert.match(view, /sing-box-smart-update-status/);
