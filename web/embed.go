@@ -3,5 +3,5 @@ package web
 
 import "embed"
 
-//go:embed index.html styles.css responsive.css app.js settings.js settings-dialog.js logo.svg
+//go:embed index.html styles.css responsive.css app.js settings.js settings-dialog.js logo.svg node-list.js
 var Files embed.FS

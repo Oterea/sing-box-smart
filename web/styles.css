@@ -411,3 +411,7 @@ body.settings-open {overflow:hidden}
  .event {flex-wrap:wrap;gap:6px 8px}
  .event-text {flex-basis:100%;min-width:0}
 }
+
+.node-list-controls {display:flex;justify-content:center;padding:14px var(--ui-pad-x)}
+.node-list-controls[hidden] {display:none}
+.node-list-controls .button,.node-list-controls .button:hover {box-shadow:none}

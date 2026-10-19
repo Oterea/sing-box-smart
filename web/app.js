@@ -1,4 +1,5 @@
 const $ = id => document.getElementById(id);
+let nodeList;
 let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
@@ -199,7 +200,6 @@ function render(s){
  $('airport-options').innerHTML=s.airports.map(a=>`<button class="airport-option ${a.id===s.airport_id&&s.control_active!==false?'selected':''}" data-airport="${esc(a.id)}" title="${esc(a.selector)}" ${busy||s.paused||s.sleeping||s.pending_id||(a.id===s.airport_id&&s.control_active!==false)?'disabled':''} aria-pressed="${a.id===s.airport_id&&s.control_active!==false}"><strong>${esc(a.selector)}</strong></button>`).join('');
   airportKey=nextAirportKey;
  }
- $('node-count').textContent=s.nodes.length;
  const available=s.nodes.filter(n=>n.checks>0&&n.last_success).length;
  $('success-summary').textContent=available+' / '+s.nodes.length+' 节点成功';
  $('sample-count').textContent=s.nodes.reduce((v,n)=>v+n.checks,0)+' 次检查';
@@ -211,7 +211,13 @@ function render(s){
  const sorted=[...s.nodes].sort((a,b)=>(a.score??Infinity)-(b.score??Infinity)||a.id.localeCompare(b.id));
  const selected=current??{id:'',name:'等待首次选择',checks:0,history:[],score:null,delay_ms:null,last_success:false};
  syncRows($('selected-node'),[selected],best,s,true);
- syncRows($('nodes'),sorted,best,s,false);
+ nodeList??=SmartNodeList.create(30);
+ const list=nodeList.view(sorted,s.airport_id);
+ $('node-count').textContent=list.canToggle?`${list.visible} / ${list.total}`:list.total;
+ $('node-list-controls').hidden=!list.canToggle;
+ $('nodes-toggle').textContent=list.expanded?'收起至前 30 个':`显示全部（还有 ${list.remaining} 个）`;
+ $('nodes-toggle').setAttribute('aria-expanded',String(list.expanded));
+ syncRows($('nodes'),list.nodes,best,s,false);
  const kinds={startup:'启动',phase:'状态',switch:'切换',recovery:'复查',sleep:'睡眠',manual:'手动',decision:'判断',api:'接口',error:'错误',unavailable:'故障',grpc:'gRPC',settings:'设置'};
  const nextEventsKey=JSON.stringify(s.events);
  if(nextEventsKey!==eventsKey){
@@ -279,3 +285,5 @@ function connectStream(){
 connectStream();
 
 $('api-test').addEventListener('click',async()=>{const button=$('api-test');button.disabled=true;try{const r=await fetch('/api/config/api/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api:$('api-address').value.trim()})});const data=await r.json();if(!r.ok)throw new Error(data.error);toast('连接正常，策略组可读取');}catch(e){toast(e.message);}finally{button.disabled=false;}});
+
+$('nodes-toggle').addEventListener('click',()=>{if(!state||!nodeList)return;nodeList.toggle();render(state);});
