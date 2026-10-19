@@ -24,9 +24,9 @@ header{height:100px;display:flex;align-items:center;justify-content:space-betwee
 h1{font-size:30px;line-height:1.3;letter-spacing:-1px;font-weight:650;margin:0}
 p{font-size:12px;color:var(--muted);margin:7px 0 0}
 .button{padding:10px 16px;border-radius:8px;border:1px solid var(--green);background:var(--green);color:white;font-weight:550;font-size:12px}
-.button:hover{background:#116d58}
+.button:hover:not(:disabled){background:#116d58}
 .button.secondary{background:white;color:#405264;border-color:#d6dfe5;box-shadow:0 2px 3px #172c3d04}
-.button.secondary:hover{background:#f7faf9;border-color:#b3c9c1}
+.button.secondary:hover:not(:disabled){background:#f7faf9;border-color:#b3c9c1}
 .overview{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:18px;margin-bottom:24px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;min-width:0;box-shadow:0 3px 10px #20374b03}
 .card-label{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:550;color:var(--muted);margin-bottom:16px}
@@ -40,7 +40,7 @@ p{font-size:12px;color:var(--muted);margin:7px 0 0}
 select{width:100%;background:#fff;color:var(--ink);font-size:21px;font-weight:600;border:0;border-bottom:1px solid var(--line);padding:0 0 10px;cursor:pointer}
 .selector-note{font-size:11px;color:var(--muted);margin:9px 0 17px}
 .compact{display:flex;align-items:center;justify-content:space-between;width:100%;padding:8px 12px;background:#f2f8f5;color:#26765f;border-color:#dce9e2}
-.compact:hover{background:#e9f3ed}
+.compact:hover:not(:disabled){background:#e9f3ed}
 .health-number{color:var(--muted);padding:0 0 3px}
 .health-number b{font-size:34px;line-height:1.2;font-weight:600;letter-spacing:-1px;color:var(--ink);margin-right:7px}
 .health-number span{font-size:16px;font-weight:500;color:#617486}
@@ -73,7 +73,7 @@ progress::-moz-progress-bar{background:var(--green)}
 .chart-missing{stroke:#aab5bf;stroke-width:2}
 .chart-failure{fill:#d7dfe4}
 .pick{border:1px solid #dbe3e8;background:white;border-radius:7px;color:#5c7181;padding:6px 11px;font-size:11px}
-.pick:hover{border-color:#94baaa;color:var(--green);background:#f6faf7}
+.pick:hover:not(:disabled){border-color:#94baaa;color:var(--green);background:#f6faf7}
 .table-footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 24px;background:#fafbfc;border-top:1px solid var(--line);font-size:10px;color:#7c8b99}
 .events-panel{margin-top:24px}
 .events-panel .panel-heading{padding-bottom:16px}
@@ -149,13 +149,13 @@ footer>span:last-child{text-align:right}
 .demo-note{border:0!important;box-shadow:0 0 14px rgba(31,53,70,.06)}
 .button,.pick,.compact{border:0!important;border-radius:0!important;box-shadow:0 0 12px rgba(23,72,59,.16);transition:background-color .15s,box-shadow .15s,transform .15s}
 .button{background:var(--green);color:#fff}
-.button:hover{background:#116d58;box-shadow:0 0 16px rgba(23,72,59,.22)}
+.button:hover:not(:disabled){background:#116d58;box-shadow:0 0 16px rgba(23,72,59,.22)}
 .button.secondary{background:#e9eff2;color:#314b5d;box-shadow:0 0 12px rgba(36,57,72,.12)}
-.button.secondary:hover{background:#dfe9ec;box-shadow:0 0 16px rgba(36,57,72,.18)}
+.button.secondary:hover:not(:disabled){background:#dfe9ec;box-shadow:0 0 16px rgba(36,57,72,.18)}
 .compact{background:var(--green);color:#fff}
-.compact:hover{background:#116d58}
+.compact:hover:not(:disabled){background:#116d58}
 .pick{background:#e9eff2;color:#405c6d;box-shadow:0 0 10px rgba(36,57,72,.1)}
-.pick:hover{background:#dce8e8;color:#176e59;box-shadow:0 0 14px rgba(23,72,59,.16)}
+.pick:hover:not(:disabled){background:#dce8e8;color:#176e59;box-shadow:0 0 14px rgba(23,72,59,.16)}
 select{border:0!important;box-shadow:0 1px 0 #dce5e7;background:transparent}
 .table-footer{border:0!important}
 .status-line{border:0!important}
@@ -260,7 +260,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .health-number b{font-size:34px;line-height:1.2;font-weight:600;letter-spacing:-1px}
 .health-number span{font-size:16px;font-weight:500;color:#617486}
 .top-health #recheck{background:var(--blue);color:var(--blue-text);box-shadow:0 0 6px rgba(81,162,255,.18)!important}
-.top-health #recheck:hover{background:#3D8FE9;box-shadow:0 0 8px rgba(81,162,255,.22)!important}
+.top-health #recheck:hover:not(:disabled){background:#3D8FE9;box-shadow:0 0 8px rgba(81,162,255,.22)!important}
 @media(max-width:700px){.health-number b{font-size:32px}.health-number span{font-size:15px}}
 
 /* Match the table's visual axis and the section heading hierarchy. */
@@ -318,7 +318,6 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .node-table .node-choice.tier-candidate{background:#d5f5e4;color:var(--green-text)}
 .node-table .node-choice.tier-ordinary{background:#e6ebef;color:#536a7b}
 .node-table .node-choice.tier-recovery{background:#fff0c6;color:var(--amber-text)}
-.node-table .node-choice:hover:not(:disabled){filter:brightness(.97)}
 .legend i.tier-current{background:var(--blue)}
 .legend i.tier-candidate{background:#d5f5e4}
 .legend i.tier-ordinary{background:#e6ebef}
@@ -352,7 +351,6 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 /* Selection mode is a small control group, separate from detection pause. */
 .selection-controls{display:flex;align-items:center;gap:8px}
 .selection-controls .button{padding:7px 10px;font-size:12px;background:#e6ebef;border:0;color:#536a7b;box-shadow:none;min-width:92px;text-align:center}
-.selection-controls .button:hover{background:#e6ebef;color:#536a7b}
 .selection-controls .button.active{background:var(--blue);color:var(--blue-text);box-shadow:0 0 14px rgba(81,162,255,.35)}
 @media(max-width:700px){.selection-controls{gap:5px}.selection-controls .button{padding:6px 8px;font-size:11px;min-width:80px}}
 
@@ -362,8 +360,6 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .settings-tabs {display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px}
 .settings-tab {border:0;padding:8px 14px;background:var(--control,#e6ebef);color:#536a7b;font:inherit;font-size:13px;line-height:1.5;white-space:nowrap;cursor:pointer;box-shadow:none}
 .settings-tab[aria-selected=true] {background:#51A2FF;color:#fff}
-.settings-tab:hover {background:#E3F6FF;color:#0E4354}
-.settings-tab[aria-selected=true]:hover {background:#3D8FE9;color:#fff}
 .settings-tab:focus-visible {outline:2px solid #51A2FF;outline-offset:3px}
 .api-settings [hidden] {display:none!important}
 .runtime-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px 18px;margin-top:18px}
@@ -417,3 +413,32 @@ body.settings-open {overflow:hidden}
 .node-list-controls {display:flex;justify-content:center;padding:14px var(--ui-pad-x)}
 .node-list-controls[hidden] {display:none}
 .node-list-controls .button,.node-list-controls .button:hover {box-shadow:none}
+
+/* Use the node controls' hover palette throughout the dashboard. Disabled
+   controls stay unchanged; selection shadows belong to the selected state. */
+.button:hover:not(:disabled),
+.button.secondary:hover:not(:disabled),
+.selection-controls .button:hover:not(:disabled),
+.header-actions :is(#detection-toggle,#recheck,#settings-open):hover:not(:disabled),
+.airport-option:hover:not(:disabled),
+.node-table .node-choice:hover:not(:disabled),
+.settings-tab:hover:not(:disabled),
+.setting-choice input:not(:disabled)+span:hover {
+ background:#E3F6FF;color:#0E4354;
+}
+.button,.button.secondary,
+.header-actions :is(#detection-toggle,#recheck,#settings-open),
+.button:hover:not(:disabled),.button.secondary:hover:not(:disabled),
+.header-actions :is(#detection-toggle,#recheck,#settings-open):hover:not(:disabled) {
+ box-shadow:none!important;
+}
+.selection-controls .button.active,
+.selection-controls .button.active:hover:not(:disabled) {
+ box-shadow:0 0 14px rgba(81,162,255,.35)!important;
+}
+.airport-option.selected:hover:not(:disabled) {
+ box-shadow:0 0 14px rgba(81,162,255,.35)!important;
+}
+.node-table .node-choice.selected:hover:not(:disabled) {
+ box-shadow:0 0 8px rgba(81,162,255,.24)!important;
+}
