@@ -39,6 +39,8 @@ type Probe struct {
 }
 type Metrics struct {
 	L, S, N, F float64
+	J          float64
+	Successes  int
 	HasLatency bool
 }
 type Sample struct {
@@ -54,6 +56,8 @@ type NodeView struct {
 	Score             *float64   `json:"score"`
 	ScoreOverflow     bool       `json:"score_overflow"`
 	DelayMS           *float64   `json:"delay_ms"`
+	JitterMS          float64    `json:"jitter_ms"`
+	JitterPenalty     float64    `json:"jitter_penalty"`
 	LastSuccess       bool       `json:"last_success"`
 	LastAt            *time.Time `json:"last_at"`
 	Samples           []Sample   `json:"history"`

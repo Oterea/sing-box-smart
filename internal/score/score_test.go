@@ -38,3 +38,36 @@ func TestExtremeFailureIsInfinite(t *testing.T) {
 		t.Fatalf("got %v %v", v, ok)
 	}
 }
+
+func TestJitterPenaltyWarmsUpAndCaps(t *testing.T) {
+	m := domain.Metrics{}
+	for i := 0; i < 7; i++ {
+		m = Update(m, domain.Probe{Success: true, DelayMS: 475})
+	}
+	if got := JitterPenalty(m); got != 1 {
+		t.Fatalf("jitter penalty enabled during warm-up: %v", got)
+	}
+	m = Update(m, domain.Probe{Success: true, DelayMS: 50})
+	if got := JitterPenalty(m); got <= 1 || got > 1.5 {
+		t.Fatalf("unexpected jitter penalty after variation: %v", got)
+	}
+	for i := 0; i < 40; i++ {
+		m = Update(m, domain.Probe{Success: true, DelayMS: 900})
+	}
+	if got := JitterPenalty(m); got > 1.5 {
+		t.Fatalf("jitter penalty exceeded cap: %v", got)
+	}
+}
+
+func TestAlternatingLatencyScoresWorseThanStableSameMean(t *testing.T) {
+	var alternating, stable domain.Metrics
+	for i := 0; i < 20; i++ {
+		alternating = Update(alternating, domain.Probe{Success: true, DelayMS: []float64{50, 900}[i%2]})
+		stable = Update(stable, domain.Probe{Success: true, DelayMS: 475})
+	}
+	a, _ := Value(alternating)
+	b, _ := Value(stable)
+	if a <= b {
+		t.Fatalf("alternating latency should score worse: alternating=%v stable=%v", a, b)
+	}
+}

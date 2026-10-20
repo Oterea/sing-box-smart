@@ -215,7 +215,7 @@ func (a *App) observe(ctx context.Context, o observation) {
 	} else if overflow {
 		loggedScore = "∞"
 	}
-	a.events.Trace("probe", "node", o.id, "reason", n.Plan.Reason, "success", o.probe.Success, "delay_ms", o.probe.DelayMS, "score", loggedScore, "score_overflow", overflow, "L", n.Metrics.L, "S", n.Metrics.S, "N", n.Metrics.N, "f", n.Metrics.F)
+	a.events.Trace("probe", "node", o.id, "reason", n.Plan.Reason, "success", o.probe.Success, "delay_ms", o.probe.DelayMS, "score", loggedScore, "score_overflow", overflow, "L", n.Metrics.L, "S", n.Metrics.S, "N", n.Metrics.N, "f", n.Metrics.F, "jitter_ms", n.Metrics.J, "jitter_penalty", score.JitterPenalty(n.Metrics), "success_samples", n.Metrics.Successes)
 	if !a.healthy {
 		return
 	}

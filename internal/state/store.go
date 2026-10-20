@@ -69,7 +69,7 @@ func (s *Store) Views(current, phase string) []domain.NodeView {
 		if phase == "unavailable" {
 			frequency = "3 秒重试"
 		}
-		x := domain.NodeView{ID: n.Info.ID, Name: n.Info.Name, Score: v, ScoreOverflow: overflow, Checks: n.Checks, LastSuccess: n.Last.Success, Current: n.Info.ID == current, Probing: n.Plan.InFlight, Frequency: frequency, RecoveryRemaining: n.Plan.RecoveryStep, Tier: n.Tier, Samples: append([]domain.Sample{}, n.History...)}
+		x := domain.NodeView{ID: n.Info.ID, Name: n.Info.Name, Score: v, ScoreOverflow: overflow, Checks: n.Checks, LastSuccess: n.Last.Success, Current: n.Info.ID == current, Probing: n.Plan.InFlight, Frequency: frequency, RecoveryRemaining: n.Plan.RecoveryStep, Tier: n.Tier, Samples: append([]domain.Sample{}, n.History...), JitterMS: n.Metrics.J, JitterPenalty: score.JitterPenalty(n.Metrics)}
 		if n.Checks > 0 {
 			t := n.Last.At
 			x.LastAt = &t
