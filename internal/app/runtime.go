@@ -25,29 +25,29 @@ func (a *App) Run(ctx context.Context) {
 				r.reply <- response{err: r.ctx.Err()}
 				continue
 			}
-			if r.action == "runtime-config" {
+			if r.action == requestRuntimeConfig {
 				r.reply <- response{config: a.cfg}
-			} else if r.action == "node-stability" {
+			} else if r.action == requestNodeStability {
 				result, ok := a.store.NodeStability(r.target, time.Now(), a.cfg.DelayGreen, a.cfg.DelayYellow, r.since)
 				if !ok {
 					r.reply <- response{err: fmt.Errorf("节点不存在")}
 				} else {
 					r.reply <- response{stability: result}
 				}
-			} else if r.action == "node-longterm" {
+			} else if r.action == requestNodeLongTerm {
 				if n := a.store.ByID[r.target]; n == nil {
 					r.reply <- response{err: fmt.Errorf("节点不存在")}
 				} else {
 					r.reply <- response{longTerm: a.longTerm.Query(a.airport.ID, r.target, time.Now(), float64(a.cfg.DelayYellow))}
 				}
-			} else if r.action == "runtime-settings" {
+			} else if r.action == requestRuntimeSettings {
 				r.reply <- response{err: a.applySettings(ctx, r.settings)}
-			} else if r.action == "snapshot" {
+			} else if r.action == requestSnapshot {
 				r.reply <- response{snapshot: a.snapshot()}
-			} else if r.action == "api" {
+			} else if r.action == requestAPI {
 				r.reply <- response{err: a.configureAPI(r)}
 			} else {
-				r.reply <- response{err: a.control(ctx, r.action, r.target)}
+				r.reply <- response{err: a.control(ctx, r.control, r.target)}
 			}
 		case p := <-a.results:
 			a.observe(ctx, p)

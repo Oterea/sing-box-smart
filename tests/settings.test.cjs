@@ -4,6 +4,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync('web/app.js','utf8');
 const context=vm.createContext({});
+vm.runInContext(fs.readFileSync('web/node-history.js','utf8'),context);
 vm.runInContext(source.slice(0,source.indexOf('function render(')),context);
 
 test('custom delay boundaries color numbers and history consistently without changing score tones',()=>{

@@ -15,6 +15,8 @@ sing-box gRPC → grpcactivity → activity → app → sleep controller → obs
 
 `app` 通过单写入事件循环编排探测、控制、快照、连接替换、选择同步和切换结果。基础模块并非完全互相独立：`state` 使用 `score`、`tiering`、`schedule`；`probe` 和 `switching` 使用 `gateway`。真实 API 实现在 `internal/real`，不是 `gateway` 包。
 
+长期稳定性由 `stability.LongTerm` 聚合，持久化通过 `LongTermPersistence` 接口隔离；当前 JSON 实现只保存最近 14 天实际有数据的 15 分钟时间桶。`app` 只依赖聚合接口，不直接依赖文件格式。
+
 睡眠监控通过 gRPC 的连接事件独立接入。`grpcactivity` 不参与评分和节点选择，只把用户连接活动转换成 `activity.Event`；`sleep` 只维护空闲状态；最终由 `app` 事件循环决定是否暂停或恢复探测。这样后续将策略组、切换和探测迁移到 gRPC 时，不需要复制睡眠逻辑。
 
 ## app 文件边界
@@ -37,6 +39,8 @@ sing-box gRPC → grpcactivity → activity → app → sleep controller → obs
 ## 小模块边界
 
 `score` 只计分；`tiering` 只划分候选；`recovery` 检测两类改善，接近候选边界由 `state` 判断；`schedule` 管到期时间；`decision` 返回切换目标；`switching` 执行并回读。候选确认结果先经过正常计分，再由 `app` 比较。
+
+浏览器资源按职责拆分：`node-history.js` 负责主面板历史图，`node-detail.js` 负责 24 小时实时详情和 14 天趋势，`stability-view.js` 只提供跨视图共享的稳定性结论规则；`app.js` 负责页面装配、主状态和事件协调。
 
 各模块实际阈值、调度行为和限制详见 [设计说明](design.md)。不将目标行为或单元测试结论当作已验证的运行保证。
 

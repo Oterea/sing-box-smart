@@ -43,28 +43,36 @@ type longTermFile struct {
 	Nodes   map[string]*longTermNode `json:"nodes"`
 }
 
+// LongTermPersistence isolates aggregation from the storage format and I/O.
+// The app can keep using the in-memory aggregator if persistence is disabled,
+// while production uses the atomic JSON implementation below.
+type LongTermPersistence interface {
+	Load() (longTermFile, error)
+	Save(longTermFile) error
+}
+
 // LongTerm stores a small, bounded time-of-day history. It never retains raw
 // probes: each node has fourteen days of ninety-six fixed fifteen-minute
 // buckets and each bucket keeps only counters plus a latency histogram.
 type LongTerm struct {
 	mu       sync.Mutex
-	path     string
+	persist  LongTermPersistence
 	nodes    map[string]*longTermNode
 	lastSave time.Time
 }
 
 func NewLongTerm(path string) (*LongTerm, error) {
-	l := &LongTerm{path: path, nodes: make(map[string]*longTermNode)}
-	b, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
+	return NewLongTermWithPersistence(&jsonLongTermPersistence{path: path})
+}
+
+func NewLongTermWithPersistence(persist LongTermPersistence) (*LongTerm, error) {
+	l := &LongTerm{persist: persist, nodes: make(map[string]*longTermNode)}
+	if persist == nil {
 		return l, nil
 	}
+	file, err := persist.Load()
 	if err != nil {
 		return nil, err
-	}
-	var file longTermFile
-	if err := json.Unmarshal(b, &file); err != nil {
-		return nil, fmt.Errorf("读取长期稳定性数据: %w", err)
 	}
 	if file.Nodes != nil {
 		l.nodes = file.Nodes
@@ -150,25 +158,52 @@ func (l *LongTerm) Flush() error {
 }
 
 func (l *LongTerm) saveLocked() error {
-	if l.path == "" {
+	if l.persist == nil {
 		return nil
 	}
-	if err := os.MkdirAll(filepath.Dir(l.path), 0700); err != nil {
+	if err := l.persist.Save(longTermFile{Version: 1, Nodes: l.nodes}); err != nil {
 		return err
 	}
-	tmp := l.path + ".tmp"
-	b, err := json.Marshal(longTermFile{Version: 1, Nodes: l.nodes})
+	l.lastSave = time.Now()
+	return nil
+}
+
+type jsonLongTermPersistence struct{ path string }
+
+func (p *jsonLongTermPersistence) Load() (longTermFile, error) {
+	b, err := os.ReadFile(p.path)
+	if os.IsNotExist(err) {
+		return longTermFile{}, nil
+	}
+	if err != nil {
+		return longTermFile{}, err
+	}
+	var file longTermFile
+	if err := json.Unmarshal(b, &file); err != nil {
+		return longTermFile{}, fmt.Errorf("读取长期稳定性数据: %w", err)
+	}
+	return file, nil
+}
+
+func (p *jsonLongTermPersistence) Save(file longTermFile) error {
+	if p.path == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(p.path), 0700); err != nil {
+		return err
+	}
+	tmp := p.path + ".tmp"
+	b, err := json.Marshal(file)
 	if err != nil {
 		return err
 	}
 	if err := os.WriteFile(tmp, b, 0600); err != nil {
 		return err
 	}
-	if err := os.Rename(tmp, l.path); err != nil {
+	if err := os.Rename(tmp, p.path); err != nil {
 		_ = os.Remove(tmp)
 		return err
 	}
-	l.lastSave = time.Now()
 	return nil
 }
 

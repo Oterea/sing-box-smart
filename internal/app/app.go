@@ -24,14 +24,33 @@ import (
 )
 
 type request struct {
-	settings       preferences.Settings
-	action, target string
-	root, pattern  string
-	since          time.Time
-	client         gateway.Client
-	airports       []domain.Airport
-	reply          chan response
-	ctx            context.Context
+	settings      preferences.Settings
+	action        requestAction
+	control       string
+	target        string
+	root, pattern string
+	since         time.Time
+	client        gateway.Client
+	airports      []domain.Airport
+	reply         chan response
+	ctx           context.Context
+}
+type requestAction string
+
+const (
+	requestControl         requestAction = "control"
+	requestAPI             requestAction = "api"
+	requestSnapshot        requestAction = "snapshot"
+	requestRuntimeConfig   requestAction = "runtime-config"
+	requestRuntimeSettings requestAction = "runtime-settings"
+	requestNodeStability   requestAction = "node-stability"
+	requestNodeLongTerm    requestAction = "node-longterm"
+)
+
+type longTermRecorder interface {
+	Record(string, string, string, domain.Probe) error
+	Flush() error
+	Query(string, string, time.Time, float64) domain.LongTermStability
 }
 type response struct {
 	config    config.Config
@@ -89,7 +108,7 @@ type App struct {
 	rootCtx, probeCtx                      context.Context
 	probeCancel                            context.CancelFunc
 	stabilityHub                           *stability.Hub
-	longTerm                               *stability.LongTerm
+	longTerm                               longTermRecorder
 }
 
 func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.Logger) (*App, error) {
@@ -175,22 +194,22 @@ func (a *App) request(ctx context.Context, r request) (response, error) {
 	}
 }
 func (a *App) Snapshot(ctx context.Context) (domain.Snapshot, error) {
-	r, e := a.request(ctx, request{action: "snapshot"})
+	r, e := a.request(ctx, request{action: requestSnapshot})
 	return r.snapshot, e
 }
 func (a *App) NodeStability(ctx context.Context, id string, since time.Time) (domain.NodeStability, error) {
-	r, e := a.request(ctx, request{action: "node-stability", target: id, since: since})
+	r, e := a.request(ctx, request{action: requestNodeStability, target: id, since: since})
 	return r.stability, e
 }
 func (a *App) NodeLongTerm(ctx context.Context, id string) (domain.LongTermStability, error) {
-	r, e := a.request(ctx, request{action: "node-longterm", target: id})
+	r, e := a.request(ctx, request{action: requestNodeLongTerm, target: id})
 	return r.longTerm, e
 }
 func (a *App) SubscribeStability(id string) (<-chan domain.StabilityUpdate, func()) {
 	return a.stabilityHub.Subscribe(id)
 }
 func (a *App) Control(ctx context.Context, action, target string) error {
-	_, err := a.request(ctx, request{action: action, target: target})
+	_, err := a.request(ctx, request{action: requestControl, control: action, target: target})
 	return err
 }
 func (a *App) snapshot() domain.Snapshot {

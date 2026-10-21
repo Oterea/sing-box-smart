@@ -13,14 +13,14 @@ import (
 )
 
 func (a *App) runtimeConfig(ctx context.Context) (config.Config, error) {
-	r, e := a.request(ctx, request{action: "runtime-config"})
+	r, e := a.request(ctx, request{action: requestRuntimeConfig})
 	return r.config, e
 }
 func (a *App) ConfigureSettings(ctx context.Context, s preferences.Settings) error {
 	if err := s.Validate(); err != nil {
 		return err
 	}
-	_, err := a.request(ctx, request{action: "runtime-settings", settings: s})
+	_, err := a.request(ctx, request{action: requestRuntimeSettings, settings: s})
 	return err
 }
 func (a *App) applySettings(ctx context.Context, s preferences.Settings) error {

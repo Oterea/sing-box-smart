@@ -62,7 +62,7 @@ func (a *App) ConfigureConnection(ctx context.Context, api, root, pattern string
 	if err != nil {
 		return err
 	}
-	_, err = a.request(ctx, request{action: "api", target: api, root: root, pattern: pattern, client: client, airports: airports})
+	_, err = a.request(ctx, request{action: requestAPI, target: api, root: root, pattern: pattern, client: client, airports: airports})
 	return err
 }
 
@@ -75,7 +75,7 @@ func (a *App) ConfigureAPI(ctx context.Context, api string) error {
 	if err != nil {
 		return err
 	}
-	_, err = a.request(ctx, request{action: "api", target: api, client: client, airports: airports})
+	_, err = a.request(ctx, request{action: requestAPI, target: api, client: client, airports: airports})
 	return err
 }
 func (a *App) ConfigureFilters(ctx context.Context, root, pattern string) error {
@@ -101,6 +101,6 @@ func (a *App) ConfigureFilters(ctx context.Context, root, pattern string) error 
 	if err != nil {
 		return err
 	}
-	_, err = a.request(ctx, request{action: "api", target: snapshot.APIAddress, root: root, pattern: pattern, client: client, airports: airports})
+	_, err = a.request(ctx, request{action: requestAPI, target: snapshot.APIAddress, root: root, pattern: pattern, client: client, airports: airports})
 	return err
 }

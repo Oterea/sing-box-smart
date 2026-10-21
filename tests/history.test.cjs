@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('web/app.js', 'utf8');
 const context = vm.createContext({});
+vm.runInContext(fs.readFileSync('web/node-history.js', 'utf8'), context);
 vm.runInContext(source.slice(0, source.indexOf('function render(')), context);
 const history = context.history;
 const sample = (value, success = true) => ({ at: '2026-09-28T00:00:00Z', score: value, delay_ms: success ? value : null, success, error: 'timeout' });
@@ -67,6 +68,7 @@ test('选中区域与列表生成完全相同的表头与七个单元格', () =>
   return elements.get(id);
  };
  const renderContext = vm.createContext({document:{getElementById}});
+ vm.runInContext(fs.readFileSync('web/node-history.js','utf8'),renderContext);
  vm.runInContext(fs.readFileSync('web/node-list.js','utf8'),renderContext);
  vm.runInContext(source.slice(0, source.indexOf('function toast(')), renderContext);
  const node = {id:'a',name:'Hong Kong 22',checks:20,score:300,delay_ms:200,last_success:true,current:true,history:[sample(200)]};
