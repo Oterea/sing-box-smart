@@ -324,8 +324,8 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .node-table .check-count,
 .node-table .metric-cell,
 .node-table .history-chart{height:40px;min-height:40px}
-.node-table .col-detail{width:72px}
-.detail-button{width:56px;min-width:56px;min-height:32px;padding:7px 8px;border:0;background:#e6ebef;color:#536a7b;font-size:12px;white-space:nowrap;cursor:pointer}
+.node-table .col-detail{width:88px}
+.detail-button{display:flex;align-items:center;justify-content:center;width:100%;height:40px;min-height:40px;box-sizing:border-box;padding:0 8px;border:0;background:#e6ebef;color:#536a7b;font-size:13px;line-height:1.5;white-space:nowrap;cursor:pointer}
 .detail-button:hover:not(:disabled){background:#dbe4e9;color:#2b4052}
 .detail-button:disabled{opacity:.55;cursor:default}
 .node-table .check-count,
