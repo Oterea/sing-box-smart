@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 let nodeList;
-let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailStream = null, detailRequestController = null, detailLongTermController = null, detailRequestToken = 0, detailUpdateChain = Promise.resolve(), detailNodeSequence = 0, detailSummaryKey = '', detailSamplesKey = '', detailLongTermData = null, detailView = 'realtime', detailFollowLatest = true;
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailStream = null, detailRequestController = null, detailLongTermController = null, detailRequestToken = 0, detailUpdateChain = Promise.resolve(), detailNodeSequence = 0, detailSummaryKey = '', detailSamplesKey = '', detailView = 'realtime', detailFollowLatest = true;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 // Large scores are useful internally for ranking, but are not meaningful in
@@ -118,14 +118,7 @@ function detailMs(value) {
  return Number.isFinite(Number(value)) ? Math.round(Number(value))+' ms' : '—';
 }
 function stabilityLabel(summary) {
- const samples=Number(summary?.samples)||0, p50=Number(summary?.p50_ms), p90=Number(summary?.p90_ms);
- if(samples<10||!Number.isFinite(p50))return ['样本不足','none'];
- const green=Number(state?.settings?.delay_green_ms??200), yellow=Number(state?.settings?.delay_yellow_ms??600);
- const level=p50<=green?'低延迟':p50<=yellow?'中延迟':'高延迟';
- const high=Number(summary.high_latency_rate)||0, success=Number(summary.success_rate)||0;
- const spread=Number.isFinite(p90)&&p50>0?p90/p50:0;
- const unstable=success<.98||high>.1||spread>=2;
- return [(unstable?'不稳定':'稳定')+level,unstable?'bad':p50<=green?'good':p50<=yellow?'medium':'bad'];
+ return stabilityConclusion(summary,Number(state?.settings?.delay_green_ms??200),Number(state?.settings?.delay_yellow_ms??600));
 }
 function detailMetric(id,label,value) { return `<div class="detail-metric"><span>${esc(label)}</span><strong id="${id}">${esc(value)}</strong></div>`; }
 function paintDetailChart(scroll, samples) {
@@ -185,11 +178,7 @@ function longTermTone(value) {
  return value==null?'none':value<=(state?.settings?.delay_green_ms??200)?'good':value<=(state?.settings?.delay_yellow_ms??600)?'medium':'bad';
 }
 function longTermSummaryText(summary) {
- const p50=summary?.p50_ms;
- if(!summary?.samples||p50==null)return '样本不足';
- const level=p50<=(state?.settings?.delay_green_ms??200)?'低延迟':p50<=(state?.settings?.delay_yellow_ms??600)?'中延迟':'高延迟';
- const unstable=Number(summary.success_rate)<.98||Number(summary.high_latency_rate)>.1||Number(summary.max_consecutive_failures)>2;
- return (unstable?'不稳定':'稳定')+level;
+ return stabilityConclusion(summary,Number(state?.settings?.delay_green_ms??200),Number(state?.settings?.delay_yellow_ms??600))[0];
 }
 function longTermChart(day) {
  const width=960,height=150,left=34,right=10,top=10,bottom=24,plotW=width-left-right,plotH=height-top-bottom,ceiling=1000;
@@ -226,7 +215,6 @@ async function loadLongTerm() {
   if(!response.ok)throw new Error('长期趋势读取失败');
   const data=await response.json();
   if(detailNodeId!==nodeID)return;
-  detailLongTermData=data;
   if(detailView==='longterm')renderLongTerm(data);
  } catch(error) {
   if(error.name!=='AbortError'&&detailNodeId===nodeID)$('node-detail-content').innerHTML=`<div class="detail-empty">${esc(error.message)}</div>`;
@@ -257,7 +245,7 @@ function renderDetail(data) {
   if(summaryChanged)updateDetailSummary(summary);
   if(samplesChanged)updateDetailChart(existingChart,samples,true,detailFollowLatest);
  } else {
-  content.innerHTML=`<div id="detail-realtime-view"><div id="detail-stability-result" class="stability-result tone-${toneName}"><span class="stability-result-dot"></span><strong id="detail-stability-label">${esc(label)}</strong></div><div class="detail-grid">${detailMetric('detail-p50','P50 典型延迟',detailMs(summary.p50_ms))}${detailMetric('detail-p90','P90 较高延迟',detailMs(summary.p90_ms))}${detailMetric('detail-success-rate','成功率',detailPercent(summary.success_rate))}${detailMetric('detail-high-latency','高延迟比例',detailPercent(summary.high_latency_rate))}${detailMetric('detail-max-failures','最大连续失败',String(summary.max_consecutive_failures||0)+' 次')}${detailMetric('detail-samples','探测次数',String(summary.samples||0)+' 次')}</div><div class="stability-chart-heading"><span>真实延迟</span><span class="subtle">每根柱子代表一次探测 · 横向滚动查看</span></div><div class="stability-chart-scroll" role="img" aria-label="最近 24 小时真实延迟"><div class="stability-chart-track"><svg class="stability-chart-layer" height="80" preserveAspectRatio="none"></svg></div></div><div class="detail-note">绿色、黄色和红色跟随当前延迟阈值；灰色表示失败。样本从 smart 启动或切换机场后重新积累。</div></div><div id="detail-longterm-view" hidden></div>`;
+  content.innerHTML=`<div id="detail-realtime-view"><div id="detail-stability-result" class="stability-result tone-${toneName}"><span class="stability-result-dot"></span><strong id="detail-stability-label">${esc(label)}</strong></div><div class="detail-grid">${detailMetric('detail-p50','P50 典型延迟',detailMs(summary.p50_ms))}${detailMetric('detail-p90','P90 较高延迟',detailMs(summary.p90_ms))}${detailMetric('detail-success-rate','成功率',detailPercent(summary.success_rate))}${detailMetric('detail-high-latency','高延迟比例',detailPercent(summary.high_latency_rate))}${detailMetric('detail-max-failures','最大连续失败',String(summary.max_consecutive_failures||0)+' 次')}${detailMetric('detail-samples','探测次数',String(summary.samples||0)+' 次')}</div><div class="stability-chart-heading"><span>真实延迟</span><span class="subtle">每根柱子代表一次探测 · 横向滚动查看</span></div><div class="stability-chart-scroll" role="img" aria-label="最近 24 小时真实延迟"><div class="stability-chart-track"><svg class="stability-chart-layer" height="80" preserveAspectRatio="none"></svg></div></div><div class="detail-note">绿色、黄色和红色跟随当前延迟阈值；灰色表示失败。样本从 smart 启动或切换机场后重新积累。</div></div>`;
   const chart=content.querySelector('.stability-chart-scroll');
   paintDetailChart(chart,samples);
   requestAnimationFrame(()=>{chart.scrollLeft=Math.max(0,chart.scrollWidth-chart.clientWidth);});
@@ -334,7 +322,7 @@ function connectDetailStream() {
 function openNodeDetail(id) {
  if(!id)return;
  closeDetailStream();
- detailNodeId=id;detailData=null;detailLongTermData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();detailView='realtime';detailFollowLatest=true;
+ detailNodeId=id;detailData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();detailView='realtime';detailFollowLatest=true;
  const dialog=$('node-detail-dialog');
  if(!dialog.open)dialog.showModal();
  $('node-detail-content').innerHTML='<div class="detail-empty">正在读取节点数据…</div>';
@@ -343,7 +331,7 @@ function openNodeDetail(id) {
 function closeNodeDetail() {
  closeDetailStream();
  detailRequestController?.abort();detailLongTermController?.abort();detailRequestToken++;
- detailNodeId='';detailData=null;detailLongTermData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();detailView='realtime';detailFollowLatest=true;
+ detailNodeId='';detailData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();detailView='realtime';detailFollowLatest=true;
  const dialog=$('node-detail-dialog');if(dialog.open)dialog.close();
 }
 function patchRow(row,n,best,s,selected=false) {
