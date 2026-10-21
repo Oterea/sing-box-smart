@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 let nodeList;
-let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailStream = null, detailSummaryKey = '', detailSamplesKey = '', detailFollowLatest = true;
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailStream = null, detailRequestController = null, detailRequestToken = 0, detailUpdateChain = Promise.resolve(), detailNodeSequence = 0, detailSummaryKey = '', detailSamplesKey = '', detailFollowLatest = true;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 // Large scores are useful internally for ranking, but are not meaningful in
@@ -207,20 +207,32 @@ function renderDetail(data) {
 }
 async function loadNodeDetail() {
  if(!detailNodeId)return;
+ const nodeID=detailNodeId, token=++detailRequestToken;
+ detailRequestController?.abort();
+ const controller=new AbortController();
+ detailRequestController=controller;
  try {
   const previous=detailData;
   const cursor=previous?.samples?.length?previous.samples[previous.samples.length-1].at:'';
   const query=cursor?'?since='+encodeURIComponent(cursor):'';
-  const response=await fetch('/api/node/'+encodeURIComponent(detailNodeId)+'/stability'+query,{cache:'no-store'});
+  const response=await fetch('/api/node/'+encodeURIComponent(nodeID)+'/stability'+query,{cache:'no-store',signal:controller.signal});
   if(!response.ok)throw new Error('节点详情读取失败');
   const next=await response.json();
+  if(token!==detailRequestToken||detailNodeId!==nodeID)return false;
   if(previous&&cursor){
    const cutoff=Date.now()-24*60*60*1000;
    next.samples=[...previous.samples,...(next.samples||[])].filter(sample=>new Date(sample.at).getTime()>=cutoff);
   }
   detailData=next;
   renderDetail(detailData);
- } catch(error) { $('node-detail-content').innerHTML=`<div class="detail-empty">${esc(error.message)}</div>`; }
+  return true;
+ } catch(error) {
+  if(error.name==='AbortError'||token!==detailRequestToken||detailNodeId!==nodeID)return false;
+  $('node-detail-content').innerHTML=`<div class="detail-empty">${esc(error.message)}</div>`;
+  return false;
+ } finally {
+  if(detailRequestController===controller)detailRequestController=null;
+ }
 }
 function closeDetailStream() {
  if(detailStream){detailStream.close();detailStream=null;}
@@ -229,33 +241,40 @@ function connectDetailStream() {
  closeDetailStream();
  if(!detailNodeId||!window.EventSource)return;
  const nodeID=detailNodeId;
+ detailNodeSequence=0;
  const source=new EventSource('/api/node/'+encodeURIComponent(nodeID)+'/stability/events');
  detailStream=source;
  source.addEventListener('stability',event=>{
   if(detailNodeId!==nodeID)return;
-  try {
-   const update=JSON.parse(event.data), previous=detailData||{samples:[]};
-   const samples=[...(previous.samples||[])];
-   if(!samples.some(sample=>sample.at===update.sample?.at))samples.push(update.sample);
+  let update;
+  try { update=JSON.parse(event.data); } catch(_) { return; }
+  detailUpdateChain=detailUpdateChain.then(async()=>{
+   if(detailNodeId!==nodeID)return;
+   const sequence=Number(update.node_sequence)||0;
+   if(detailNodeSequence&&sequence>detailNodeSequence+1){
+    await loadNodeDetail();
+   }
+   if(detailNodeId!==nodeID)return;
+   const previous=detailData||{samples:[]}, samples=[...(previous.samples||[])], sample=update.sample;
+   const last=samples[samples.length-1];
+   if(sample?.at&&(!last||sample.at>last.at))samples.push(sample);
    const cutoff=Date.now()-24*60*60*1000;
    detailData={summary:update.summary,samples:samples.filter(sample=>new Date(sample.at).getTime()>=cutoff)};
+   detailNodeSequence=sequence||detailNodeSequence;
    renderDetail(detailData);
-  } catch(_) {}
+  }).catch(()=>{});
  });
  source.onerror=()=>{
-  if(detailStream===source)detailStream=null;
+  const active=detailStream===source;
+  if(active)detailStream=null;
   source.close();
-  if(detailNodeId===nodeID&&!detailTimer){detailTimer=setTimeout(async()=>{detailTimer=0;if(detailNodeId===nodeID){await loadNodeDetail();connectDetailStream();}},3000);}
+  if(active&&detailNodeId===nodeID&&!detailTimer){detailTimer=setTimeout(async()=>{detailTimer=0;if(detailNodeId===nodeID){await loadNodeDetail();connectDetailStream();}},3000);}
  };
-}
-function scheduleDetailRefresh() {
- if(!detailNodeId||detailTimer)return;
- detailTimer=setTimeout(()=>{detailTimer=0;if(detailNodeId)loadNodeDetail();},3000);
 }
 function openNodeDetail(id) {
  if(!id)return;
  closeDetailStream();
- detailNodeId=id;detailData=null;detailSummaryKey='';detailSamplesKey='';detailFollowLatest=true;
+ detailNodeId=id;detailData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();detailFollowLatest=true;
  const dialog=$('node-detail-dialog');
  if(!dialog.open)dialog.showModal();
  $('node-detail-content').innerHTML='<div class="detail-empty">正在读取节点数据…</div>';
@@ -263,7 +282,8 @@ function openNodeDetail(id) {
 }
 function closeNodeDetail() {
  closeDetailStream();
- detailNodeId='';detailData=null;detailSummaryKey='';detailSamplesKey='';detailFollowLatest=true;
+ detailRequestController?.abort();detailRequestToken++;
+ detailNodeId='';detailData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();detailFollowLatest=true;
  const dialog=$('node-detail-dialog');if(dialog.open)dialog.close();
 }
 function patchRow(row,n,best,s,selected=false) {

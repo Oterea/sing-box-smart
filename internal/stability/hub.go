@@ -8,13 +8,19 @@ import (
 // Hub publishes one-node stability deltas to the detail dialog without
 // coupling the HTTP stream to the app event loop or to snapshot polling.
 type Hub struct {
-	mu          sync.Mutex
-	nextID      int
-	sequence    uint64
-	subscribers map[string]map[int]chan domain.StabilityUpdate
+	mu           sync.Mutex
+	nextID       int
+	sequence     uint64
+	nodeSequence map[string]uint64
+	subscribers  map[string]map[int]chan domain.StabilityUpdate
 }
 
-func NewHub() *Hub { return &Hub{subscribers: make(map[string]map[int]chan domain.StabilityUpdate)} }
+func NewHub() *Hub {
+	return &Hub{
+		nodeSequence: make(map[string]uint64),
+		subscribers:  make(map[string]map[int]chan domain.StabilityUpdate),
+	}
+}
 
 func (h *Hub) Subscribe(nodeID string) (<-chan domain.StabilityUpdate, func()) {
 	h.mu.Lock()
@@ -32,7 +38,9 @@ func (h *Hub) Subscribe(nodeID string) (<-chan domain.StabilityUpdate, func()) {
 func (h *Hub) Publish(update domain.StabilityUpdate) {
 	h.mu.Lock()
 	h.sequence++
+	h.nodeSequence[update.NodeID]++
 	update.Sequence = h.sequence
+	update.NodeSequence = h.nodeSequence[update.NodeID]
 	for _, ch := range h.subscribers[update.NodeID] {
 		select {
 		case ch <- update:

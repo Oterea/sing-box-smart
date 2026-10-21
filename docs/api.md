@@ -25,7 +25,7 @@ SSE 首条消息包含 `full:true` 和全部节点，后续 `full:false` 的 `no
 
 `GET /api/node/{id}/stability` 返回节点最近 24 小时的稳定性摘要和真实探测样本；带 `since` 参数时只返回该时间之后新增的样本。样本只保存在当前 smart 进程内，重启或切换机场后重新积累；普通 `/api/state` 只返回轻量摘要，不携带这批原始样本。
 
-`GET /api/node/{id}/stability/events` 是该节点详情的 SSE 增量流。首次数据仍通过稳定性接口读取，后续只推送新增探测和最新摘要；断线后用 `since` 补齐。
+`GET /api/node/{id}/stability/events` 是该节点详情的 SSE 增量流。首次数据仍通过稳定性接口读取，后续只推送新增探测和最新摘要；`node_sequence` 是该节点独立递增的序号，客户端发现跳号时应通过 `since` 补齐；断线后也用 `since` 补齐。
 
 暂停不会撤销已经发出的 selector 写入；该写入仍可能完成并回读。启动阶段拒绝手动节点选择。
 

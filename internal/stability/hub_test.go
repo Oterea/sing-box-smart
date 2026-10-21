@@ -11,12 +11,21 @@ func TestHubPublishesNodeScopedUpdates(t *testing.T) {
 	defer closeSubscription()
 	hub.Publish(domain.StabilityUpdate{NodeID: "node-b"})
 	hub.Publish(domain.StabilityUpdate{NodeID: "node-a"})
+	hub.Publish(domain.StabilityUpdate{NodeID: "node-a"})
 	select {
 	case update := <-updates:
-		if update.NodeID != "node-a" || update.Sequence != 2 {
+		if update.NodeID != "node-a" || update.Sequence != 2 || update.NodeSequence != 1 {
 			t.Fatalf("unexpected update: %+v", update)
 		}
 	default:
 		t.Fatal("node-scoped update was not delivered")
+	}
+	select {
+	case update := <-updates:
+		if update.NodeSequence != 2 {
+			t.Fatalf("unexpected node sequence: %+v", update)
+		}
+	default:
+		t.Fatal("second node-scoped update was not delivered")
 	}
 }

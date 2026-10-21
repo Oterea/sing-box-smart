@@ -19,3 +19,9 @@ test('样本键包含失败和延迟变化', () => {
  const failed=[{at:'2026-10-21T00:00:00Z',success:false,error:'timeout'}];
  assert.notEqual(context.stabilitySamplesKey(first),context.stabilitySamplesKey(failed));
 });
+
+test('样本键只依赖窗口边界，新增样本能触发更新', () => {
+ const middle=Array.from({length:10000},(_,i)=>({at:`2026-10-21T00:${String(Math.floor(i/60)).padStart(2,'0')}:${String(i%60).padStart(2,'0')}Z`,success:true,delay_ms:100}));
+ const next=[...middle,{at:'2026-10-21T03:00:00Z',success:true,delay_ms:110}];
+ assert.notEqual(context.stabilitySamplesKey(middle),context.stabilitySamplesKey(next));
+});

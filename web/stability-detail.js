@@ -24,5 +24,10 @@ function stabilitySampleKey(sample) {
 }
 
 function stabilitySamplesKey(samples) {
- return JSON.stringify((samples || []).map(stabilitySampleKey));
+ const list=samples||[];
+ return JSON.stringify([
+  list.length,
+  stabilitySampleKey(list[0]),
+  stabilitySampleKey(list[list.length-1])
+ ]);
 }
