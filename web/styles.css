@@ -481,5 +481,5 @@ body.settings-open {overflow:hidden}
 
 @media(max-width:700px){
  .node-table .col-detail{width:78px}
- .node-table .detail-button{height:40px;min-height:40px;padding:0 4px;font-size:13px}
+ .node-table .detail-button{height:34px;min-height:34px;padding:0 4px;font-size:12px}
 }
