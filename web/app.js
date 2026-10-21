@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 let nodeList;
-let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailRenderKey = '', detailSourceKey = '', detailFollowLatest = true;
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailStream = null, detailRenderKey = '', detailSourceKey = '', detailFollowLatest = true;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 // Large scores are useful internally for ranking, but are not meaningful in
@@ -221,19 +221,47 @@ async function loadNodeDetail() {
   renderDetail(detailData);
  } catch(error) { $('node-detail-content').innerHTML=`<div class="detail-empty">${esc(error.message)}</div>`; }
 }
+function closeDetailStream() {
+ if(detailStream){detailStream.close();detailStream=null;}
+}
+function connectDetailStream() {
+ closeDetailStream();
+ if(!detailNodeId||!window.EventSource)return;
+ const nodeID=detailNodeId;
+ const source=new EventSource('/api/node/'+encodeURIComponent(nodeID)+'/stability/events');
+ detailStream=source;
+ source.addEventListener('stability',event=>{
+  if(detailNodeId!==nodeID)return;
+  try {
+   const update=JSON.parse(event.data), previous=detailData||{samples:[]};
+   const samples=[...(previous.samples||[])];
+   if(!samples.some(sample=>sample.at===update.sample?.at))samples.push(update.sample);
+   const cutoff=Date.now()-24*60*60*1000;
+   detailData={summary:update.summary,samples:samples.filter(sample=>new Date(sample.at).getTime()>=cutoff)};
+   renderDetail(detailData);
+  } catch(_) {}
+ });
+ source.onerror=()=>{
+  if(detailStream===source)detailStream=null;
+  source.close();
+  if(detailNodeId===nodeID&&!detailTimer){detailTimer=setTimeout(async()=>{detailTimer=0;if(detailNodeId===nodeID){await loadNodeDetail();connectDetailStream();}},3000);}
+ };
+}
 function scheduleDetailRefresh() {
  if(!detailNodeId||detailTimer)return;
  detailTimer=setTimeout(()=>{detailTimer=0;if(detailNodeId)loadNodeDetail();},3000);
 }
 function openNodeDetail(id) {
  if(!id)return;
+ closeDetailStream();
  detailNodeId=id;detailData=null;detailRenderKey='';detailSourceKey='';detailFollowLatest=true;
  const dialog=$('node-detail-dialog');
  if(!dialog.open)dialog.showModal();
  $('node-detail-content').innerHTML='<div class="detail-empty">正在读取节点数据…</div>';
- loadNodeDetail();
+ loadNodeDetail().then(connectDetailStream);
 }
 function closeNodeDetail() {
+ closeDetailStream();
  detailNodeId='';detailData=null;detailRenderKey='';detailSourceKey='';detailFollowLatest=true;
  const dialog=$('node-detail-dialog');if(dialog.open)dialog.close();
 }
@@ -296,9 +324,6 @@ function render(s){
  if(s.instance_id)stateInstance=s.instance_id;
  if(Number.isFinite(Number(s.revision)))stateRevision=Number(s.revision);
  state=s;
- const detailNode=s.nodes?.find(node=>node.id===detailNodeId);
- const liveDetailKey=stabilityKey(detailNode?.stability);
- if(detailNodeId&&liveDetailKey!==detailSourceKey)scheduleDetailRefresh();
  if(typeof SmartSettings!=='undefined')SmartSettings.update(s.settings);
  const prefs=s.settings;
  if(prefs?.delay_green_ms){

@@ -58,7 +58,11 @@ func streamHandler(hub *snapshotHub) http.HandlerFunc {
 }
 
 func writeSSE(w http.ResponseWriter, flusher http.Flusher, revision uint64, body []byte) error {
-	if _, err := writeStream(w, fmt.Sprintf("id: %d\nevent: state\ndata: %s\n\n", revision, body)); err != nil {
+	return writeNamedSSE(w, flusher, "state", revision, body)
+}
+
+func writeNamedSSE(w http.ResponseWriter, flusher http.Flusher, event string, revision uint64, body []byte) error {
+	if _, err := writeStream(w, fmt.Sprintf("id: %d\nevent: %s\ndata: %s\n\n", revision, event, body)); err != nil {
 		return err
 	}
 	flusher.Flush()

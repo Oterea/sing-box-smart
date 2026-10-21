@@ -193,6 +193,12 @@ func (a *App) observe(ctx context.Context, o observation) {
 		signal = recovery.Detect(n.History, n.Last, o.probe, a.cfg.RecoveryDropRatio, a.cfg.RecoveryDropMinMS, a.cfg.RecoveryGoodMaxMS)
 	}
 	a.store.Record(o.id, o.probe)
+	var delay *float64
+	if o.probe.Success {
+		value := o.probe.DelayMS
+		delay = &value
+	}
+	a.stabilityHub.Publish(domain.StabilityUpdate{NodeID: o.id, Sample: domain.StabilitySample{At: o.probe.At, Success: o.probe.Success, DelayMS: delay, Error: o.probe.Error}, Summary: n.Stability.Summary(time.Now(), float64(a.cfg.DelayGreen), float64(a.cfg.DelayYellow))})
 	if a.phase == "startup" {
 		a.observeWindow.Complete(o.id)
 	}

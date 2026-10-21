@@ -73,6 +73,12 @@ type NodeStability struct {
 	Summary StabilitySummary  `json:"summary"`
 	Samples []StabilitySample `json:"samples"`
 }
+type StabilityUpdate struct {
+	Sequence uint64           `json:"sequence"`
+	NodeID   string           `json:"node_id"`
+	Sample   StabilitySample  `json:"sample"`
+	Summary  StabilitySummary `json:"summary"`
+}
 type NodeView struct {
 	ID                string           `json:"id"`
 	Name              string           `json:"name"`

@@ -26,6 +26,7 @@ type Service interface {
 
 type stabilityService interface {
 	NodeStability(context.Context, string, time.Time) (domain.NodeStability, error)
+	SubscribeStability(string) (<-chan domain.StabilityUpdate, func())
 }
 
 func Handler(service Service) http.Handler {
@@ -77,6 +78,49 @@ func Handler(service Service) http.Handler {
 			return
 		}
 		write(w, http.StatusOK, detail)
+	})
+	mux.HandleFunc("GET /api/node/{id}/stability/events", func(w http.ResponseWriter, r *http.Request) {
+		service, ok := service.(stabilityService)
+		if !ok {
+			write(w, http.StatusNotImplemented, map[string]string{"error": "节点详情推送不可用"})
+			return
+		}
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			write(w, http.StatusNotImplemented, map[string]string{"error": "SSE 不受支持"})
+			return
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		w.Header().Set("X-Accel-Buffering", "no")
+		updates, unsubscribe := service.SubscribeStability(r.PathValue("id"))
+		defer unsubscribe()
+		if _, err := writeStream(w, "retry: 3000\n\n"); err != nil {
+			return
+		}
+		flusher.Flush()
+		heartbeat := time.NewTicker(sseHeartbeat)
+		defer heartbeat.Stop()
+		for {
+			select {
+			case <-r.Context().Done():
+				return
+			case update, open := <-updates:
+				if !open {
+					return
+				}
+				body, err := json.Marshal(update)
+				if err != nil || writeNamedSSE(w, flusher, "stability", update.Sequence, body) != nil {
+					return
+				}
+			case <-heartbeat.C:
+				if _, err := writeStream(w, "event: heartbeat\ndata: {}\n\n"); err != nil {
+					return
+				}
+				flusher.Flush()
+			}
+		}
 	})
 	mux.HandleFunc("GET /api/events", streamHandler(hub))
 	mux.HandleFunc("POST /api/config/filters", func(w http.ResponseWriter, r *http.Request) {
