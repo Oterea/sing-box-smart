@@ -27,7 +27,7 @@ func (a *App) Run(ctx context.Context) {
 			if r.action == "runtime-config" {
 				r.reply <- response{config: a.cfg}
 			} else if r.action == "node-stability" {
-				result, ok := a.store.NodeStability(r.target, time.Now(), a.cfg.DelayGreen, a.cfg.DelayYellow)
+				result, ok := a.store.NodeStability(r.target, time.Now(), a.cfg.DelayGreen, a.cfg.DelayYellow, r.since)
 				if !ok {
 					r.reply <- response{err: fmt.Errorf("节点不存在")}
 				} else {

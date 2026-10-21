@@ -53,11 +53,24 @@ func (t *Tracker) Snapshot(now time.Time) domain.NodeStability {
 }
 
 func (t *Tracker) SnapshotWithThreshold(now time.Time, yellow float64) domain.NodeStability {
+	return t.SnapshotWithThresholdSince(now, yellow, time.Time{})
+}
+
+func (t *Tracker) SnapshotWithThresholdSince(now time.Time, yellow float64, since time.Time) domain.NodeStability {
 	t.prune(now)
 	copySamples := append([]domain.StabilitySample(nil), t.samples...)
 	summary := summarize(copySamples)
 	addHighLatency(&summary, copySamples, yellow)
-	return domain.NodeStability{Summary: summary, Samples: copySamples}
+	if since.IsZero() {
+		return domain.NodeStability{Summary: summary, Samples: copySamples}
+	}
+	newSamples := make([]domain.StabilitySample, 0)
+	for _, sample := range copySamples {
+		if sample.At.After(since) {
+			newSamples = append(newSamples, sample)
+		}
+	}
+	return domain.NodeStability{Summary: summary, Samples: newSamples}
 }
 
 func (t *Tracker) Summary(now time.Time, green, yellow float64) domain.StabilitySummary {

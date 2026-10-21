@@ -25,6 +25,7 @@ type request struct {
 	settings       preferences.Settings
 	action, target string
 	root, pattern  string
+	since          time.Time
 	client         gateway.Client
 	airports       []domain.Airport
 	reply          chan response
@@ -164,8 +165,8 @@ func (a *App) Snapshot(ctx context.Context) (domain.Snapshot, error) {
 	r, e := a.request(ctx, request{action: "snapshot"})
 	return r.snapshot, e
 }
-func (a *App) NodeStability(ctx context.Context, id string) (domain.NodeStability, error) {
-	r, e := a.request(ctx, request{action: "node-stability", target: id})
+func (a *App) NodeStability(ctx context.Context, id string, since time.Time) (domain.NodeStability, error) {
+	r, e := a.request(ctx, request{action: "node-stability", target: id, since: since})
 	return r.stability, e
 }
 func (a *App) Control(ctx context.Context, action, target string) error {

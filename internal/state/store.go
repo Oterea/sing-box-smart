@@ -89,16 +89,13 @@ func (s *Store) Views(current, phase string, thresholds ...int) []domain.NodeVie
 	}
 	return out
 }
-func (s *Store) NodeStability(id string, now time.Time, thresholds ...int) (domain.NodeStability, bool) {
+func (s *Store) NodeStability(id string, now time.Time, green, yellow int, since time.Time) (domain.NodeStability, bool) {
 	n := s.ByID[id]
 	if n == nil {
 		return domain.NodeStability{}, false
 	}
-	yellow := 600
-	if len(thresholds) >= 2 {
-		yellow = thresholds[1]
-	}
-	return n.Stability.SnapshotWithThreshold(now, float64(yellow)), true
+	_ = green
+	return n.Stability.SnapshotWithThresholdSince(now, float64(yellow), since), true
 }
 func (s *Store) AllChecked() bool {
 	for _, n := range s.Nodes {

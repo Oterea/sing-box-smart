@@ -25,7 +25,7 @@ type Service interface {
 }
 
 type stabilityService interface {
-	NodeStability(context.Context, string) (domain.NodeStability, error)
+	NodeStability(context.Context, string, time.Time) (domain.NodeStability, error)
 }
 
 func Handler(service Service) http.Handler {
@@ -60,9 +60,18 @@ func Handler(service Service) http.Handler {
 			write(w, http.StatusNotImplemented, map[string]string{"error": "节点详情不可用"})
 			return
 		}
+		var since time.Time
+		if raw := r.URL.Query().Get("since"); raw != "" {
+			parsed, err := time.Parse(time.RFC3339Nano, raw)
+			if err != nil {
+				write(w, http.StatusBadRequest, map[string]string{"error": "since 时间无效"})
+				return
+			}
+			since = parsed
+		}
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
-		detail, err := service.NodeStability(ctx, r.PathValue("id"))
+		detail, err := service.NodeStability(ctx, r.PathValue("id"), since)
 		if err != nil {
 			write(w, http.StatusNotFound, map[string]string{"error": err.Error()})
 			return

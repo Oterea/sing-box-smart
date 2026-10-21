@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 let nodeList;
-let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailRenderKey = '', detailSourceKey = '';
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailRenderKey = '', detailSourceKey = '', detailFollowLatest = true;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 // Large scores are useful internally for ranking, but are not meaningful in
@@ -147,7 +147,7 @@ function paintDetailChart(scroll, samples) {
   }).join('');
  };
  scroll._detailDraw=draw;
- if(!scroll._detailBound){scroll.addEventListener('scroll',()=>requestAnimationFrame(draw));scroll._detailBound=true;}
+ if(!scroll._detailBound){scroll.addEventListener('scroll',()=>{const max=Math.max(0,scroll.scrollWidth-scroll.clientWidth);detailFollowLatest=max-scroll.scrollLeft<=32;requestAnimationFrame(draw);});scroll._detailBound=true;}
  draw();
 }
 function renderDetail(data) {
@@ -156,6 +156,7 @@ function renderDetail(data) {
  const previousChart=content.querySelector('.stability-chart-scroll');
  const previousScrollLeft=previousChart?.scrollLeft||0;
  const preserveScroll=Boolean(previousChart);
+ const followLatest=detailFollowLatest;
  const summary=data.summary||{}, samples=data.samples||[], [label,toneName]=stabilityLabel(summary);
  const renderKey=stabilityKey(summary);
  if(detailRenderKey===renderKey&&content.querySelector('.stability-chart-scroll'))return;
@@ -168,7 +169,8 @@ function renderDetail(data) {
  paintDetailChart(chart,samples);
  requestAnimationFrame(()=>{
   const maxScroll=Math.max(0,chart.scrollWidth-chart.clientWidth);
-  chart.scrollLeft=preserveScroll?Math.min(previousScrollLeft,maxScroll):maxScroll;
+  if(preserveScroll&&followLatest&&maxScroll>previousScrollLeft)chart.scrollTo({left:maxScroll,behavior:'smooth'});
+  else chart.scrollLeft=preserveScroll?Math.min(previousScrollLeft,maxScroll):maxScroll;
  });
  detailRenderKey=renderKey;
  detailSourceKey=renderKey;
@@ -176,9 +178,17 @@ function renderDetail(data) {
 async function loadNodeDetail() {
  if(!detailNodeId)return;
  try {
-  const response=await fetch('/api/node/'+encodeURIComponent(detailNodeId)+'/stability',{cache:'no-store'});
+  const previous=detailData;
+  const cursor=previous?.samples?.length?previous.samples[previous.samples.length-1].at:'';
+  const query=cursor?'?since='+encodeURIComponent(cursor):'';
+  const response=await fetch('/api/node/'+encodeURIComponent(detailNodeId)+'/stability'+query,{cache:'no-store'});
   if(!response.ok)throw new Error('节点详情读取失败');
-  detailData=await response.json();
+  const next=await response.json();
+  if(previous&&cursor){
+   const cutoff=Date.now()-24*60*60*1000;
+   next.samples=[...previous.samples,...(next.samples||[])].filter(sample=>new Date(sample.at).getTime()>=cutoff);
+  }
+  detailData=next;
   renderDetail(detailData);
  } catch(error) { $('node-detail-content').innerHTML=`<div class="detail-empty">${esc(error.message)}</div>`; }
 }
@@ -188,14 +198,14 @@ function scheduleDetailRefresh() {
 }
 function openNodeDetail(id) {
  if(!id)return;
- detailNodeId=id;detailData=null;detailRenderKey='';detailSourceKey='';
+ detailNodeId=id;detailData=null;detailRenderKey='';detailSourceKey='';detailFollowLatest=true;
  const dialog=$('node-detail-dialog');
  if(!dialog.open)dialog.showModal();
  $('node-detail-content').innerHTML='<div class="detail-empty">正在读取节点数据…</div>';
  loadNodeDetail();
 }
 function closeNodeDetail() {
- detailNodeId='';detailData=null;detailRenderKey='';detailSourceKey='';
+ detailNodeId='';detailData=null;detailRenderKey='';detailSourceKey='';detailFollowLatest=true;
  const dialog=$('node-detail-dialog');if(dialog.open)dialog.close();
 }
 function patchRow(row,n,best,s,selected=false) {
