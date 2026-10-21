@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 let nodeList;
-let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailStream = null, detailRenderKey = '', detailSourceKey = '', detailFollowLatest = true;
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailStream = null, detailSummaryKey = '', detailSamplesKey = '', detailFollowLatest = true;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 // Large scores are useful internally for ranking, but are not meaningful in
@@ -128,7 +128,6 @@ function stabilityLabel(summary) {
  return [(unstable?'不稳定':'稳定')+level,unstable?'bad':p50<=green?'good':p50<=yellow?'medium':'bad'];
 }
 function detailMetric(id,label,value) { return `<div class="detail-metric"><span>${esc(label)}</span><strong id="${id}">${esc(value)}</strong></div>`; }
-function stabilityKey(summary) { return JSON.stringify([summary?.samples,summary?.successes,summary?.failures,summary?.success_rate,summary?.p50_ms,summary?.p90_ms,summary?.high_latency_rate,summary?.max_consecutive_failures]); }
 function paintDetailChart(scroll, samples) {
  const track=scroll.querySelector('.stability-chart-track'), layer=scroll.querySelector('.stability-chart-layer');
  if(!track||!layer)return;
@@ -186,23 +185,25 @@ function renderDetail(data) {
  const content=$('node-detail-content');
  if(!content||!data)return;
  const summary=data.summary||{}, samples=data.samples||[], [label,toneName]=stabilityLabel(summary);
- const renderKey=stabilityKey(summary);
- if(detailRenderKey===renderKey&&content.querySelector('.stability-chart-scroll'))return;
+ const summaryKey=stabilitySummaryKey(summary), samplesKey=stabilitySamplesKey(samples);
+ const summaryChanged=detailSummaryKey!==summaryKey;
+ const samplesChanged=detailSamplesKey!==samplesKey;
+ if(!summaryChanged&&!samplesChanged&&content.querySelector('.stability-chart-scroll'))return;
  const node=state?.nodes?.find(n=>n.id===detailNodeId);
  const name=node?.name||detailNodeId;
  $('node-detail-title').textContent=name+' · 详情';
  const existingChart=content.querySelector('.stability-chart-scroll');
  if(existingChart){
-  updateDetailSummary(summary);
-  updateDetailChart(existingChart,samples,true,detailFollowLatest);
+  if(summaryChanged)updateDetailSummary(summary);
+  if(samplesChanged)updateDetailChart(existingChart,samples,true,detailFollowLatest);
  } else {
   content.innerHTML=`<div id="detail-stability-result" class="stability-result tone-${toneName}"><span class="stability-result-dot"></span><strong id="detail-stability-label">${esc(label)}</strong></div><div class="detail-grid">${detailMetric('detail-p50','P50 典型延迟',detailMs(summary.p50_ms))}${detailMetric('detail-p90','P90 较高延迟',detailMs(summary.p90_ms))}${detailMetric('detail-success-rate','成功率',detailPercent(summary.success_rate))}${detailMetric('detail-high-latency','高延迟比例',detailPercent(summary.high_latency_rate))}${detailMetric('detail-max-failures','最大连续失败',String(summary.max_consecutive_failures||0)+' 次')}${detailMetric('detail-samples','探测次数',String(summary.samples||0)+' 次')}</div><div class="stability-chart-heading"><span>真实延迟</span><span class="subtle">每根柱子代表一次探测 · 横向滚动查看</span></div><div class="stability-chart-scroll" role="img" aria-label="最近 24 小时真实延迟"><div class="stability-chart-track"><svg class="stability-chart-layer" height="80" preserveAspectRatio="none"></svg></div></div><div class="detail-note">绿色、黄色和红色跟随当前延迟阈值；灰色表示失败。样本从 smart 启动或切换机场后重新积累。</div>`;
   const chart=content.querySelector('.stability-chart-scroll');
   paintDetailChart(chart,samples);
   requestAnimationFrame(()=>{chart.scrollLeft=Math.max(0,chart.scrollWidth-chart.clientWidth);});
  }
- detailRenderKey=renderKey;
- detailSourceKey=renderKey;
+ detailSummaryKey=summaryKey;
+ detailSamplesKey=samplesKey;
 }
 async function loadNodeDetail() {
  if(!detailNodeId)return;
@@ -254,7 +255,7 @@ function scheduleDetailRefresh() {
 function openNodeDetail(id) {
  if(!id)return;
  closeDetailStream();
- detailNodeId=id;detailData=null;detailRenderKey='';detailSourceKey='';detailFollowLatest=true;
+ detailNodeId=id;detailData=null;detailSummaryKey='';detailSamplesKey='';detailFollowLatest=true;
  const dialog=$('node-detail-dialog');
  if(!dialog.open)dialog.showModal();
  $('node-detail-content').innerHTML='<div class="detail-empty">正在读取节点数据…</div>';
@@ -262,7 +263,7 @@ function openNodeDetail(id) {
 }
 function closeNodeDetail() {
  closeDetailStream();
- detailNodeId='';detailData=null;detailRenderKey='';detailSourceKey='';detailFollowLatest=true;
+ detailNodeId='';detailData=null;detailSummaryKey='';detailSamplesKey='';detailFollowLatest=true;
  const dialog=$('node-detail-dialog');if(dialog.open)dialog.close();
 }
 function patchRow(row,n,best,s,selected=false) {
