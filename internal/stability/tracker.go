@@ -13,7 +13,12 @@ import (
 const Window = 24 * time.Hour
 
 type Tracker struct {
-	samples []domain.StabilitySample
+	samples       []domain.StabilitySample
+	version       uint64
+	cachedVersion uint64
+	cachedYellow  float64
+	cachedSummary domain.StabilitySummary
+	cacheValid    bool
 }
 
 func (t *Tracker) Record(p domain.Probe) {
@@ -27,6 +32,7 @@ func (t *Tracker) Record(p domain.Probe) {
 		delay = &value
 	}
 	t.samples = append(t.samples, domain.StabilitySample{At: at, Success: p.Success, DelayMS: delay, Error: p.Error})
+	t.version++
 	t.prune(at)
 }
 
@@ -38,6 +44,7 @@ func (t *Tracker) prune(now time.Time) {
 	}
 	if first > 0 {
 		t.samples = append([]domain.StabilitySample(nil), t.samples[first:]...)
+		t.version++
 	}
 }
 
@@ -55,8 +62,15 @@ func (t *Tracker) SnapshotWithThreshold(now time.Time, yellow float64) domain.No
 
 func (t *Tracker) Summary(now time.Time, green, yellow float64) domain.StabilitySummary {
 	t.prune(now)
+	if t.cacheValid && t.cachedVersion == t.version && t.cachedYellow == yellow {
+		return t.cachedSummary
+	}
 	summary := summarize(t.samples)
 	addHighLatency(&summary, t.samples, yellow)
+	t.cachedVersion = t.version
+	t.cachedYellow = yellow
+	t.cachedSummary = summary
+	t.cacheValid = true
 	_ = green
 	return summary
 }

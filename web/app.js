@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 let nodeList;
-let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailRenderKey = '';
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailRenderKey = '', detailSourceKey = '';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 // Large scores are useful internally for ranking, but are not meaningful in
@@ -128,6 +128,7 @@ function stabilityLabel(summary) {
  return [(unstable?'不稳定':'稳定')+level,unstable?'bad':p50<=green?'good':p50<=yellow?'medium':'bad'];
 }
 function detailMetric(label,value) { return `<div class="detail-metric"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`; }
+function stabilityKey(summary) { return JSON.stringify([summary?.samples,summary?.successes,summary?.failures,summary?.success_rate,summary?.p50_ms,summary?.p90_ms,summary?.high_latency_rate,summary?.max_consecutive_failures]); }
 function paintDetailChart(scroll, samples) {
  const track=scroll.querySelector('.stability-chart-track'), layer=scroll.querySelector('.stability-chart-layer');
  if(!track||!layer)return;
@@ -156,6 +157,8 @@ function renderDetail(data) {
  const previousScrollLeft=previousChart?.scrollLeft||0;
  const preserveScroll=Boolean(previousChart);
  const summary=data.summary||{}, samples=data.samples||[], [label,toneName]=stabilityLabel(summary);
+ const renderKey=stabilityKey(summary);
+ if(detailRenderKey===renderKey&&content.querySelector('.stability-chart-scroll'))return;
  const node=state?.nodes?.find(n=>n.id===detailNodeId);
  const name=node?.name||detailNodeId;
  $('node-detail-title').textContent=name+' · 详情';
@@ -167,7 +170,8 @@ function renderDetail(data) {
   const maxScroll=Math.max(0,chart.scrollWidth-chart.clientWidth);
   chart.scrollLeft=preserveScroll?Math.min(previousScrollLeft,maxScroll):maxScroll;
  });
- detailRenderKey=JSON.stringify([summary.samples,summary.p50_ms,summary.p90_ms]);
+ detailRenderKey=renderKey;
+ detailSourceKey=renderKey;
 }
 async function loadNodeDetail() {
  if(!detailNodeId)return;
@@ -184,14 +188,14 @@ function scheduleDetailRefresh() {
 }
 function openNodeDetail(id) {
  if(!id)return;
- detailNodeId=id;detailData=null;detailRenderKey='';
+ detailNodeId=id;detailData=null;detailRenderKey='';detailSourceKey='';
  const dialog=$('node-detail-dialog');
  if(!dialog.open)dialog.showModal();
  $('node-detail-content').innerHTML='<div class="detail-empty">正在读取节点数据…</div>';
  loadNodeDetail();
 }
 function closeNodeDetail() {
- detailNodeId='';detailData=null;detailRenderKey='';
+ detailNodeId='';detailData=null;detailRenderKey='';detailSourceKey='';
  const dialog=$('node-detail-dialog');if(dialog.open)dialog.close();
 }
 function patchRow(row,n,best,s,selected=false) {
@@ -253,7 +257,9 @@ function render(s){
  if(s.instance_id)stateInstance=s.instance_id;
  if(Number.isFinite(Number(s.revision)))stateRevision=Number(s.revision);
  state=s;
- if(detailNodeId)scheduleDetailRefresh();
+ const detailNode=s.nodes?.find(node=>node.id===detailNodeId);
+ const liveDetailKey=stabilityKey(detailNode?.stability);
+ if(detailNodeId&&liveDetailKey!==detailSourceKey)scheduleDetailRefresh();
  if(typeof SmartSettings!=='undefined')SmartSettings.update(s.settings);
  const prefs=s.settings;
  if(prefs?.delay_green_ms){
