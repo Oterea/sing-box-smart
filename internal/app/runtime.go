@@ -26,6 +26,13 @@ func (a *App) Run(ctx context.Context) {
 			}
 			if r.action == "runtime-config" {
 				r.reply <- response{config: a.cfg}
+			} else if r.action == "node-stability" {
+				result, ok := a.store.NodeStability(r.target, time.Now(), a.cfg.DelayGreen, a.cfg.DelayYellow)
+				if !ok {
+					r.reply <- response{err: fmt.Errorf("节点不存在")}
+				} else {
+					r.reply <- response{stability: result}
+				}
 			} else if r.action == "runtime-settings" {
 				r.reply <- response{err: a.applySettings(ctx, r.settings)}
 			} else if r.action == "snapshot" {

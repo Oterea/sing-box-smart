@@ -60,7 +60,7 @@ test('当前两个数值共享相同字号，移除旧柱子的层叠样式', ()
  assert.doesNotMatch(css, /\.sample\b/);
 });
 
-test('选中区域与列表生成完全相同的表头与六个单元格', () => {
+test('选中区域与列表生成完全相同的表头与七个单元格', () => {
  const elements = new Map();
  const getElementById = id => {
   if (!elements.has(id)) elements.set(id, { textContent:'', innerHTML:'', parentElement:{dataset:{}}, classList:{toggle(){}}, setAttribute(){} });
@@ -74,10 +74,10 @@ test('选中区域与列表生成完全相同的表头与六个单元格', () =>
  renderContext.render(snapshot);
  const row = getElementById('selected-node').innerHTML;
  assert.equal(row, getElementById('nodes').innerHTML);
- assert.equal((row.match(/<td>/g)||[]).length, 6);
+ assert.equal((row.match(/<td>/g)||[]).length, 7);
  assert.equal(getElementById('status-line').textContent, '');
  const header = renderContext.tableHeading();
- assert.equal((header.match(/scope="col"/g)||[]).length,6);
+ assert.equal((header.match(/scope="col"/g)||[]).length,7);
  assert.doesNotMatch(header, /colspan|rowspan|当前表现|历史走势|最近20/);
  assert.equal((fs.readFileSync('web/index.html','utf8').match(/class="node-table"/g)||[]).length,2);
 });

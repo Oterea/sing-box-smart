@@ -31,9 +31,10 @@ type request struct {
 	ctx            context.Context
 }
 type response struct {
-	config   config.Config
-	snapshot domain.Snapshot
-	err      error
+	config    config.Config
+	snapshot  domain.Snapshot
+	stability domain.NodeStability
+	err       error
 }
 type observation struct {
 	id         string
@@ -163,6 +164,10 @@ func (a *App) Snapshot(ctx context.Context) (domain.Snapshot, error) {
 	r, e := a.request(ctx, request{action: "snapshot"})
 	return r.snapshot, e
 }
+func (a *App) NodeStability(ctx context.Context, id string) (domain.NodeStability, error) {
+	r, e := a.request(ctx, request{action: "node-stability", target: id})
+	return r.stability, e
+}
 func (a *App) Control(ctx context.Context, action, target string) error {
 	_, err := a.request(ctx, request{action: action, target: target})
 	return err
@@ -174,7 +179,7 @@ func (a *App) snapshot() domain.Snapshot {
 		lastActivity = &v
 	}
 	now := time.Now()
-	nodes := a.store.Views(a.current, a.phase)
+	nodes := a.store.Views(a.current, a.phase, a.cfg.DelayGreen, a.cfg.DelayYellow)
 	for i := range nodes {
 		n := &nodes[i]
 		switch {

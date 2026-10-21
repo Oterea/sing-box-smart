@@ -50,23 +50,47 @@ type Sample struct {
 	Score   *float64  `json:"score"`
 	Error   string    `json:"error,omitempty"`
 }
+type StabilitySample struct {
+	At      time.Time `json:"at"`
+	Success bool      `json:"success"`
+	DelayMS *float64  `json:"delay_ms,omitempty"`
+	Error   string    `json:"error,omitempty"`
+}
+type StabilitySummary struct {
+	WindowSeconds       float64   `json:"window_seconds"`
+	StartedAt           time.Time `json:"started_at"`
+	Samples             int       `json:"samples"`
+	Successes           int       `json:"successes"`
+	Failures            int       `json:"failures"`
+	SuccessRate         float64   `json:"success_rate"`
+	P50MS               *float64  `json:"p50_ms,omitempty"`
+	P90MS               *float64  `json:"p90_ms,omitempty"`
+	HighLatencyCount    int       `json:"high_latency_count"`
+	HighLatencyRate     float64   `json:"high_latency_rate"`
+	MaxConsecutiveFails int       `json:"max_consecutive_failures"`
+}
+type NodeStability struct {
+	Summary StabilitySummary  `json:"summary"`
+	Samples []StabilitySample `json:"samples"`
+}
 type NodeView struct {
-	ID                string     `json:"id"`
-	Name              string     `json:"name"`
-	Score             *float64   `json:"score"`
-	ScoreOverflow     bool       `json:"score_overflow"`
-	DelayMS           *float64   `json:"delay_ms"`
-	JitterMS          float64    `json:"jitter_ms"`
-	JitterPenalty     float64    `json:"jitter_penalty"`
-	LastSuccess       bool       `json:"last_success"`
-	LastAt            *time.Time `json:"last_at"`
-	Samples           []Sample   `json:"history"`
-	Checks            int        `json:"checks"`
-	Current           bool       `json:"current"`
-	Probing           bool       `json:"probing"`
-	Frequency         string     `json:"frequency"`
-	RecoveryRemaining int        `json:"recovery_remaining"`
-	Tier              Tier       `json:"tier"`
+	ID                string           `json:"id"`
+	Name              string           `json:"name"`
+	Score             *float64         `json:"score"`
+	ScoreOverflow     bool             `json:"score_overflow"`
+	DelayMS           *float64         `json:"delay_ms"`
+	JitterMS          float64          `json:"jitter_ms"`
+	JitterPenalty     float64          `json:"jitter_penalty"`
+	LastSuccess       bool             `json:"last_success"`
+	LastAt            *time.Time       `json:"last_at"`
+	Samples           []Sample         `json:"history"`
+	Checks            int              `json:"checks"`
+	Current           bool             `json:"current"`
+	Probing           bool             `json:"probing"`
+	Frequency         string           `json:"frequency"`
+	RecoveryRemaining int              `json:"recovery_remaining"`
+	Tier              Tier             `json:"tier"`
+	Stability         StabilitySummary `json:"stability"`
 }
 type Event struct {
 	At      time.Time      `json:"at"`

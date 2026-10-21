@@ -28,6 +28,7 @@ sing-box gRPC → grpcactivity → activity → app → sleep controller → obs
 - `activity_source.go`：启动、替换和取消 gRPC 活动源。
 - `switching.go`：选择比较、候选确认安排、写入前复核、异步写入和回读结果。
 - `internal/switching/confirmation.go`：维护最多 3 次、15 秒总上限的节点切换确认批次；不负责启动探测，只提供确认状态。
+- `internal/stability`：按节点维护最近 24 小时的内存探测窗口，计算 P50、P90、成功率和失败连续性；普通状态只读取摘要，详情接口才复制原始样本。
 - `selection_mode.go`：自动/手动模式控制；模式只影响切换，不影响探测和计分。
 - `selection_sync.go`：单实例读取根策略组和当前策略组的 `now`，处理外部 Dashboard 切换和运行状态重建。
 

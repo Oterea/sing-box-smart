@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 let nodeList;
-let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '';
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailRenderKey = '';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 // Large scores are useful internally for ranking, but are not meaningful in
@@ -90,7 +90,7 @@ function history(samples, kind, best, motion=false) {
 }
 // Both sections share the same header, column definitions and row renderer.
 function tableHeading() {
- return '<colgroup><col class="col-node"><col class="col-action"><col class="col-score"><col class="col-delay"><col class="col-history"><col class="col-history"></colgroup><thead><tr><th scope="col">节点</th><th scope="col">检查次数</th><th scope="col">分数</th><th scope="col">延迟</th><th scope="col">分数历史</th><th scope="col">延迟历史</th></tr></thead>';
+ return '<colgroup><col class="col-node"><col class="col-action"><col class="col-score"><col class="col-delay"><col class="col-history"><col class="col-history"><col class="col-detail"></colgroup><thead><tr><th scope="col">节点</th><th scope="col">检查次数</th><th scope="col">分数</th><th scope="col">延迟</th><th scope="col">分数历史</th><th scope="col">延迟历史</th><th scope="col">详情</th></tr></thead>';
 }
 function nodeTier(n,s) {
  return n.id&&n.id===s.current_id?'current':n.recovery_remaining>0?'recovery':n.tier==='candidate'?'candidate':'ordinary';
@@ -109,7 +109,82 @@ function nodeRow(n,best,s) {
  const disabled=busy||Boolean(s.pending_id)||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
  const delayColor=n.checks&&!n.last_success?'bad':delayTone(n.delay_ms);
  const buttonText=n.id?n.name:'等待首次选择';
- return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}">${esc(buttonText)}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${scoreNum(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td></tr>`;
+ return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}">${esc(buttonText)}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${scoreNum(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td><td><button class="detail-button" data-detail-node="${esc(n.id)}" ${!n.id?'disabled':''}>详情</button></td></tr>`;
+}
+function detailPercent(value) {
+ return Number.isFinite(Number(value)) ? (Number(value)*100).toFixed(1)+'%' : '—';
+}
+function detailMs(value) {
+ return Number.isFinite(Number(value)) ? Math.round(Number(value))+' ms' : '—';
+}
+function stabilityLabel(summary) {
+ const samples=Number(summary?.samples)||0, p50=Number(summary?.p50_ms), p90=Number(summary?.p90_ms);
+ if(samples<10||!Number.isFinite(p50))return ['样本不足','none'];
+ const green=Number(state?.settings?.delay_green_ms??200), yellow=Number(state?.settings?.delay_yellow_ms??600);
+ const level=p50<=green?'低延迟':p50<=yellow?'中延迟':'高延迟';
+ const high=Number(summary.high_latency_rate)||0, success=Number(summary.success_rate)||0;
+ const spread=Number.isFinite(p90)&&p50>0?p90/p50:0;
+ const unstable=success<.98||high>.1||spread>=2;
+ return [(unstable?'不稳定':'稳定')+level,unstable?'bad':p50<=green?'good':p50<=yellow?'medium':'bad'];
+}
+function detailMetric(label,value) { return `<div class="detail-metric"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`; }
+function paintDetailChart(scroll, samples) {
+ const track=scroll.querySelector('.stability-chart-track'), layer=scroll.querySelector('.stability-chart-layer');
+ if(!track||!layer)return;
+ const slot=8, bar=6, ceiling=1000;
+ const totalWidth=Math.max(scroll.clientWidth,samples.length*slot);
+ layer.setAttribute('width',String(totalWidth));
+ layer.setAttribute('viewBox',`0 0 ${totalWidth} 120`);
+ const draw=()=>{
+  const first=Math.max(0,Math.floor(scroll.scrollLeft/slot)-120), count=Math.ceil(scroll.clientWidth/slot)+240, last=Math.min(samples.length,first+count);
+  layer.innerHTML=samples.slice(first,last).map((sample,index)=>{
+   const value=Number(sample.delay_ms), height=sample.success&&Number.isFinite(value)?Math.max(2,Math.min(104,value/ceiling*104)):104;
+   const color=!sample.success?'failure':delayTone(value);
+   const title=recordTime(sample.at)+' · '+(sample.success?'实际延迟 '+Math.round(value)+' ms':'失败'+(sample.error?'：'+sample.error:''));
+   const x=(first+index)*slot, y=104-height;
+   return `<g><title>${esc(title)}</title><rect class="stability-bar bar-${color}" x="${x}" y="${y}" width="${bar}" height="${height}"/></g>`;
+  }).join('');
+ };
+ scroll._detailDraw=draw;
+ if(!scroll._detailBound){scroll.addEventListener('scroll',()=>requestAnimationFrame(draw));scroll._detailBound=true;}
+ draw();
+}
+function renderDetail(data) {
+ const content=$('node-detail-content');
+ if(!content||!data)return;
+ const summary=data.summary||{}, samples=data.samples||[], [label,toneName]=stabilityLabel(summary);
+ const node=state?.nodes?.find(n=>n.id===detailNodeId);
+ const name=node?.name||detailNodeId;
+ $('node-detail-title').textContent=name+' · 详情';
+ $('node-detail-subtitle').textContent='最近 24 小时 · '+(summary.started_at?recordTime(summary.started_at):'尚无记录');
+ content.innerHTML=`<div class="stability-result tone-${toneName}"><span class="stability-result-dot"></span><strong>${esc(label)}</strong></div><div class="detail-grid">${detailMetric('P50 典型延迟',detailMs(summary.p50_ms))}${detailMetric('P90 较高延迟',detailMs(summary.p90_ms))}${detailMetric('成功率',detailPercent(summary.success_rate))}${detailMetric('高延迟比例',detailPercent(summary.high_latency_rate))}${detailMetric('最大连续失败',String(summary.max_consecutive_failures||0)+' 次')}${detailMetric('探测次数',String(summary.samples||0)+' 次')}</div><div class="stability-chart-heading"><span>真实延迟</span><span class="subtle">每根柱子代表一次探测 · 横向滚动查看</span></div><div class="stability-chart-scroll" role="img" aria-label="最近 24 小时真实延迟"><div class="stability-chart-track"><svg class="stability-chart-layer" height="120" preserveAspectRatio="none"></svg></div></div><div class="detail-note">绿色、黄色和红色跟随当前延迟阈值；灰色表示失败。样本从 smart 启动或切换机场后重新积累。</div>`;
+ paintDetailChart(content.querySelector('.stability-chart-scroll'),samples);
+ detailRenderKey=JSON.stringify([summary.samples,summary.p50_ms,summary.p90_ms]);
+}
+async function loadNodeDetail() {
+ if(!detailNodeId)return;
+ try {
+  const response=await fetch('/api/node/'+encodeURIComponent(detailNodeId)+'/stability',{cache:'no-store'});
+  if(!response.ok)throw new Error('节点详情读取失败');
+  detailData=await response.json();
+  renderDetail(detailData);
+ } catch(error) { $('node-detail-content').innerHTML=`<div class="detail-empty">${esc(error.message)}</div>`; }
+}
+function scheduleDetailRefresh() {
+ if(!detailNodeId||detailTimer)return;
+ detailTimer=setTimeout(()=>{detailTimer=0;if(detailNodeId)loadNodeDetail();},3000);
+}
+function openNodeDetail(id) {
+ if(!id)return;
+ detailNodeId=id;detailData=null;detailRenderKey='';
+ const dialog=$('node-detail-dialog');
+ if(!dialog.open)dialog.showModal();
+ $('node-detail-content').innerHTML='<div class="detail-empty">正在读取节点数据…</div>';
+ loadNodeDetail();
+}
+function closeNodeDetail() {
+ detailNodeId='';detailData=null;detailRenderKey='';
+ const dialog=$('node-detail-dialog');if(dialog.open)dialog.close();
 }
 function patchRow(row,n,best,s,selected=false) {
  const current=Boolean(n.id)&&n.id===s.current_id;
@@ -170,6 +245,7 @@ function render(s){
  if(s.instance_id)stateInstance=s.instance_id;
  if(Number.isFinite(Number(s.revision)))stateRevision=Number(s.revision);
  state=s;
+ if(detailNodeId)scheduleDetailRefresh();
  if(typeof SmartSettings!=='undefined')SmartSettings.update(s.settings);
  const prefs=s.settings;
  if(prefs?.delay_green_ms){
@@ -256,6 +332,8 @@ for (const id of ['nodes','selected-node']) {
  const body=$(id);
  body.closest('table').insertAdjacentHTML('afterbegin',tableHeading());
  body.addEventListener('click',e=>{
+  const detail=e.target.closest('button[data-detail-node]');
+  if(detail&&!detail.disabled){e.stopPropagation();openNodeDetail(detail.dataset.detailNode);return;}
   const button=e.target.closest('button[data-node]');
   if(button&&!button.disabled)control('node',button.dataset.node);
  });
@@ -287,3 +365,4 @@ connectStream();
 $('api-test').addEventListener('click',async()=>{const button=$('api-test');button.disabled=true;try{const r=await fetch('/api/config/api/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api:$('api-address').value.trim()})});const data=await r.json();if(!r.ok)throw new Error(data.error);toast('连接正常，策略组可读取');}catch(e){toast(e.message);}finally{button.disabled=false;}});
 
 $('nodes-toggle').addEventListener('click',()=>{if(!state||!nodeList)return;nodeList.toggle();render(state);});
+for(const id of ['node-detail-close','node-detail-dismiss'])$(id)?.addEventListener('click',closeNodeDetail);

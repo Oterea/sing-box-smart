@@ -24,6 +24,10 @@ type Service interface {
 	TestAPI(context.Context, string) error
 }
 
+type stabilityService interface {
+	NodeStability(context.Context, string) (domain.NodeStability, error)
+}
+
 func Handler(service Service) http.Handler {
 	mux := http.NewServeMux()
 	registerSettings(mux, service)
@@ -49,6 +53,21 @@ func Handler(service Service) http.Handler {
 			return
 		}
 		write(w, 200, s)
+	})
+	mux.HandleFunc("GET /api/node/{id}/stability", func(w http.ResponseWriter, r *http.Request) {
+		service, ok := service.(stabilityService)
+		if !ok {
+			write(w, http.StatusNotImplemented, map[string]string{"error": "节点详情不可用"})
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		detail, err := service.NodeStability(ctx, r.PathValue("id"))
+		if err != nil {
+			write(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+			return
+		}
+		write(w, http.StatusOK, detail)
 	})
 	mux.HandleFunc("GET /api/events", streamHandler(hub))
 	mux.HandleFunc("POST /api/config/filters", func(w http.ResponseWriter, r *http.Request) {

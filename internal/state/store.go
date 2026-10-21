@@ -5,18 +5,20 @@ import (
 	"sing-box-smart/internal/domain"
 	"sing-box-smart/internal/schedule"
 	"sing-box-smart/internal/score"
+	"sing-box-smart/internal/stability"
 	"sing-box-smart/internal/tiering"
 	"time"
 )
 
 type Node struct {
-	Info    domain.Node
-	Metrics domain.Metrics
-	Last    domain.Probe
-	Checks  int
-	History []domain.Sample
-	Plan    schedule.Plan
-	Tier    domain.Tier
+	Info      domain.Node
+	Metrics   domain.Metrics
+	Last      domain.Probe
+	Checks    int
+	History   []domain.Sample
+	Plan      schedule.Plan
+	Tier      domain.Tier
+	Stability stability.Tracker
 }
 type Store struct {
 	Nodes              []*Node
@@ -38,6 +40,7 @@ func New(nodes []domain.Node, limit int) *Store {
 func (s *Store) Record(id string, p domain.Probe) {
 	n := s.ByID[id]
 	n.Metrics = score.Update(n.Metrics, p)
+	n.Stability.Record(p)
 	n.Last = p
 	n.Checks++
 	v, _ := score.Display(n.Metrics)
@@ -51,7 +54,11 @@ func (s *Store) Record(id string, p domain.Probe) {
 		n.History = n.History[len(n.History)-s.Limit:]
 	}
 }
-func (s *Store) Views(current, phase string) []domain.NodeView {
+func (s *Store) Views(current, phase string, thresholds ...int) []domain.NodeView {
+	green, yellow := 200, 600
+	if len(thresholds) >= 2 {
+		green, yellow = thresholds[0], thresholds[1]
+	}
 	out := make([]domain.NodeView, 0, len(s.Nodes))
 	for _, n := range s.Nodes {
 		v, overflow := score.Display(n.Metrics)
@@ -69,7 +76,7 @@ func (s *Store) Views(current, phase string) []domain.NodeView {
 		if phase == "unavailable" {
 			frequency = "3 秒重试"
 		}
-		x := domain.NodeView{ID: n.Info.ID, Name: n.Info.Name, Score: v, ScoreOverflow: overflow, Checks: n.Checks, LastSuccess: n.Last.Success, Current: n.Info.ID == current, Probing: n.Plan.InFlight, Frequency: frequency, RecoveryRemaining: n.Plan.RecoveryStep, Tier: n.Tier, Samples: append([]domain.Sample{}, n.History...), JitterMS: n.Metrics.J, JitterPenalty: score.JitterPenalty(n.Metrics)}
+		x := domain.NodeView{ID: n.Info.ID, Name: n.Info.Name, Score: v, ScoreOverflow: overflow, Checks: n.Checks, LastSuccess: n.Last.Success, Current: n.Info.ID == current, Probing: n.Plan.InFlight, Frequency: frequency, RecoveryRemaining: n.Plan.RecoveryStep, Tier: n.Tier, Samples: append([]domain.Sample{}, n.History...), JitterMS: n.Metrics.J, JitterPenalty: score.JitterPenalty(n.Metrics), Stability: n.Stability.Summary(time.Now(), float64(green), float64(yellow))}
 		if n.Checks > 0 {
 			t := n.Last.At
 			x.LastAt = &t
@@ -81,6 +88,17 @@ func (s *Store) Views(current, phase string) []domain.NodeView {
 		out = append(out, x)
 	}
 	return out
+}
+func (s *Store) NodeStability(id string, now time.Time, thresholds ...int) (domain.NodeStability, bool) {
+	n := s.ByID[id]
+	if n == nil {
+		return domain.NodeStability{}, false
+	}
+	yellow := 600
+	if len(thresholds) >= 2 {
+		yellow = thresholds[1]
+	}
+	return n.Stability.SnapshotWithThreshold(now, float64(yellow)), true
 }
 func (s *Store) AllChecked() bool {
 	for _, n := range s.Nodes {
