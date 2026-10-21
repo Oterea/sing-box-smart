@@ -365,4 +365,4 @@ connectStream();
 $('api-test').addEventListener('click',async()=>{const button=$('api-test');button.disabled=true;try{const r=await fetch('/api/config/api/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api:$('api-address').value.trim()})});const data=await r.json();if(!r.ok)throw new Error(data.error);toast('连接正常，策略组可读取');}catch(e){toast(e.message);}finally{button.disabled=false;}});
 
 $('nodes-toggle').addEventListener('click',()=>{if(!state||!nodeList)return;nodeList.toggle();render(state);});
-for(const id of ['node-detail-close','node-detail-dismiss'])$(id)?.addEventListener('click',closeNodeDetail);
+$('node-detail-close')?.addEventListener('click',closeNodeDetail);

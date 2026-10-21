@@ -375,8 +375,8 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .stability-bar.bar-failure{fill:#aeb9c1}
 .stability-bar.bar-none{fill:#aeb9c1}
 .detail-note{margin-top:9px;color:#7b8b98;font-size:12px;line-height:1.6}
-.node-detail-actions{display:flex;justify-content:flex-end;flex-shrink:0;margin-top:16px}
 @media(max-width:700px){.node-detail-dialog{width:calc(100% - 20px);height:min(720px,calc(100dvh - 20px));max-height:calc(100dvh - 20px);padding:16px}.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stability-chart-heading{align-items:flex-start;flex-direction:column;gap:4px}}
+@media(max-width:420px){.detail-grid{grid-template-columns:1fr}.detail-metric{min-height:42px}.node-detail-heading h2{font-size:18px}}
 
 /* Selection mode is a small control group, separate from detection pause. */
 .selection-controls{display:flex;align-items:center;gap:8px}
