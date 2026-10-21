@@ -41,7 +41,7 @@ func TestExtremeFailureIsInfinite(t *testing.T) {
 
 func TestJitterPenaltyWarmsUpAndCaps(t *testing.T) {
 	m := domain.Metrics{}
-	for i := 0; i < 7; i++ {
+	for i := 0; i < 9; i++ {
 		m = Update(m, domain.Probe{Success: true, DelayMS: 475})
 	}
 	if got := JitterPenalty(m); got != 1 {

@@ -9,7 +9,7 @@ import (
 const (
 	jitterDecay      = 0.9
 	jitterUpdate     = 1 - jitterDecay
-	minJitterSamples = 8
+	minJitterSamples = 10
 	maxJitterPenalty = 0.5
 )
 
