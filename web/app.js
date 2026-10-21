@@ -149,7 +149,7 @@ function paintDetailChart(scroll, samples) {
  scroll._detailDraw=draw;
  if(!scroll._detailBound){
   const stopAutoFollow=()=>{detailFollowLatest=false;scroll.scrollLeft=scroll.scrollLeft;};
-  scroll.addEventListener('scroll',()=>{const max=Math.max(0,scroll.scrollWidth-scroll.clientWidth);detailFollowLatest=max-scroll.scrollLeft<=32;requestAnimationFrame(draw);});
+  scroll.addEventListener('scroll',()=>{const max=Math.max(0,scroll.scrollWidth-scroll.clientWidth);detailFollowLatest=max-scroll.scrollLeft<=32;requestAnimationFrame(()=>scroll._detailDraw?.());});
   scroll.addEventListener('wheel',stopAutoFollow,{passive:true});
   scroll.addEventListener('touchstart',stopAutoFollow,{passive:true});
   scroll.addEventListener('pointerdown',stopAutoFollow,{passive:true});
