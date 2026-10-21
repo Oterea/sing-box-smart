@@ -27,6 +27,8 @@ SSE 首条消息包含 `full:true` 和全部节点，后续 `full:false` 的 `no
 
 `GET /api/node/{id}/stability/events` 是该节点详情的 SSE 增量流。首次数据仍通过稳定性接口读取，后续只推送新增探测和最新摘要；`node_sequence` 是该节点独立递增的序号，客户端发现跳号时应通过 `since` 补齐；断线后也用 `since` 补齐。
 
+`GET /api/node/{id}/stability/long-term` 返回最近 14 天按天、按 15 分钟聚合的趋势数据。每个时间桶只保存分位数、成功率、高延迟比例和失败连续性所需的聚合信息，不保存长期原始探测。
+
 暂停不会撤销已经发出的 selector 写入；该写入仍可能完成并回读。启动阶段拒绝手动节点选择。
 
 ## 选择状态同步

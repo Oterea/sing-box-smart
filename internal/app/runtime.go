@@ -11,6 +11,7 @@ import (
 )
 
 func (a *App) Run(ctx context.Context) {
+	defer func() { _ = a.longTerm.Flush() }()
 	a.restartActivity(ctx)
 	defer a.stopActivity()
 	ticker := time.NewTicker(25 * time.Millisecond)
@@ -32,6 +33,12 @@ func (a *App) Run(ctx context.Context) {
 					r.reply <- response{err: fmt.Errorf("节点不存在")}
 				} else {
 					r.reply <- response{stability: result}
+				}
+			} else if r.action == "node-longterm" {
+				if n := a.store.ByID[r.target]; n == nil {
+					r.reply <- response{err: fmt.Errorf("节点不存在")}
+				} else {
+					r.reply <- response{longTerm: a.longTerm.Query(a.airport.ID, r.target, time.Now(), float64(a.cfg.DelayYellow))}
 				}
 			} else if r.action == "runtime-settings" {
 				r.reply <- response{err: a.applySettings(ctx, r.settings)}
@@ -193,6 +200,9 @@ func (a *App) observe(ctx context.Context, o observation) {
 		signal = recovery.Detect(n.History, n.Last, o.probe, a.cfg.RecoveryDropRatio, a.cfg.RecoveryDropMinMS, a.cfg.RecoveryGoodMaxMS)
 	}
 	a.store.Record(o.id, o.probe)
+	if err := a.longTerm.Record(a.airport.ID, o.id, n.Info.Name, o.probe); err != nil {
+		a.events.Warn("stability", "long_term_save", "长期稳定性数据保存失败", map[string]any{"error": err.Error()})
+	}
 	var delay *float64
 	if o.probe.Success {
 		value := o.probe.DelayMS

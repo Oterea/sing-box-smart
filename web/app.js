@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 let nodeList;
-let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailStream = null, detailRequestController = null, detailRequestToken = 0, detailUpdateChain = Promise.resolve(), detailNodeSequence = 0, detailSummaryKey = '', detailSamplesKey = '', detailFollowLatest = true;
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailStream = null, detailRequestController = null, detailLongTermController = null, detailRequestToken = 0, detailUpdateChain = Promise.resolve(), detailNodeSequence = 0, detailSummaryKey = '', detailSamplesKey = '', detailLongTermData = null, detailView = 'realtime', detailFollowLatest = true;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 // Large scores are useful internally for ranking, but are not meaningful in
@@ -181,9 +181,69 @@ function updateDetailChart(chart, samples, preserveScroll, followLatest) {
   else chart.scrollLeft=preserveScroll?Math.min(previousScrollLeft,maxScroll):maxScroll;
  });
 }
+function longTermTone(value) {
+ return value==null?'none':value<=(state?.settings?.delay_green_ms??200)?'good':value<=(state?.settings?.delay_yellow_ms??600)?'medium':'bad';
+}
+function longTermSummaryText(summary) {
+ const p50=summary?.p50_ms;
+ if(!summary?.samples||p50==null)return '样本不足';
+ const level=p50<=(state?.settings?.delay_green_ms??200)?'低延迟':p50<=(state?.settings?.delay_yellow_ms??600)?'中延迟':'高延迟';
+ const unstable=Number(summary.success_rate)<.98||Number(summary.high_latency_rate)>.1||Number(summary.max_consecutive_failures)>2;
+ return (unstable?'不稳定':'稳定')+level;
+}
+function longTermChart(day) {
+ const width=960,height=150,left=34,right=10,top=10,bottom=24,plotW=width-left-right,plotH=height-top-bottom,ceiling=1000;
+ const points=(day.buckets||[]).map(bucket=>{
+  const date=new Date(bucket.at), minutes=date.getHours()*60+date.getMinutes();
+  return {bucket,x:left+minutes/1440*plotW,p50:Number(bucket.p50_ms),p90:Number(bucket.p90_ms)};
+ }).filter(point=>point.bucket.has_data);
+ const line=(metric,extra='')=>points.slice(1).map((point,index)=>{
+  const previous=points[index], value=point[metric], previousValue=previous[metric];
+  if(!Number.isFinite(value)||!Number.isFinite(previousValue)||point.x-previous.x>plotW/24*2)return '';
+  const y1=top+plotH-Math.min(ceiling,previousValue)/ceiling*plotH, y2=top+plotH-Math.min(ceiling,value)/ceiling*plotH;
+  if(metric==='p90')return `<line class="longterm-p90" x1="${previous.x}" y1="${y1}" x2="${point.x}" y2="${y2}"/>`;
+  return `<line class="longterm-line longterm-line-${longTermTone(value)} ${extra}" x1="${previous.x}" y1="${y1}" x2="${point.x}" y2="${y2}"/>`;
+ }).join('');
+ const grid=[0,200,600,1000].map(value=>{const y=top+plotH-value/ceiling*plotH;return `<line class="longterm-grid" x1="${left}" y1="${y}" x2="${width-right}" y2="${y}"/><text class="longterm-axis" x="2" y="${y+3}">${value}</text>`;}).join('');
+ const axis=[0,6,12,18,24].map(hour=>{const x=left+hour/24*plotW;return `<text class="longterm-axis" x="${x-7}" y="${height-6}">${String(hour).padStart(2,'0')}:00</text>`;}).join('');
+ return `<svg class="longterm-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(day.date)} 延迟趋势">${grid}${axis}${line('p90')}${line('p50')}</svg>`;
+}
+function renderLongTerm(data) {
+ const content=$('node-detail-content');
+ if(!content)return;
+ const days=(data?.days||[]).slice().sort((a,b)=>a.date.localeCompare(b.date)).reverse();
+ if(!days.length){content.innerHTML='<div class="detail-empty">暂无 14 天聚合数据</div>';return;}
+ content.innerHTML=days.map(day=>`<section class="longterm-day"><div class="longterm-day-heading"><strong>${esc(day.date)}</strong><span class="subtle">${esc(longTermSummaryText(day.summary))} · P50 ${esc(detailMs(day.summary?.p50_ms))} · P90 ${esc(detailMs(day.summary?.p90_ms))}</span></div>${longTermChart(day)}</section>`).join('');
+}
+async function loadLongTerm() {
+ if(!detailNodeId)return;
+ const nodeID=detailNodeId;
+ detailLongTermController?.abort();
+ const controller=new AbortController();
+ detailLongTermController=controller;
+ try {
+  const response=await fetch('/api/node/'+encodeURIComponent(nodeID)+'/stability/long-term',{cache:'no-store',signal:controller.signal});
+  if(!response.ok)throw new Error('长期趋势读取失败');
+  const data=await response.json();
+  if(detailNodeId!==nodeID)return;
+  detailLongTermData=data;
+  if(detailView==='longterm')renderLongTerm(data);
+ } catch(error) {
+  if(error.name!=='AbortError'&&detailNodeId===nodeID)$('node-detail-content').innerHTML=`<div class="detail-empty">${esc(error.message)}</div>`;
+ } finally { if(detailLongTermController===controller)detailLongTermController=null; }
+}
+function setDetailView(view) {
+ detailView=view;
+ const realtime=$('detail-view-realtime'), longterm=$('detail-view-longterm');
+ if(realtime){realtime.classList.toggle('active',view==='realtime');realtime.setAttribute('aria-selected',String(view==='realtime'));}
+ if(longterm){longterm.classList.toggle('active',view==='longterm');longterm.setAttribute('aria-selected',String(view==='longterm'));}
+ if(view==='realtime'){detailLongTermController?.abort();renderDetail(detailData);$('node-detail-subtitle').textContent='最近 24 小时';}
+ else { $('node-detail-subtitle').textContent='最近 14 天 · 每 15 分钟聚合'; loadLongTerm(); }
+}
 function renderDetail(data) {
  const content=$('node-detail-content');
  if(!content||!data)return;
+ if(detailView==='longterm')return;
  const summary=data.summary||{}, samples=data.samples||[], [label,toneName]=stabilityLabel(summary);
  const summaryKey=stabilitySummaryKey(summary), samplesKey=stabilitySamplesKey(samples);
  const summaryChanged=detailSummaryKey!==summaryKey;
@@ -197,7 +257,7 @@ function renderDetail(data) {
   if(summaryChanged)updateDetailSummary(summary);
   if(samplesChanged)updateDetailChart(existingChart,samples,true,detailFollowLatest);
  } else {
-  content.innerHTML=`<div id="detail-stability-result" class="stability-result tone-${toneName}"><span class="stability-result-dot"></span><strong id="detail-stability-label">${esc(label)}</strong></div><div class="detail-grid">${detailMetric('detail-p50','P50 典型延迟',detailMs(summary.p50_ms))}${detailMetric('detail-p90','P90 较高延迟',detailMs(summary.p90_ms))}${detailMetric('detail-success-rate','成功率',detailPercent(summary.success_rate))}${detailMetric('detail-high-latency','高延迟比例',detailPercent(summary.high_latency_rate))}${detailMetric('detail-max-failures','最大连续失败',String(summary.max_consecutive_failures||0)+' 次')}${detailMetric('detail-samples','探测次数',String(summary.samples||0)+' 次')}</div><div class="stability-chart-heading"><span>真实延迟</span><span class="subtle">每根柱子代表一次探测 · 横向滚动查看</span></div><div class="stability-chart-scroll" role="img" aria-label="最近 24 小时真实延迟"><div class="stability-chart-track"><svg class="stability-chart-layer" height="80" preserveAspectRatio="none"></svg></div></div><div class="detail-note">绿色、黄色和红色跟随当前延迟阈值；灰色表示失败。样本从 smart 启动或切换机场后重新积累。</div>`;
+  content.innerHTML=`<div id="detail-realtime-view"><div id="detail-stability-result" class="stability-result tone-${toneName}"><span class="stability-result-dot"></span><strong id="detail-stability-label">${esc(label)}</strong></div><div class="detail-grid">${detailMetric('detail-p50','P50 典型延迟',detailMs(summary.p50_ms))}${detailMetric('detail-p90','P90 较高延迟',detailMs(summary.p90_ms))}${detailMetric('detail-success-rate','成功率',detailPercent(summary.success_rate))}${detailMetric('detail-high-latency','高延迟比例',detailPercent(summary.high_latency_rate))}${detailMetric('detail-max-failures','最大连续失败',String(summary.max_consecutive_failures||0)+' 次')}${detailMetric('detail-samples','探测次数',String(summary.samples||0)+' 次')}</div><div class="stability-chart-heading"><span>真实延迟</span><span class="subtle">每根柱子代表一次探测 · 横向滚动查看</span></div><div class="stability-chart-scroll" role="img" aria-label="最近 24 小时真实延迟"><div class="stability-chart-track"><svg class="stability-chart-layer" height="80" preserveAspectRatio="none"></svg></div></div><div class="detail-note">绿色、黄色和红色跟随当前延迟阈值；灰色表示失败。样本从 smart 启动或切换机场后重新积累。</div></div><div id="detail-longterm-view" hidden></div>`;
   const chart=content.querySelector('.stability-chart-scroll');
   paintDetailChart(chart,samples);
   requestAnimationFrame(()=>{chart.scrollLeft=Math.max(0,chart.scrollWidth-chart.clientWidth);});
@@ -274,7 +334,7 @@ function connectDetailStream() {
 function openNodeDetail(id) {
  if(!id)return;
  closeDetailStream();
- detailNodeId=id;detailData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();detailFollowLatest=true;
+ detailNodeId=id;detailData=null;detailLongTermData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();detailView='realtime';detailFollowLatest=true;
  const dialog=$('node-detail-dialog');
  if(!dialog.open)dialog.showModal();
  $('node-detail-content').innerHTML='<div class="detail-empty">正在读取节点数据…</div>';
@@ -282,8 +342,8 @@ function openNodeDetail(id) {
 }
 function closeNodeDetail() {
  closeDetailStream();
- detailRequestController?.abort();detailRequestToken++;
- detailNodeId='';detailData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();detailFollowLatest=true;
+ detailRequestController?.abort();detailLongTermController?.abort();detailRequestToken++;
+ detailNodeId='';detailData=null;detailLongTermData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();detailView='realtime';detailFollowLatest=true;
  const dialog=$('node-detail-dialog');if(dialog.open)dialog.close();
 }
 function patchRow(row,n,best,s,selected=false) {
@@ -465,3 +525,5 @@ $('api-test').addEventListener('click',async()=>{const button=$('api-test');butt
 
 $('nodes-toggle').addEventListener('click',()=>{if(!state||!nodeList)return;nodeList.toggle();render(state);});
 $('node-detail-close')?.addEventListener('click',closeNodeDetail);
+$('detail-view-realtime')?.addEventListener('click',()=>setDetailView('realtime'));
+$('detail-view-longterm')?.addEventListener('click',()=>setDetailView('longterm'));

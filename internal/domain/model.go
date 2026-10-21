@@ -73,6 +73,26 @@ type NodeStability struct {
 	Summary StabilitySummary  `json:"summary"`
 	Samples []StabilitySample `json:"samples"`
 }
+type LongTermBucket struct {
+	At                 time.Time `json:"at"`
+	P50MS              *float64  `json:"p50_ms,omitempty"`
+	P90MS              *float64  `json:"p90_ms,omitempty"`
+	SuccessRate        float64   `json:"success_rate"`
+	HighLatencyRate    float64   `json:"high_latency_rate"`
+	MaxConsecutiveFail int       `json:"max_consecutive_failures"`
+	HasData            bool      `json:"has_data"`
+}
+type LongTermDay struct {
+	Date    string           `json:"date"`
+	Buckets []LongTermBucket `json:"buckets"`
+	Summary StabilitySummary `json:"summary"`
+}
+type LongTermStability struct {
+	Days       []LongTermDay `json:"days"`
+	Retention  int           `json:"retention_days"`
+	BucketMins int           `json:"bucket_minutes"`
+	YellowMS   int           `json:"yellow_ms"`
+}
 type StabilityUpdate struct {
 	Sequence     uint64           `json:"sequence"`
 	NodeSequence uint64           `json:"node_sequence"`

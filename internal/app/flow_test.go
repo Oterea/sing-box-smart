@@ -13,7 +13,9 @@ import (
 
 func newFlowApp(t *testing.T) *App {
 	t.Helper()
-	a, err := New(context.Background(), config.Default(), demo.New(), log.New(io.Discard, "", 0))
+	cfg := config.Default()
+	cfg.LogDir = t.TempDir()
+	a, err := New(context.Background(), cfg, demo.New(), log.New(io.Discard, "", 0))
 	if err != nil {
 		t.Fatal(err)
 	}

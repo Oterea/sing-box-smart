@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"path/filepath"
 	"sing-box-smart/internal/activity"
 	"sing-box-smart/internal/config"
 	"sing-box-smart/internal/discovery"
@@ -36,6 +37,7 @@ type response struct {
 	config    config.Config
 	snapshot  domain.Snapshot
 	stability domain.NodeStability
+	longTerm  domain.LongTermStability
 	err       error
 }
 type observation struct {
@@ -87,6 +89,7 @@ type App struct {
 	rootCtx, probeCtx                      context.Context
 	probeCancel                            context.CancelFunc
 	stabilityHub                           *stability.Hub
+	longTerm                               *stability.LongTerm
 }
 
 func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.Logger) (*App, error) {
@@ -97,12 +100,16 @@ func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.L
 	if err != nil {
 		return nil, err
 	}
+	longTerm, err := stability.NewLongTerm(filepath.Join(cfg.LogDir, "stability-summary.json"))
+	if err != nil {
+		return nil, err
+	}
 	airports, err := discovery.Load(ctx, c)
 	if err != nil {
 		return nil, err
 	}
 	probeCtx, probeCancel := context.WithCancel(ctx)
-	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger, MinLevel: minLevel}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), selection: make(chan selectionObservation, 1), activityEvents: make(chan activity.Event, 256), sleepController: sleep.New(sleep.Config{Enabled: cfg.SleepEnabled, IdleAfter: cfg.SleepIdleAfter, QuietBytes: cfg.SleepQuietBytes, WakeWindow: cfg.SleepWakeWindow, WakeBytes: cfg.SleepWakeBytes}, time.Now()), sleepRecords: sleep.NewRecorder(3), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel}
+	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger, MinLevel: minLevel}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), selection: make(chan selectionObservation, 1), activityEvents: make(chan activity.Event, 256), sleepController: sleep.New(sleep.Config{Enabled: cfg.SleepEnabled, IdleAfter: cfg.SleepIdleAfter, QuietBytes: cfg.SleepQuietBytes, WakeWindow: cfg.SleepWakeWindow, WakeBytes: cfg.SleepWakeBytes}, time.Now()), sleepRecords: sleep.NewRecorder(3), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel, longTerm: longTerm}
 	a.stabilityHub = stability.NewHub()
 	a.apiAddress, a.groupRoot, a.groupPattern = cfg.API, cfg.Root, cfg.Pattern
 	a.reset(airports[0])
@@ -174,6 +181,10 @@ func (a *App) Snapshot(ctx context.Context) (domain.Snapshot, error) {
 func (a *App) NodeStability(ctx context.Context, id string, since time.Time) (domain.NodeStability, error) {
 	r, e := a.request(ctx, request{action: "node-stability", target: id, since: since})
 	return r.stability, e
+}
+func (a *App) NodeLongTerm(ctx context.Context, id string) (domain.LongTermStability, error) {
+	r, e := a.request(ctx, request{action: "node-longterm", target: id})
+	return r.longTerm, e
 }
 func (a *App) SubscribeStability(id string) (<-chan domain.StabilityUpdate, func()) {
 	return a.stabilityHub.Subscribe(id)
