@@ -127,7 +127,7 @@ function stabilityLabel(summary) {
  const unstable=success<.98||high>.1||spread>=2;
  return [(unstable?'不稳定':'稳定')+level,unstable?'bad':p50<=green?'good':p50<=yellow?'medium':'bad'];
 }
-function detailMetric(label,value) { return `<div class="detail-metric"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`; }
+function detailMetric(id,label,value) { return `<div class="detail-metric"><span>${esc(label)}</span><strong id="${id}">${esc(value)}</strong></div>`; }
 function stabilityKey(summary) { return JSON.stringify([summary?.samples,summary?.successes,summary?.failures,summary?.success_rate,summary?.p50_ms,summary?.p90_ms,summary?.high_latency_rate,summary?.max_consecutive_failures]); }
 function paintDetailChart(scroll, samples) {
  const track=scroll.querySelector('.stability-chart-track'), layer=scroll.querySelector('.stability-chart-layer');
@@ -150,28 +150,49 @@ function paintDetailChart(scroll, samples) {
  if(!scroll._detailBound){scroll.addEventListener('scroll',()=>{const max=Math.max(0,scroll.scrollWidth-scroll.clientWidth);detailFollowLatest=max-scroll.scrollLeft<=32;requestAnimationFrame(draw);});scroll._detailBound=true;}
  draw();
 }
-function renderDetail(data) {
- const content=$('node-detail-content');
- if(!content||!data)return;
- const previousChart=content.querySelector('.stability-chart-scroll');
- const previousScrollLeft=previousChart?.scrollLeft||0;
- const preserveScroll=Boolean(previousChart);
- const followLatest=detailFollowLatest;
- const summary=data.summary||{}, samples=data.samples||[], [label,toneName]=stabilityLabel(summary);
- const renderKey=stabilityKey(summary);
- if(detailRenderKey===renderKey&&content.querySelector('.stability-chart-scroll'))return;
- const node=state?.nodes?.find(n=>n.id===detailNodeId);
- const name=node?.name||detailNodeId;
- $('node-detail-title').textContent=name+' · 详情';
+function updateDetailSummary(summary) {
+ const [label,toneName]=stabilityLabel(summary);
+ const result=$('detail-stability-result');
+ if(result){result.className=`stability-result tone-${toneName}`;$('detail-stability-label').textContent=label;}
+ const values={
+  'detail-p50':detailMs(summary.p50_ms),
+  'detail-p90':detailMs(summary.p90_ms),
+  'detail-success-rate':detailPercent(summary.success_rate),
+  'detail-high-latency':detailPercent(summary.high_latency_rate),
+  'detail-max-failures':String(summary.max_consecutive_failures||0)+' 次',
+  'detail-samples':String(summary.samples||0)+' 次'
+ };
+ for(const [id,value] of Object.entries(values)){const element=$(id);if(element)element.textContent=value;}
  $('node-detail-subtitle').textContent='最近 24 小时 · '+(summary.started_at?recordTime(summary.started_at):'尚无记录');
- content.innerHTML=`<div class="stability-result tone-${toneName}"><span class="stability-result-dot"></span><strong>${esc(label)}</strong></div><div class="detail-grid">${detailMetric('P50 典型延迟',detailMs(summary.p50_ms))}${detailMetric('P90 较高延迟',detailMs(summary.p90_ms))}${detailMetric('成功率',detailPercent(summary.success_rate))}${detailMetric('高延迟比例',detailPercent(summary.high_latency_rate))}${detailMetric('最大连续失败',String(summary.max_consecutive_failures||0)+' 次')}${detailMetric('探测次数',String(summary.samples||0)+' 次')}</div><div class="stability-chart-heading"><span>真实延迟</span><span class="subtle">每根柱子代表一次探测 · 横向滚动查看</span></div><div class="stability-chart-scroll" role="img" aria-label="最近 24 小时真实延迟"><div class="stability-chart-track"><svg class="stability-chart-layer" height="80" preserveAspectRatio="none"></svg></div></div><div class="detail-note">绿色、黄色和红色跟随当前延迟阈值；灰色表示失败。样本从 smart 启动或切换机场后重新积累。</div>`;
- const chart=content.querySelector('.stability-chart-scroll');
+}
+function updateDetailChart(chart, samples, preserveScroll, followLatest) {
+ const previousScrollLeft=chart.scrollLeft;
  paintDetailChart(chart,samples);
  requestAnimationFrame(()=>{
   const maxScroll=Math.max(0,chart.scrollWidth-chart.clientWidth);
   if(preserveScroll&&followLatest&&maxScroll>previousScrollLeft)chart.scrollTo({left:maxScroll,behavior:'smooth'});
   else chart.scrollLeft=preserveScroll?Math.min(previousScrollLeft,maxScroll):maxScroll;
  });
+}
+function renderDetail(data) {
+ const content=$('node-detail-content');
+ if(!content||!data)return;
+ const summary=data.summary||{}, samples=data.samples||[], [label,toneName]=stabilityLabel(summary);
+ const renderKey=stabilityKey(summary);
+ if(detailRenderKey===renderKey&&content.querySelector('.stability-chart-scroll'))return;
+ const node=state?.nodes?.find(n=>n.id===detailNodeId);
+ const name=node?.name||detailNodeId;
+ $('node-detail-title').textContent=name+' · 详情';
+ const existingChart=content.querySelector('.stability-chart-scroll');
+ if(existingChart){
+  updateDetailSummary(summary);
+  updateDetailChart(existingChart,samples,true,detailFollowLatest);
+ } else {
+  content.innerHTML=`<div id="detail-stability-result" class="stability-result tone-${toneName}"><span class="stability-result-dot"></span><strong id="detail-stability-label">${esc(label)}</strong></div><div class="detail-grid">${detailMetric('detail-p50','P50 典型延迟',detailMs(summary.p50_ms))}${detailMetric('detail-p90','P90 较高延迟',detailMs(summary.p90_ms))}${detailMetric('detail-success-rate','成功率',detailPercent(summary.success_rate))}${detailMetric('detail-high-latency','高延迟比例',detailPercent(summary.high_latency_rate))}${detailMetric('detail-max-failures','最大连续失败',String(summary.max_consecutive_failures||0)+' 次')}${detailMetric('detail-samples','探测次数',String(summary.samples||0)+' 次')}</div><div class="stability-chart-heading"><span>真实延迟</span><span class="subtle">每根柱子代表一次探测 · 横向滚动查看</span></div><div class="stability-chart-scroll" role="img" aria-label="最近 24 小时真实延迟"><div class="stability-chart-track"><svg class="stability-chart-layer" height="80" preserveAspectRatio="none"></svg></div></div><div class="detail-note">绿色、黄色和红色跟随当前延迟阈值；灰色表示失败。样本从 smart 启动或切换机场后重新积累。</div>`;
+  const chart=content.querySelector('.stability-chart-scroll');
+  paintDetailChart(chart,samples);
+  requestAnimationFrame(()=>{chart.scrollLeft=Math.max(0,chart.scrollWidth-chart.clientWidth);});
+ }
  detailRenderKey=renderKey;
  detailSourceKey=renderKey;
 }
