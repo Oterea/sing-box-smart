@@ -325,7 +325,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .node-table .metric-cell,
 .node-table .history-chart{height:40px;min-height:40px}
 .node-table .col-detail{width:72px}
-.detail-button{min-height:32px;padding:7px 9px;border:0;background:#e6ebef;color:#536a7b;font-size:12px;cursor:pointer}
+.detail-button{width:56px;min-width:56px;min-height:32px;padding:7px 8px;border:0;background:#e6ebef;color:#536a7b;font-size:12px;white-space:nowrap;cursor:pointer}
 .detail-button:hover:not(:disabled){background:#dbe4e9;color:#2b4052}
 .detail-button:disabled{opacity:.55;cursor:default}
 .node-table .check-count,
@@ -365,9 +365,9 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .detail-metric span{color:#718494;font-size:12px}
 .detail-metric strong{color:#2b4052;font-size:16px;font-weight:550;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
 .stability-chart-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:24px 0 8px;color:#536a7b;font-size:14px}
-.stability-chart-scroll{height:94px;overflow-x:auto;overflow-y:hidden;background:#fff;border:1px solid #e1e8ec;overscroll-behavior:contain}
-.stability-chart-track{position:relative;width:max-content;min-width:100%;height:92px}
-.stability-chart-layer{display:block;min-width:100%;height:80px}
+.stability-chart-scroll{height:78px;overflow-x:auto;overflow-y:hidden;background:#fff;border:1px solid #e1e8ec;overscroll-behavior:contain}
+.stability-chart-track{position:relative;width:max-content;min-width:100%;height:76px}
+.stability-chart-layer{display:block;min-width:100%;height:76px}
 .stability-bar{fill:var(--green)}
 .stability-bar.bar-good{fill:var(--green)}
 .stability-bar.bar-medium{fill:var(--amber)}

@@ -134,11 +134,11 @@ function paintDetailChart(scroll, samples) {
  const slot=8, bar=4, ceiling=1000;
  const totalWidth=Math.max(scroll.clientWidth,samples.length*slot);
  layer.setAttribute('width',String(totalWidth));
- layer.setAttribute('viewBox',`0 0 ${totalWidth} 80`);
+ layer.setAttribute('viewBox',`0 0 ${totalWidth} 76`);
  const draw=()=>{
   const first=Math.max(0,Math.floor(scroll.scrollLeft/slot)-120), count=Math.ceil(scroll.clientWidth/slot)+240, last=Math.min(samples.length,first+count);
   layer.innerHTML=samples.slice(first,last).map((sample,index)=>{
-   const value=Number(sample.delay_ms), height=sample.success&&Number.isFinite(value)?Math.max(2,Math.min(64,value/ceiling*64)):64;
+   const value=Number(sample.delay_ms), height=sample.success&&Number.isFinite(value)?Math.max(2,Math.min(56,value/ceiling*56)):56;
    const color=!sample.success?'failure':delayTone(value);
    const title=recordTime(sample.at)+' · '+(sample.success?'实际延迟 '+Math.round(value)+' ms':'失败'+(sample.error?'：'+sample.error:''));
    const x=(first+index)*slot, y=64-height;
