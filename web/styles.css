@@ -429,7 +429,7 @@ body.settings-open {overflow:hidden}
 .setting-choice input:checked+span {background:#51A2FF;color:#fff}
 .setting-choice input:focus-visible+span {outline:2px solid #51A2FF;outline-offset:3px}
 .setting-choice input:disabled+span {opacity:.45;cursor:default}
-@media(max-width:560px) {
+@media(max-width:700px) {
  .settings-dialog {padding:16px;width:calc(100% - 20px);height:min(720px,calc(100dvh - 20px));max-height:calc(100dvh - 20px)}
  .settings-dialog .runtime-grid,.settings-dialog #api-form {grid-template-columns:1fr}
  .settings-dialog .runtime-grid {gap:18px}
