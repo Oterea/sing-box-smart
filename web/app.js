@@ -147,7 +147,15 @@ function paintDetailChart(scroll, samples) {
   }).join('');
  };
  scroll._detailDraw=draw;
- if(!scroll._detailBound){scroll.addEventListener('scroll',()=>{const max=Math.max(0,scroll.scrollWidth-scroll.clientWidth);detailFollowLatest=max-scroll.scrollLeft<=32;requestAnimationFrame(draw);});scroll._detailBound=true;}
+ if(!scroll._detailBound){
+  const stopAutoFollow=()=>{detailFollowLatest=false;scroll.scrollLeft=scroll.scrollLeft;};
+  scroll.addEventListener('scroll',()=>{const max=Math.max(0,scroll.scrollWidth-scroll.clientWidth);detailFollowLatest=max-scroll.scrollLeft<=32;requestAnimationFrame(draw);});
+  scroll.addEventListener('wheel',stopAutoFollow,{passive:true});
+  scroll.addEventListener('touchstart',stopAutoFollow,{passive:true});
+  scroll.addEventListener('pointerdown',stopAutoFollow,{passive:true});
+  scroll.addEventListener('keydown',event=>{if(['ArrowLeft','ArrowRight','PageUp','PageDown','Home','End'].includes(event.key))stopAutoFollow();});
+  scroll._detailBound=true;
+ }
  draw();
 }
 function updateDetailSummary(summary) {
