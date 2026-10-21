@@ -325,7 +325,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .node-table .metric-cell,
 .node-table .history-chart{height:40px;min-height:40px}
 .node-table .col-detail{width:88px}
-.detail-button{display:flex;align-items:center;justify-content:center;width:100%;height:40px;min-height:40px;box-sizing:border-box;padding:0 8px;border:0;background:#e6ebef;color:#536a7b;font-size:13px;line-height:1.5;white-space:nowrap;cursor:pointer}
+.detail-button{display:flex;align-items:center;justify-content:center;width:100%;height:40px;min-height:40px;box-sizing:border-box;padding:0 8px;border:0;background:#edf3f5;color:#536a7b;font-size:13px;font-weight:600;line-height:1.5;white-space:nowrap;cursor:pointer}
 .detail-button:hover:not(:disabled){background:#dbe4e9;color:#2b4052}
 .detail-button:disabled{opacity:.55;cursor:default}
 .node-table .check-count,
@@ -478,3 +478,8 @@ body.settings-open {overflow:hidden}
 .settings-tab[aria-selected=true],.setting-choice input:checked+span {cursor:default}
 
 .airport-option:disabled,.node-table .node-choice:disabled {cursor:default}
+
+@media(max-width:700px){
+ .node-table .col-detail{width:64px}
+ .node-table .detail-button{height:40px;min-height:40px;padding:0 4px;font-size:13px}
+}
