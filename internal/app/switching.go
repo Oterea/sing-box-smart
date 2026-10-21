@@ -5,6 +5,7 @@ import (
 	"sing-box-smart/internal/decision"
 	"sing-box-smart/internal/domain"
 	"sing-box-smart/internal/score"
+	"sing-box-smart/internal/state"
 	"sing-box-smart/internal/switching"
 	"time"
 )
@@ -40,6 +41,25 @@ func (a *App) evaluate(ctx context.Context) {
 		loggedScore = "∞"
 	}
 	a.events.Trace("decision", "current", a.current, "candidate", target, "candidate_score", loggedScore, "threshold", a.cfg.SwitchRatio)
+	a.startNodeConfirmation(ctx, candidate, false)
+}
+
+func (a *App) startNodeConfirmation(ctx context.Context, candidate *state.Node, manual bool) {
+	if candidate == nil {
+		return
+	}
+	a.pending = candidate.Info.ID
+	a.pendingKind = "node"
+	a.pendingManual = manual
+	a.confirmation.Start(candidate.Info.ID, time.Now())
+	a.revision++
+	if candidate.Plan.InFlight {
+		// Reuse the already running bounded probe as the first confirmation
+		// result. Changing the reason here keeps the result inside this batch
+		// without launching a duplicate request for the same node.
+		candidate.Plan.Reason = "confirm"
+		return
+	}
 	a.startProbe(ctx, candidate, "confirm")
 }
 
@@ -71,6 +91,7 @@ func (a *App) switched(c changed) {
 	a.pending = ""
 	a.pendingKind = ""
 	a.pendingManual = false
+	a.confirmation.Clear()
 	a.selectionEpoch++
 	if c.result.Superseded {
 		a.setSelectionMode(domain.SelectionManual)

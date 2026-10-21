@@ -87,13 +87,9 @@ func (a *App) control(ctx context.Context, action, target string) error {
 		if target == a.current {
 			return nil
 		}
-		a.pending = target
-		a.pendingKind = "node"
-		a.revision++
-		a.pendingManual = true
 		a.selectionEpoch++
 		a.events.Record("manual", "手动选择：先检查目标节点")
-		a.startProbe(ctx, a.store.ByID[target], "confirm")
+		a.startNodeConfirmation(ctx, a.store.ByID[target], true)
 	case "airport":
 		for _, airport := range a.airports {
 			if airport.ID == target {

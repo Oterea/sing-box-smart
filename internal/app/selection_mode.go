@@ -26,6 +26,7 @@ func (a *App) controlSelectionMode(ctx context.Context, action string) error {
 		// authorize an automatic write after the user asks to hold the node.
 		a.pending, a.pendingKind = "", ""
 		a.pendingManual = false
+		a.confirmation.Clear()
 		a.selectionEpoch++
 		a.setSelectionMode(domain.SelectionManual)
 		a.revision++

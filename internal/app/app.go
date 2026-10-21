@@ -63,6 +63,7 @@ type App struct {
 	controlActive                          bool
 	selectionEpoch                         uint64
 	pendingManual                          bool
+	confirmation                           switching.Confirmation
 	switchBusy, healthy, healthBusy        bool
 	selectionSyncBusy                      bool
 	paused                                 bool
@@ -140,6 +141,7 @@ func (a *App) reset(airport domain.Airport) {
 	a.selectionInitialized = false
 	a.selectionEpoch++
 	a.pendingManual = false
+	a.confirmation.Clear()
 	a.events.Record("startup", fmt.Sprintf("%s：开始约 %.0f 秒启动检查，期间不选择节点", airport.Name, a.cfg.Startup.Seconds()))
 }
 func (a *App) request(ctx context.Context, r request) (response, error) {

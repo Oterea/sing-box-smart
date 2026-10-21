@@ -60,6 +60,9 @@ func (a *App) Run(ctx context.Context) {
 }
 
 func (a *App) tick(ctx context.Context, now time.Time) {
+	if a.confirmation.Expired(now) {
+		a.cancelNodeConfirmation("确认超时，取消本次切换")
+	}
 	if a.sleepController.Tick(now, a.paused || a.pending != "" || a.switchBusy) {
 		a.enterSleep()
 	}
@@ -118,6 +121,18 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 	}
 }
 
+func (a *App) cancelNodeConfirmation(message string) {
+	if !a.confirmation.Active() {
+		return
+	}
+	a.confirmation.Clear()
+	a.pending = ""
+	a.pendingKind = ""
+	a.pendingManual = false
+	a.revision++
+	a.events.Record("decision", message)
+}
+
 func (a *App) startProbe(ctx context.Context, n *state.Node, reason string) {
 	if a.paused || a.sleeping || n.Plan.InFlight {
 		return
@@ -156,6 +171,7 @@ func (a *App) observe(ctx context.Context, o observation) {
 		if !a.switchBusy {
 			a.pending = ""
 			a.pendingKind = ""
+			a.confirmation.Clear()
 		}
 		return
 	}
@@ -195,6 +211,12 @@ func (a *App) observe(ctx context.Context, o observation) {
 		if n.Plan.StartRecovery(now, a.cfg.RecoverySteps) {
 			a.events.Record("recovery", fmt.Sprintf("%s：发现%s，%.0f 秒后开始恢复复查", n.Info.Name, recoveryLabel(signal.Kind), a.cfg.RecoverySteps[0].Seconds()))
 		}
+	} else if reason == "confirm" {
+		// A confirmation batch owns the target until it completes. Keep the
+		// ordinary schedule behind it so the next confirmation is the only
+		// probe that can start for this node.
+		n.Plan.ClearRecovery()
+		n.Plan.NormalDue = now.Add(a.cfg.Candidate)
 	} else {
 		n.Plan.ClearRecovery()
 		a.store.RescheduleNode(now, n, a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
@@ -238,6 +260,23 @@ func (a *App) observe(ctx context.Context, o observation) {
 		a.events.Record("phase", "有节点检查成功，恢复正常检查频率")
 	}
 	if a.pendingKind == "node" && a.pending == o.id && !a.switchBusy {
+		if reason == "confirm" && a.confirmation.Active() && a.confirmation.Target == o.id {
+			a.confirmation.Complete()
+			if a.confirmation.Completed < a.confirmation.Attempts {
+				a.startProbe(ctx, n, "confirm")
+				return
+			}
+			a.confirmation.Clear()
+			if o.probe.Success && (a.pendingManual || (a.selectionMode == domain.SelectionAuto && a.controlActive && a.choose() == o.id)) {
+				a.apply(ctx, "node", o.id, a.airport.Selector, o.id)
+			} else {
+				a.events.Record("decision", "取消本次切换：确认探测未通过或更新后分差不足")
+				a.pending = ""
+				a.pendingKind = ""
+				a.pendingManual = false
+			}
+			return
+		}
 		if o.probe.Success && (a.pendingManual || (a.selectionMode == domain.SelectionAuto && a.controlActive && a.choose() == o.id)) {
 			a.apply(ctx, "node", o.id, a.airport.Selector, o.id)
 		} else {
@@ -245,6 +284,12 @@ func (a *App) observe(ctx context.Context, o observation) {
 			a.pending = ""
 			a.pendingKind = ""
 		}
+		return
+	}
+	// A result from a confirmation that was canceled by pause, manual mode,
+	// configuration reset, or the total deadline may still be queued. Score it
+	// normally, but do not let that stale result immediately start a new switch.
+	if reason == "confirm" {
 		return
 	}
 	a.evaluate(ctx)

@@ -29,6 +29,7 @@ func (a *App) pauseDetection() {
 	if !a.switchBusy {
 		a.pending = ""
 		a.pendingKind = ""
+		a.confirmation.Clear()
 	}
 	a.events.Record("manual", "已暂停检测和自动切换")
 }
