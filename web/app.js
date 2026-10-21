@@ -152,13 +152,21 @@ function paintDetailChart(scroll, samples) {
 function renderDetail(data) {
  const content=$('node-detail-content');
  if(!content||!data)return;
+ const previousChart=content.querySelector('.stability-chart-scroll');
+ const previousScrollLeft=previousChart?.scrollLeft||0;
+ const preserveScroll=Boolean(previousChart);
  const summary=data.summary||{}, samples=data.samples||[], [label,toneName]=stabilityLabel(summary);
  const node=state?.nodes?.find(n=>n.id===detailNodeId);
  const name=node?.name||detailNodeId;
  $('node-detail-title').textContent=name+' · 详情';
  $('node-detail-subtitle').textContent='最近 24 小时 · '+(summary.started_at?recordTime(summary.started_at):'尚无记录');
  content.innerHTML=`<div class="stability-result tone-${toneName}"><span class="stability-result-dot"></span><strong>${esc(label)}</strong></div><div class="detail-grid">${detailMetric('P50 典型延迟',detailMs(summary.p50_ms))}${detailMetric('P90 较高延迟',detailMs(summary.p90_ms))}${detailMetric('成功率',detailPercent(summary.success_rate))}${detailMetric('高延迟比例',detailPercent(summary.high_latency_rate))}${detailMetric('最大连续失败',String(summary.max_consecutive_failures||0)+' 次')}${detailMetric('探测次数',String(summary.samples||0)+' 次')}</div><div class="stability-chart-heading"><span>真实延迟</span><span class="subtle">每根柱子代表一次探测 · 横向滚动查看</span></div><div class="stability-chart-scroll" role="img" aria-label="最近 24 小时真实延迟"><div class="stability-chart-track"><svg class="stability-chart-layer" height="80" preserveAspectRatio="none"></svg></div></div><div class="detail-note">绿色、黄色和红色跟随当前延迟阈值；灰色表示失败。样本从 smart 启动或切换机场后重新积累。</div>`;
- paintDetailChart(content.querySelector('.stability-chart-scroll'),samples);
+ const chart=content.querySelector('.stability-chart-scroll');
+ paintDetailChart(chart,samples);
+ requestAnimationFrame(()=>{
+  const maxScroll=Math.max(0,chart.scrollWidth-chart.clientWidth);
+  chart.scrollLeft=preserveScroll?Math.min(previousScrollLeft,maxScroll):maxScroll;
+ });
  detailRenderKey=JSON.stringify([summary.samples,summary.p50_ms,summary.p90_ms]);
 }
 async function loadNodeDetail() {
