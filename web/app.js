@@ -131,17 +131,17 @@ function detailMetric(label,value) { return `<div class="detail-metric"><span>${
 function paintDetailChart(scroll, samples) {
  const track=scroll.querySelector('.stability-chart-track'), layer=scroll.querySelector('.stability-chart-layer');
  if(!track||!layer)return;
- const slot=8, bar=6, ceiling=1000;
+ const slot=8, bar=4, ceiling=1000;
  const totalWidth=Math.max(scroll.clientWidth,samples.length*slot);
  layer.setAttribute('width',String(totalWidth));
- layer.setAttribute('viewBox',`0 0 ${totalWidth} 120`);
+ layer.setAttribute('viewBox',`0 0 ${totalWidth} 80`);
  const draw=()=>{
   const first=Math.max(0,Math.floor(scroll.scrollLeft/slot)-120), count=Math.ceil(scroll.clientWidth/slot)+240, last=Math.min(samples.length,first+count);
   layer.innerHTML=samples.slice(first,last).map((sample,index)=>{
-   const value=Number(sample.delay_ms), height=sample.success&&Number.isFinite(value)?Math.max(2,Math.min(104,value/ceiling*104)):104;
+   const value=Number(sample.delay_ms), height=sample.success&&Number.isFinite(value)?Math.max(2,Math.min(64,value/ceiling*64)):64;
    const color=!sample.success?'failure':delayTone(value);
    const title=recordTime(sample.at)+' · '+(sample.success?'实际延迟 '+Math.round(value)+' ms':'失败'+(sample.error?'：'+sample.error:''));
-   const x=(first+index)*slot, y=104-height;
+   const x=(first+index)*slot, y=64-height;
    return `<g><title>${esc(title)}</title><rect class="stability-bar bar-${color}" x="${x}" y="${y}" width="${bar}" height="${height}"/></g>`;
   }).join('');
  };
@@ -157,7 +157,7 @@ function renderDetail(data) {
  const name=node?.name||detailNodeId;
  $('node-detail-title').textContent=name+' · 详情';
  $('node-detail-subtitle').textContent='最近 24 小时 · '+(summary.started_at?recordTime(summary.started_at):'尚无记录');
- content.innerHTML=`<div class="stability-result tone-${toneName}"><span class="stability-result-dot"></span><strong>${esc(label)}</strong></div><div class="detail-grid">${detailMetric('P50 典型延迟',detailMs(summary.p50_ms))}${detailMetric('P90 较高延迟',detailMs(summary.p90_ms))}${detailMetric('成功率',detailPercent(summary.success_rate))}${detailMetric('高延迟比例',detailPercent(summary.high_latency_rate))}${detailMetric('最大连续失败',String(summary.max_consecutive_failures||0)+' 次')}${detailMetric('探测次数',String(summary.samples||0)+' 次')}</div><div class="stability-chart-heading"><span>真实延迟</span><span class="subtle">每根柱子代表一次探测 · 横向滚动查看</span></div><div class="stability-chart-scroll" role="img" aria-label="最近 24 小时真实延迟"><div class="stability-chart-track"><svg class="stability-chart-layer" height="120" preserveAspectRatio="none"></svg></div></div><div class="detail-note">绿色、黄色和红色跟随当前延迟阈值；灰色表示失败。样本从 smart 启动或切换机场后重新积累。</div>`;
+ content.innerHTML=`<div class="stability-result tone-${toneName}"><span class="stability-result-dot"></span><strong>${esc(label)}</strong></div><div class="detail-grid">${detailMetric('P50 典型延迟',detailMs(summary.p50_ms))}${detailMetric('P90 较高延迟',detailMs(summary.p90_ms))}${detailMetric('成功率',detailPercent(summary.success_rate))}${detailMetric('高延迟比例',detailPercent(summary.high_latency_rate))}${detailMetric('最大连续失败',String(summary.max_consecutive_failures||0)+' 次')}${detailMetric('探测次数',String(summary.samples||0)+' 次')}</div><div class="stability-chart-heading"><span>真实延迟</span><span class="subtle">每根柱子代表一次探测 · 横向滚动查看</span></div><div class="stability-chart-scroll" role="img" aria-label="最近 24 小时真实延迟"><div class="stability-chart-track"><svg class="stability-chart-layer" height="80" preserveAspectRatio="none"></svg></div></div><div class="detail-note">绿色、黄色和红色跟随当前延迟阈值；灰色表示失败。样本从 smart 启动或切换机场后重新积累。</div>`;
  paintDetailChart(content.querySelector('.stability-chart-scroll'),samples);
  detailRenderKey=JSON.stringify([summary.samples,summary.p50_ms,summary.p90_ms]);
 }
