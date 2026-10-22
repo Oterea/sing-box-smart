@@ -27,13 +27,16 @@ jobs:
       - name: Set package version
         run: |
           n=${{ github.run_number }}
-          d1=$((n / 1331))
-          r=$((n % 1331))
-          d2=$((r / 121))
-          r=$((r % 121))
-          d3=$((r / 11))
-          d4=$((r % 11))
-          echo "PACKAGE_VERSION=1.${d1}.${d2}.${d3}.${d4}" >> "$GITHUB_ENV"
+          n=$((n - 1))
+          major=$((n / 121 + 1))
+          remainder=$((n % 121))
+          minor=$((remainder / 11))
+          patch=$((remainder % 11))
+          if [ "$major" -gt 10 ]; then
+            echo 'package version space exhausted' >&2
+            exit 1
+          fi
+          echo "PACKAGE_VERSION=${major}.${minor}.${patch}" >> "$GITHUB_ENV"
       - name: Build packages
         run: |
           python3 scripts/build-ipk.py
