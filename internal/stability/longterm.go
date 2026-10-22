@@ -253,15 +253,7 @@ func (l *LongTerm) Query(airportID, nodeID string, now time.Time, yellow float64
 			p90 := percentileBucket(bucket, .90)
 			high := highLatency(bucket, yellow)
 			out.Buckets = append(out.Buckets, domain.LongTermBucket{At: bucket.At, MinuteOfDay: index * l.calendar.BucketMinutes, P50MS: p50, P90MS: p90, SuccessRate: float64(bucket.Success) / float64(bucket.Samples), HighLatencyRate: float64(high) / float64(bucket.Samples), MaxConsecutiveFail: bucket.MaxFail, HasData: true})
-			total.Samples += bucket.Samples
-			total.Success += bucket.Success
-			total.Failure += bucket.Failure
-			if bucket.MaxFail > total.MaxFail {
-				total.MaxFail = bucket.MaxFail
-			}
-			for i, count := range bucket.Bins {
-				total.Bins[i] += count
-			}
+			mergeLongTermBucket(&total, bucket)
 		}
 		out.Summary = summarizeLongTermBucket(total, yellow)
 		result.Days = append(result.Days, out)

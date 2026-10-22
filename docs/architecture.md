@@ -52,6 +52,8 @@ sing-box gRPC → grpcactivity → activity → app → sleep controller → obs
 
 长期比较由 `stability.LongTerm.Overview` 从已有直方图一次聚合 1、3、7、14 天窗口，`GET /api/nodes/stability/overview` 批量返回当前策略组数据；`longterm-overview.js` 只负责窗口选择、分组、组内多指标排序和排名渲染，并复用节点表格的滚动和响应式布局。这样详情图和主面板比较不会互相放大请求，也不会让浏览器重复计算长期统计。
 
+长期表现读取失败时前端采用 30 秒退避；黄色延迟阈值变化会强制重新请求批量汇总，因为高延迟比例依赖该阈值，绿色阈值变化只重新计算分组显示。聚合桶的合并逻辑由 `mergeLongTermBucket` 统一提供给详情和批量概览，避免两个接口产生不同的统计结果。
+
 各模块实际阈值、调度行为和限制详见 [设计说明](design.md)。不将目标行为或单元测试结论当作已验证的运行保证。
 
 ## 并发和推送
