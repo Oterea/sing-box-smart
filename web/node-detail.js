@@ -78,7 +78,7 @@ function longTermChart(day) {
   return `<line class="longterm-line longterm-line-${longTermTone(value)} ${extra}" x1="${previous.x}" y1="${y1}" x2="${point.x}" y2="${y2}"/>`;
  }).join('');
  const grid=[0,200,600,1000].map(value=>{const y=top+plotH-value/ceiling*plotH;return `<line class="longterm-grid" x1="${left}" y1="${y}" x2="${width-right}" y2="${y}"/><text class="longterm-axis" x="2" y="${y+3}">${value}</text>`;}).join('');
- const axis=[0,3,6,9,12,15,18,21,24].map(hour=>{const x=left+hour/24*plotW,anchor=hour===0?'start':hour===24?'end':'middle';return `<text class="longterm-axis" text-anchor="${anchor}" x="${x}" y="${height-6}">${hour}</text>`;}).join('');
+ const axis=[0,2,4,6,8,10,12,14,16,18,20,22,24].map(hour=>{const x=left+hour/24*plotW,anchor=hour===0?'start':hour===24?'end':'middle';return `<text class="longterm-axis" text-anchor="${anchor}" x="${x}" y="${height-6}">${hour}</text>`;}).join('');
  return `<div class="longterm-chart-panel"><svg class="longterm-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(day.date)} 延迟趋势">${grid}${axis}${line('p90')}${line('p50')}</svg></div>`;
 }
 function renderLongTerm(data) {
