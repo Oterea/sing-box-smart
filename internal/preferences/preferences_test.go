@@ -35,24 +35,26 @@ func TestRoundTripAndFutureDefaults(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err = preferences.Load(path, config.Default().Preferences())
-	if err != nil || got.NodeDisplayLimit != 30 || got.DelayGreen != 100 || got.WakeBytes != 1048576 {
+	if err != nil || got.NodeDisplayLimit != 30 || got.LongTermDisplayLimit != 5 || got.DelayGreen != 100 || got.WakeBytes != 1048576 {
 		t.Fatalf("new defaults lost: %+v %v", got, err)
 	}
 }
 func TestInvalidValuesCannotReplaceSavedSettings(t *testing.T) {
 	cases := map[string]func(*preferences.Settings){
-		"zero node limit":      func(s *preferences.Settings) { s.NodeDisplayLimit = 0 },
-		"excessive node limit": func(s *preferences.Settings) { s.NodeDisplayLimit = 1001 },
-		"reversed colors":      func(s *preferences.Settings) { s.DelayGreen = s.DelayYellow },
-		"zero timeout":         func(s *preferences.Settings) { s.Timeout = 0 },
-		"overflow duration":    func(s *preferences.Settings) { s.Ordinary = 1 << 60 },
-		"empty steps":          func(s *preferences.Settings) { s.RecoverySteps = nil },
-		"negative step":        func(s *preferences.Settings) { s.RecoverySteps = []int{-1} },
-		"bad URL":              func(s *preferences.Settings) { s.TestURL = "file:///etc/passwd" },
-		"bad level":            func(s *preferences.Settings) { s.LogLevel = "trace" },
-		"NaN":                  func(s *preferences.Settings) { s.SwitchRatio = math.NaN() },
-		"infinity":             func(s *preferences.Settings) { s.RecoveryDropRatio = math.Inf(1) },
-		"negative bytes":       func(s *preferences.Settings) { s.WakeBytes = -1 },
+		"zero node limit":                 func(s *preferences.Settings) { s.NodeDisplayLimit = 0 },
+		"excessive node limit":            func(s *preferences.Settings) { s.NodeDisplayLimit = 1001 },
+		"zero long-term group limit":      func(s *preferences.Settings) { s.LongTermDisplayLimit = 0 },
+		"excessive long-term group limit": func(s *preferences.Settings) { s.LongTermDisplayLimit = 1001 },
+		"reversed colors":                 func(s *preferences.Settings) { s.DelayGreen = s.DelayYellow },
+		"zero timeout":                    func(s *preferences.Settings) { s.Timeout = 0 },
+		"overflow duration":               func(s *preferences.Settings) { s.Ordinary = 1 << 60 },
+		"empty steps":                     func(s *preferences.Settings) { s.RecoverySteps = nil },
+		"negative step":                   func(s *preferences.Settings) { s.RecoverySteps = []int{-1} },
+		"bad URL":                         func(s *preferences.Settings) { s.TestURL = "file:///etc/passwd" },
+		"bad level":                       func(s *preferences.Settings) { s.LogLevel = "trace" },
+		"NaN":                             func(s *preferences.Settings) { s.SwitchRatio = math.NaN() },
+		"infinity":                        func(s *preferences.Settings) { s.RecoveryDropRatio = math.Inf(1) },
+		"negative bytes":                  func(s *preferences.Settings) { s.WakeBytes = -1 },
 	}
 	path := filepath.Join(t.TempDir(), "runtime.json")
 	base := config.Default().Preferences()

@@ -12,29 +12,30 @@ import (
 )
 
 type Settings struct {
-	NodeDisplayLimit  int     `json:"node_display_limit"`
-	TestURL           string  `json:"test_url"`
-	Current           int     `json:"current_seconds"`
-	Candidate         int     `json:"candidate_seconds"`
-	Ordinary          int     `json:"ordinary_seconds"`
-	Timeout           int     `json:"timeout_seconds"`
-	Startup           int     `json:"startup_seconds"`
-	Resume            int     `json:"resume_seconds"`
-	Recovery          int     `json:"retry_seconds"`
-	SleepEnabled      bool    `json:"sleep_enabled"`
-	SleepIdle         int     `json:"sleep_idle_seconds"`
-	QuietBytes        int64   `json:"quiet_bytes"`
-	WakeWindow        int     `json:"wake_window_seconds"`
-	WakeBytes         int64   `json:"wake_bytes"`
-	LogLevel          string  `json:"log_level"`
-	DelayGreen        int     `json:"delay_green_ms"`
-	DelayYellow       int     `json:"delay_yellow_ms"`
-	SwitchRatio       float64 `json:"switch_ratio"`
-	RecoveryDropRatio float64 `json:"recovery_drop_ratio"`
-	RecoveryDropMinMS float64 `json:"recovery_drop_min_ms"`
-	RecoveryGoodMaxMS float64 `json:"recovery_good_max_ms"`
-	RecoverySteps     []int   `json:"recovery_steps_seconds"`
-	HistoryLimit      int     `json:"history_limit"`
+	NodeDisplayLimit     int     `json:"node_display_limit"`
+	LongTermDisplayLimit int     `json:"long_term_display_limit"`
+	TestURL              string  `json:"test_url"`
+	Current              int     `json:"current_seconds"`
+	Candidate            int     `json:"candidate_seconds"`
+	Ordinary             int     `json:"ordinary_seconds"`
+	Timeout              int     `json:"timeout_seconds"`
+	Startup              int     `json:"startup_seconds"`
+	Resume               int     `json:"resume_seconds"`
+	Recovery             int     `json:"retry_seconds"`
+	SleepEnabled         bool    `json:"sleep_enabled"`
+	SleepIdle            int     `json:"sleep_idle_seconds"`
+	QuietBytes           int64   `json:"quiet_bytes"`
+	WakeWindow           int     `json:"wake_window_seconds"`
+	WakeBytes            int64   `json:"wake_bytes"`
+	LogLevel             string  `json:"log_level"`
+	DelayGreen           int     `json:"delay_green_ms"`
+	DelayYellow          int     `json:"delay_yellow_ms"`
+	SwitchRatio          float64 `json:"switch_ratio"`
+	RecoveryDropRatio    float64 `json:"recovery_drop_ratio"`
+	RecoveryDropMinMS    float64 `json:"recovery_drop_min_ms"`
+	RecoveryGoodMaxMS    float64 `json:"recovery_good_max_ms"`
+	RecoverySteps        []int   `json:"recovery_steps_seconds"`
+	HistoryLimit         int     `json:"history_limit"`
 }
 
 func (s Settings) Validate() error {
@@ -49,7 +50,7 @@ func (s Settings) Validate() error {
 		{"当前节点间隔", s.Current, 1, 86400}, {"候选节点间隔", s.Candidate, 1, 86400}, {"普通节点间隔", s.Ordinary, 1, 86400},
 		{"探测超时", s.Timeout, 1, 120}, {"启动观察", s.Startup, 1, 300}, {"恢复观察", s.Resume, 1, 300}, {"故障重试", s.Recovery, 1, 3600},
 		{"睡眠时长", s.SleepIdle, 60, 86400}, {"唤醒窗口", s.WakeWindow, 1, 60}, {"历史数量", s.HistoryLimit, 1, 200},
-		{"默认显示节点数", s.NodeDisplayLimit, 1, 1000}, {"绿色延迟上限", s.DelayGreen, 1, 59999}, {"黄色延迟上限", s.DelayYellow, 2, 60000},
+		{"默认显示节点数", s.NodeDisplayLimit, 1, 1000}, {"每组长期表现显示数", s.LongTermDisplayLimit, 1, 1000}, {"绿色延迟上限", s.DelayGreen, 1, 59999}, {"黄色延迟上限", s.DelayYellow, 2, 60000},
 	} {
 		if v.v < v.lo || v.v > v.hi {
 			return fmt.Errorf("%s需在 %d–%d 之间", v.name, v.lo, v.hi)

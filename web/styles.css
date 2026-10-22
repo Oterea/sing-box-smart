@@ -411,6 +411,9 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .longterm-group-dot.tone-good{background:var(--green)}
 .longterm-group-dot.tone-medium{background:var(--amber)}
 .longterm-group-dot.tone-bad{background:var(--red)}
+.longterm-group-toggle-row td{padding:4px 24px 12px;text-align:left}
+.longterm-group-toggle{padding:5px 10px;border:0;background:#e6ebef;color:#536a7b;font-size:12px;cursor:pointer;box-shadow:none}
+.longterm-group-toggle:hover{background:#dbe4e9;color:#2b4052}
 @media(max-width:900px){.longterm-overview-controls{justify-content:flex-start;width:100%}}
 @media(max-width:700px){.longterm-overview-panel{margin-top:18px}.longterm-overview-controls{display:block;overflow-x:auto;padding-bottom:2px;white-space:nowrap}.longterm-control-group{display:inline-flex;margin-right:14px}.longterm-overview-table{min-width:900px}}
 @media(max-width:700px){.node-detail-dialog{width:calc(100% - 20px);height:min(720px,calc(100dvh - 20px));max-height:calc(100dvh - 20px);padding:16px}.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stability-chart-heading{align-items:flex-start;flex-direction:column;gap:4px}}
