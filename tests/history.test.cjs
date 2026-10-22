@@ -81,7 +81,7 @@ test('选中区域与列表生成完全相同的表头与七个单元格', () =>
  const header = renderContext.tableHeading();
  assert.equal((header.match(/scope="col"/g)||[]).length,7);
  assert.doesNotMatch(header, /colspan|rowspan|当前表现|历史走势|最近20/);
- assert.equal((fs.readFileSync('web/index.html','utf8').match(/class="node-table"/g)||[]).length,2);
+ assert.equal((fs.readFileSync('web/index.html','utf8').match(/class="node-table/g)||[]).length,3);
 });
 
 test('选择按钮只在允许选择的状态启用，当前节点与启动状态禁用', () => {
