@@ -9,7 +9,7 @@ function chartCeiling(green, yellow) {
 }
 function longTermChart(day, thresholds={}) {
  const green=Math.max(0,Number(thresholds.green)||200), yellow=Math.max(green,Number(thresholds.yellow)||600);
- const width=960,height=150,left=34,right=10,top=10,bottom=24,plotW=width-left-right,plotH=height-top-bottom,ceiling=chartCeiling(green,yellow);
+ const width=960,height=72,left=34,right=10,top=6,bottom=18,plotW=width-left-right,plotH=height-top-bottom,ceiling=chartCeiling(green,yellow);
  const points=(day.buckets||[]).map(bucket=>{
   // Calendar conversion is owned by the backend. The chart consumes the
   // authoritative minute value and never interprets the timestamp locally.
