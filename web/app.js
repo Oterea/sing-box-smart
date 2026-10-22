@@ -238,5 +238,6 @@ $('api-test').addEventListener('click',async()=>{const button=$('api-test');butt
 
 $('nodes-toggle').addEventListener('click',()=>{if(!state||!nodeList)return;nodeList.toggle();render(state);});
 $('node-detail-close')?.addEventListener('click',closeNodeDetail);
+$('node-detail-dialog')?.addEventListener('close',()=>{if(detailNodeId)closeNodeDetail();else resetDetailView();});
 $('detail-view-realtime')?.addEventListener('click',()=>setDetailView('realtime'));
 $('detail-view-longterm')?.addEventListener('click',()=>setDetailView('longterm'));

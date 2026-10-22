@@ -112,6 +112,13 @@ function setDetailView(view) {
  if(view==='realtime'){detailLongTermController?.abort();renderDetail(detailData);$('node-detail-subtitle').textContent='最近 24 小时';}
  else { $('node-detail-subtitle').textContent='最近 14 天 · 每 15 分钟聚合'; loadLongTerm(); }
 }
+function resetDetailView() {
+ detailView='realtime';
+ const realtime=$('detail-view-realtime'), longterm=$('detail-view-longterm');
+ if(realtime){realtime.classList.add('active');realtime.setAttribute('aria-selected','true');}
+ if(longterm){longterm.classList.remove('active');longterm.setAttribute('aria-selected','false');}
+ $('node-detail-subtitle').textContent='最近 24 小时';
+}
 function renderDetail(data) {
  const content=$('node-detail-content');
  if(!content||!data)return;
@@ -206,7 +213,7 @@ function connectDetailStream() {
 function openNodeDetail(id) {
  if(!id)return;
  closeDetailStream();
- detailNodeId=id;detailData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();detailView='realtime';detailFollowLatest=true;
+ detailNodeId=id;detailData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();resetDetailView();detailFollowLatest=true;
  const dialog=$('node-detail-dialog');
  if(!dialog.open)dialog.showModal();
  $('node-detail-content').innerHTML='<div class="detail-empty">正在读取节点数据…</div>';
@@ -215,6 +222,6 @@ function openNodeDetail(id) {
 function closeNodeDetail() {
  closeDetailStream();
  detailRequestController?.abort();detailLongTermController?.abort();detailRequestToken++;
- detailNodeId='';detailData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();detailView='realtime';detailFollowLatest=true;
+ detailNodeId='';detailData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();resetDetailView();detailFollowLatest=true;
  const dialog=$('node-detail-dialog');if(dialog.open)dialog.close();
 }
