@@ -9,6 +9,7 @@
   if(dialog.open)return;
   if(toast)dialog.append(toast);
   dialog.showModal();
+  dialog.focus({preventScroll:true});
   document.body.classList.add('settings-open');
  });
  close.addEventListener('click',()=>dialog.close());

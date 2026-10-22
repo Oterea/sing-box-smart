@@ -194,6 +194,7 @@ function openNodeDetail(id) {
  detailNodeId=id;detailData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();resetDetailView();detailFollowLatest=true;
  const dialog=$('node-detail-dialog');
  if(!dialog.open)dialog.showModal();
+ dialog.focus({preventScroll:true});
  $('node-detail-content').innerHTML='<div class="detail-empty">正在读取节点数据…</div>';
  loadNodeDetail().then(connectDetailStream);
 }
