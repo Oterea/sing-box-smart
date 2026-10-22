@@ -31,7 +31,14 @@ func NewCalendar(timezone string, bucketMinutes int) (Calendar, error) {
 	}
 	location, err := time.LoadLocation(timezone)
 	if err != nil {
-		return Calendar{}, fmt.Errorf("load timezone %q: %w", timezone, err)
+		// OpenWrt images commonly omit the zoneinfo database. China has no
+		// daylight-saving transitions, so the default calendar remains correct
+		// with a fixed UTC+8 fallback and does not require tzdata on the router.
+		if timezone == DefaultTimezone {
+			location = time.FixedZone(DefaultTimezone, 8*60*60)
+		} else {
+			return Calendar{}, fmt.Errorf("load timezone %q: %w", timezone, err)
+		}
 	}
 	if bucketMinutes <= 0 || 24*60%bucketMinutes != 0 {
 		return Calendar{}, fmt.Errorf("bucket minutes must divide one day: %d", bucketMinutes)
