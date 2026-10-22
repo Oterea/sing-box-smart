@@ -64,9 +64,12 @@ function longTermSummaryText(summary) {
 function longTermChart(day) {
  const width=960,height=150,left=34,right=10,top=10,bottom=24,plotW=width-left-right,plotH=height-top-bottom,ceiling=1000;
  const points=(day.buckets||[]).map(bucket=>{
-  const date=new Date(bucket.at), minutes=date.getHours()*60+date.getMinutes();
+  // The backend owns calendar conversion. Parsing `at` in the browser caused
+  // UTC routers and Asia/Shanghai clients to place one backend day in two
+  // different visual days.
+  const minutes=Number(bucket.minute_of_day);
   return {bucket,x:left+minutes/1440*plotW,p50:Number(bucket.p50_ms),p90:Number(bucket.p90_ms)};
- }).filter(point=>point.bucket.has_data);
+ }).filter(point=>point.bucket.has_data&&Number.isFinite(point.x));
  const line=(metric,extra='')=>points.slice(1).map((point,index)=>{
   const previous=points[index], value=point[metric], previousValue=previous[metric];
   if(!Number.isFinite(value)||!Number.isFinite(previousValue)||point.x-previous.x>plotW/24*2)return '';

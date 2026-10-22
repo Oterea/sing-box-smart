@@ -7,6 +7,7 @@ import (
 	"log"
 	"path/filepath"
 	"sing-box-smart/internal/activity"
+	"sing-box-smart/internal/clock"
 	"sing-box-smart/internal/config"
 	"sing-box-smart/internal/discovery"
 	"sing-box-smart/internal/domain"
@@ -119,7 +120,11 @@ func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.L
 	if err != nil {
 		return nil, err
 	}
-	longTerm, err := stability.NewLongTerm(filepath.Join(cfg.LogDir, "stability-summary.json"))
+	calendar, err := clock.NewCalendar(cfg.Timezone, int(stability.LongTermBucket/time.Minute))
+	if err != nil {
+		return nil, err
+	}
+	longTerm, err := stability.NewLongTerm(filepath.Join(cfg.LogDir, "stability-summary.json"), calendar)
 	if err != nil {
 		return nil, err
 	}

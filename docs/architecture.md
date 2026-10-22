@@ -17,6 +17,14 @@ sing-box gRPC → grpcactivity → activity → app → sleep controller → obs
 
 长期稳定性由 `stability.LongTerm` 聚合，持久化通过 `LongTermPersistence` 接口隔离；当前 JSON 实现只保存最近 14 天实际有数据的 15 分钟时间桶。`app` 只依赖聚合接口，不直接依赖文件格式。
 
+## 时间边界与日历模块
+
+系统把时间分成两类处理：探测超时、调度间隔、睡眠窗口和切换确认使用 `time.Duration`；探测事件、日志和 SSE 使用带时区的 `time.Time` 瞬时值；只有“属于哪一天、当天几点、落在哪个 15 分钟桶”才进入 `internal/clock.Calendar`。这样服务器运行在哪个系统时区不会改变用户看到的日期。
+
+`config.Config.Timezone` 默认是 `Asia/Shanghai`，可通过 `--timezone` 显式覆盖。`stability.LongTerm` 只依赖注入的 `clock.Calendar`，不读取 `time.Local`；它在后端计算 `date`、`minute_of_day` 和桶起点，HTTP API 同时返回 `timezone`。浏览器趋势图只使用 `minute_of_day`，不再用浏览器自己的时区重新解析 `at`。长期聚合持久化版本为 v2，旧版按服务器 `time.Local` 分桶，无法安全迁移，会自动重新积累。
+
+这套边界是可拼接的：将来需要可测试的当前时间时，可在 `internal/clock` 增加注入式 `Clock`，而不改变 `Calendar`、长期聚合、API 或前端的职责；持续时间和瞬时事件也不需要被改写成日历时间。
+
 睡眠监控通过 gRPC 的连接事件独立接入。`grpcactivity` 不参与评分和节点选择，只把用户连接活动转换成 `activity.Event`；`sleep` 只维护空闲状态；最终由 `app` 事件循环决定是否暂停或恢复探测。这样后续将策略组、切换和探测迁移到 gRPC 时，不需要复制睡眠逻辑。
 
 ## app 文件边界

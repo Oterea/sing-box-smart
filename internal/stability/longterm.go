@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sing-box-smart/internal/clock"
 	"sing-box-smart/internal/domain"
 	"sort"
 	"sync"
@@ -43,6 +44,8 @@ type longTermFile struct {
 	Nodes   map[string]*longTermNode `json:"nodes"`
 }
 
+const longTermStorageVersion = 2
+
 // LongTermPersistence isolates aggregation from the storage format and I/O.
 // The app can keep using the in-memory aggregator if persistence is disabled,
 // while production uses the atomic JSON implementation below.
@@ -57,16 +60,17 @@ type LongTermPersistence interface {
 type LongTerm struct {
 	mu       sync.Mutex
 	persist  LongTermPersistence
+	calendar clock.Calendar
 	nodes    map[string]*longTermNode
 	lastSave time.Time
 }
 
-func NewLongTerm(path string) (*LongTerm, error) {
-	return NewLongTermWithPersistence(&jsonLongTermPersistence{path: path})
+func NewLongTerm(path string, calendars ...clock.Calendar) (*LongTerm, error) {
+	return NewLongTermWithPersistence(calendarFor(calendars), &jsonLongTermPersistence{path: path})
 }
 
-func NewLongTermWithPersistence(persist LongTermPersistence) (*LongTerm, error) {
-	l := &LongTerm{persist: persist, nodes: make(map[string]*longTermNode)}
+func NewLongTermWithPersistence(calendar clock.Calendar, persist LongTermPersistence) (*LongTerm, error) {
+	l := &LongTerm{persist: persist, calendar: calendar, nodes: make(map[string]*longTermNode)}
 	if persist == nil {
 		return l, nil
 	}
@@ -74,25 +78,23 @@ func NewLongTermWithPersistence(persist LongTermPersistence) (*LongTerm, error) 
 	if err != nil {
 		return nil, err
 	}
-	if file.Nodes != nil {
+	// Version 1 used time.Local on the server. It cannot be migrated safely
+	// because the original timezone is not stored, so start a clean v2 window.
+	if file.Version == longTermStorageVersion && file.Nodes != nil {
 		l.nodes = file.Nodes
 	}
 	l.pruneLocked(time.Now())
 	return l, nil
 }
 
+func calendarFor(calendars []clock.Calendar) clock.Calendar {
+	if len(calendars) > 0 && calendars[0].Location != nil {
+		return calendars[0]
+	}
+	return clock.MustCalendar(clock.DefaultTimezone, 15)
+}
+
 func nodeKey(airportID, nodeID string) string { return airportID + "\x00" + nodeID }
-
-func localDay(t time.Time) (time.Time, string) {
-	local := t.In(time.Local)
-	day := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, local.Location())
-	return day, day.Format("2006-01-02")
-}
-
-func bucketIndex(t time.Time) int {
-	local := t.In(time.Local)
-	return (local.Hour()*60 + local.Minute()) / 15
-}
 
 func (l *LongTerm) Record(airportID, nodeID, name string, p domain.Probe) error {
 	if p.At.IsZero() {
@@ -100,7 +102,8 @@ func (l *LongTerm) Record(airportID, nodeID, name string, p domain.Probe) error 
 	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	_, date := localDay(p.At)
+	bucket := l.calendar.Bucket(p.At)
+	date := bucket.Day
 	key := nodeKey(airportID, nodeID)
 	n := l.nodes[key]
 	if n == nil {
@@ -113,11 +116,10 @@ func (l *LongTerm) Record(airportID, nodeID, name string, p domain.Probe) error 
 		day = &longTermDay{Date: date, Buckets: make(map[int]longTermBucket)}
 		n.Days[date] = day
 	}
-	index := bucketIndex(p.At)
+	index := bucket.Index
 	b := day.Buckets[index]
 	if b.At.IsZero() {
-		start, _ := localDay(p.At)
-		b.At = start.Add(time.Duration(index) * LongTermBucket)
+		b.At = bucket.Start
 	}
 	b.Samples++
 	if !p.Success {
@@ -161,7 +163,7 @@ func (l *LongTerm) saveLocked() error {
 	if l.persist == nil {
 		return nil
 	}
-	if err := l.persist.Save(longTermFile{Version: 1, Nodes: l.nodes}); err != nil {
+	if err := l.persist.Save(longTermFile{Version: longTermStorageVersion, Nodes: l.nodes}); err != nil {
 		return err
 	}
 	l.lastSave = time.Now()
@@ -208,11 +210,11 @@ func (p *jsonLongTermPersistence) Save(file longTermFile) error {
 }
 
 func (l *LongTerm) pruneLocked(now time.Time) {
-	today, _ := localDay(now)
+	today, _ := l.calendar.Day(now)
 	cutoff := today.AddDate(0, 0, -(LongTermRetention - 1))
 	for key, node := range l.nodes {
 		for date := range node.Days {
-			parsed, err := time.ParseInLocation("2006-01-02", date, time.Local)
+			parsed, err := time.ParseInLocation("2006-01-02", date, l.calendar.Location)
 			if err != nil || parsed.Before(cutoff) {
 				delete(node.Days, date)
 			}
@@ -228,7 +230,7 @@ func (l *LongTerm) Query(airportID, nodeID string, now time.Time, yellow float64
 	defer l.mu.Unlock()
 	l.pruneLocked(now)
 	n := l.nodes[nodeKey(airportID, nodeID)]
-	result := domain.LongTermStability{Retention: LongTermRetention, BucketMins: 15, YellowMS: int(yellow)}
+	result := domain.LongTermStability{Retention: LongTermRetention, BucketMins: l.calendar.BucketMinutes, YellowMS: int(yellow), Timezone: l.calendar.Timezone}
 	if n == nil {
 		return result
 	}
@@ -248,7 +250,7 @@ func (l *LongTerm) Query(airportID, nodeID string, now time.Time, yellow float64
 			p50 := percentileBucket(bucket, .50)
 			p90 := percentileBucket(bucket, .90)
 			high := highLatency(bucket, yellow)
-			out.Buckets = append(out.Buckets, domain.LongTermBucket{At: bucket.At, P50MS: p50, P90MS: p90, SuccessRate: float64(bucket.Success) / float64(bucket.Samples), HighLatencyRate: float64(high) / float64(bucket.Samples), MaxConsecutiveFail: bucket.MaxFail, HasData: true})
+			out.Buckets = append(out.Buckets, domain.LongTermBucket{At: bucket.At, MinuteOfDay: index * l.calendar.BucketMinutes, P50MS: p50, P90MS: p90, SuccessRate: float64(bucket.Success) / float64(bucket.Samples), HighLatencyRate: float64(high) / float64(bucket.Samples), MaxConsecutiveFail: bucket.MaxFail, HasData: true})
 			total.Samples += bucket.Samples
 			total.Success += bucket.Success
 			total.Failure += bucket.Failure

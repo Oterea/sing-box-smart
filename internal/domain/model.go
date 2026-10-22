@@ -75,6 +75,7 @@ type NodeStability struct {
 }
 type LongTermBucket struct {
 	At                 time.Time `json:"at"`
+	MinuteOfDay        int       `json:"minute_of_day"`
 	P50MS              *float64  `json:"p50_ms,omitempty"`
 	P90MS              *float64  `json:"p90_ms,omitempty"`
 	SuccessRate        float64   `json:"success_rate"`
@@ -92,6 +93,7 @@ type LongTermStability struct {
 	Retention  int           `json:"retention_days"`
 	BucketMins int           `json:"bucket_minutes"`
 	YellowMS   int           `json:"yellow_ms"`
+	Timezone   string        `json:"timezone"`
 }
 type StabilityUpdate struct {
 	Sequence     uint64           `json:"sequence"`

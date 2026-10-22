@@ -30,3 +30,17 @@ func TestDefaultSchedulingPolicy(t *testing.T) {
 		t.Fatalf("unexpected policy: %+v", c)
 	}
 }
+
+func TestDefaultTimezoneIsExplicit(t *testing.T) {
+	if got := Default().Timezone; got != "Asia/Shanghai" {
+		t.Fatalf("timezone=%q", got)
+	}
+}
+
+func TestInvalidTimezoneRejected(t *testing.T) {
+	c := Default()
+	c.Timezone = "Not/AZone"
+	if err := c.Validate(); err == nil {
+		t.Fatal("invalid timezone was accepted")
+	}
+}

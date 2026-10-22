@@ -47,6 +47,7 @@ func run() error {
 	flag.StringVar(&cfg.Listen, "listen", cfg.Listen, "HTTP listen address")
 	flag.StringVar(&cfg.LogDir, "log-dir", cfg.LogDir, "log directory")
 	flag.StringVar(&cfg.LogLevel, "log-level", cfg.LogLevel, "log level: debug, info, warn, error")
+	flag.StringVar(&cfg.Timezone, "timezone", cfg.Timezone, "calendar timezone used for long-term trends")
 	flag.StringVar(&cfg.SettingsPath, "settings", "connection.json", "persistent connection settings file")
 	flag.StringVar(&cfg.GRPCAddress, "grpc", cfg.GRPCAddress, "sing-box native gRPC API address; enables sleep monitoring when set")
 	flag.StringVar(&cfg.GRPCSecret, "grpc-secret", cfg.GRPCSecret, "sing-box native gRPC API secret")
