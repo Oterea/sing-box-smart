@@ -3,5 +3,5 @@ package web
 
 import "embed"
 
-//go:embed index.html styles.css responsive.css app.js stability-detail.js stability-view.js node-history.js node-detail.js settings.js settings-dialog.js logo.svg apple-touch-icon.png node-list.js
+//go:embed index.html styles.css responsive.css app.js stability-detail.js stability-view.js node-history.js longterm-chart.js node-detail.js settings.js settings-dialog.js logo.svg apple-touch-icon.png node-list.js
 var Files embed.FS

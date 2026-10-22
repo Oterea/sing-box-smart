@@ -55,38 +55,16 @@ function updateDetailChart(chart, samples, preserveScroll, followLatest) {
   else chart.scrollLeft=preserveScroll?Math.min(previousScrollLeft,maxScroll):maxScroll;
  });
 }
-function longTermTone(value) {
- return value==null?'none':value<=(state?.settings?.delay_green_ms??200)?'good':value<=(state?.settings?.delay_yellow_ms??600)?'medium':'bad';
-}
 function longTermSummaryText(summary) {
  return stabilityConclusion(summary,Number(state?.settings?.delay_green_ms??200),Number(state?.settings?.delay_yellow_ms??600))[0];
-}
-function longTermChart(day) {
- const width=960,height=150,left=34,right=10,top=10,bottom=24,plotW=width-left-right,plotH=height-top-bottom,ceiling=1000;
- const points=(day.buckets||[]).map(bucket=>{
-  // The backend owns calendar conversion. Parsing `at` in the browser caused
-  // UTC routers and Asia/Shanghai clients to place one backend day in two
-  // different visual days.
-  const minutes=Number(bucket.minute_of_day);
-  return {bucket,x:left+minutes/1440*plotW,p50:Number(bucket.p50_ms),p90:Number(bucket.p90_ms)};
- }).filter(point=>point.bucket.has_data&&Number.isFinite(point.x));
- const line=(metric,extra='')=>points.slice(1).map((point,index)=>{
-  const previous=points[index], value=point[metric], previousValue=previous[metric];
-  if(!Number.isFinite(value)||!Number.isFinite(previousValue)||point.x-previous.x>plotW/24*2)return '';
-  const y1=top+plotH-Math.min(ceiling,previousValue)/ceiling*plotH, y2=top+plotH-Math.min(ceiling,value)/ceiling*plotH;
-  if(metric==='p90')return `<line class="longterm-p90" x1="${previous.x}" y1="${y1}" x2="${point.x}" y2="${y2}"/>`;
-  return `<line class="longterm-line longterm-line-${longTermTone(value)} ${extra}" x1="${previous.x}" y1="${y1}" x2="${point.x}" y2="${y2}"/>`;
- }).join('');
- const grid=[0,200,600,1000].map(value=>{const y=top+plotH-value/ceiling*plotH;return `<line class="longterm-grid" x1="${left}" y1="${y}" x2="${width-right}" y2="${y}"/><text class="longterm-axis" x="2" y="${y+3}">${value}</text>`;}).join('');
- const axis=[0,2,4,6,8,10,12,14,16,18,20,22,24].map(hour=>{const x=left+hour/24*plotW,anchor=hour===0?'start':hour===24?'end':'middle';return `<text class="longterm-axis" text-anchor="${anchor}" x="${x}" y="${height-6}">${hour}</text>`;}).join('');
- return `<div class="longterm-chart-panel"><svg class="longterm-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(day.date)} 延迟趋势">${grid}${axis}${line('p90')}${line('p50')}</svg></div>`;
 }
 function renderLongTerm(data) {
  const content=$('node-detail-content');
  if(!content)return;
  const days=(data?.days||[]).slice().sort((a,b)=>a.date.localeCompare(b.date)).reverse();
  if(!days.length){content.innerHTML='<div class="detail-empty">暂无 14 天聚合数据</div>';return;}
- content.innerHTML=days.map(day=>`<section class="longterm-day"><div class="longterm-day-heading"><strong>${esc(day.date)}</strong><span class="subtle">${esc(longTermSummaryText(day.summary))} · P50 ${esc(detailMs(day.summary?.p50_ms))} · P90 ${esc(detailMs(day.summary?.p90_ms))}</span></div>${longTermChart(day)}</section>`).join('');
+ const thresholds={green:Number(state?.settings?.delay_green_ms??200),yellow:Number(state?.settings?.delay_yellow_ms??600)};
+ content.innerHTML=days.map(day=>`<section class="longterm-day"><div class="longterm-day-heading"><strong>${esc(day.date)}</strong><span class="subtle">${esc(longTermSummaryText(day.summary))} · P50 ${esc(detailMs(day.summary?.p50_ms))} · P90 ${esc(detailMs(day.summary?.p90_ms))}</span></div>${longTermChart(day,thresholds)}</section>`).join('');
 }
 async function loadLongTerm() {
  if(!detailNodeId)return;
