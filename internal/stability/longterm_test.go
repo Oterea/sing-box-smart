@@ -97,3 +97,24 @@ func TestLongTermDropsLegacyStorageVersion(t *testing.T) {
 		t.Fatalf("legacy data was reused: %+v", got)
 	}
 }
+
+func TestLongTermOverviewAggregatesConfiguredWindows(t *testing.T) {
+	calendar := clock.MustCalendar("Asia/Shanghai", 15)
+	store, err := NewLongTermWithPersistence(calendar, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 10, 22, 12, 0, 0, 0, calendar.Location)
+	if err := store.Record("airport", "node", "Node", domain.Probe{At: now, Success: true, DelayMS: 150}); err != nil {
+		t.Fatal(err)
+	}
+	data := store.Overview("airport", []domain.Node{{ID: "node", Name: "Node"}}, now, 600)
+	if data.Timezone != "Asia/Shanghai" || len(data.Nodes) != 1 || len(data.Nodes[0].Windows) != 4 {
+		t.Fatalf("unexpected overview: %+v", data)
+	}
+	for _, window := range data.Nodes[0].Windows {
+		if window.Summary.Samples != 1 || window.Summary.P50MS == nil || *window.Summary.P50MS != 150 {
+			t.Fatalf("unexpected %d-day summary: %+v", window.Days, window.Summary)
+		}
+	}
+}

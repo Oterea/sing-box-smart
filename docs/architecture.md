@@ -50,6 +50,8 @@ sing-box gRPC → grpcactivity → activity → app → sleep controller → obs
 
 浏览器资源按职责拆分：`node-history.js` 负责主面板历史图，`node-detail.js` 负责 24 小时实时详情和 14 天趋势，`stability-view.js` 只提供跨视图共享的稳定性结论规则；`app.js` 负责页面装配、主状态和事件协调。
 
+长期比较由 `stability.LongTerm.Overview` 从已有直方图一次聚合 1、3、7、14 天窗口，`GET /api/nodes/stability/overview` 批量返回当前策略组数据；`longterm-overview.js` 只负责窗口选择、分组、组内多指标排序和排名渲染，并复用节点表格的滚动和响应式布局。这样详情图和主面板比较不会互相放大请求，也不会让浏览器重复计算长期统计。
+
 各模块实际阈值、调度行为和限制详见 [设计说明](design.md)。不将目标行为或单元测试结论当作已验证的运行保证。
 
 ## 并发和推送

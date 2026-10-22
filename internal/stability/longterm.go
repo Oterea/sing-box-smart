@@ -18,6 +18,8 @@ const (
 	longTermBuckets   = 24 * 60 / 15
 )
 
+var longTermOverviewWindows = [...]int{1, 3, 7, 14}
+
 var histogramEdges = [...]float64{50, 100, 150, 200, 250, 300, 400, 500, 600, 800, 1000, 1500, 2000, 3000, 5000}
 
 type longTermBucket struct {
@@ -265,6 +267,53 @@ func (l *LongTerm) Query(airportID, nodeID string, now time.Time, yellow float64
 		result.Days = append(result.Days, out)
 	}
 	return result
+}
+
+// Overview returns the compact summaries needed to compare every node in the
+// current airport. It aggregates the existing histograms in one locked pass;
+// it never expands raw probe samples or makes one query per node.
+func (l *LongTerm) Overview(airportID string, nodes []domain.Node, now time.Time, yellow float64) domain.LongTermOverview {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.pruneLocked(now)
+	today, _ := l.calendar.Day(now)
+	result := domain.LongTermOverview{Timezone: l.calendar.Timezone, YellowMS: int(yellow), Nodes: make([]domain.LongTermNodeOverview, 0, len(nodes))}
+	for _, node := range nodes {
+		out := domain.LongTermNodeOverview{ID: node.ID, Name: node.Name, Windows: make([]domain.LongTermWindow, 0, len(longTermOverviewWindows))}
+		stored := l.nodes[nodeKey(airportID, node.ID)]
+		for _, days := range longTermOverviewWindows {
+			var total longTermBucket
+			if stored != nil {
+				cutoff := today.AddDate(0, 0, -(days - 1))
+				for date, day := range stored.Days {
+					parsed, err := time.ParseInLocation("2006-01-02", date, l.calendar.Location)
+					if err != nil || parsed.Before(cutoff) {
+						continue
+					}
+					for _, bucket := range day.Buckets {
+						mergeLongTermBucket(&total, bucket)
+					}
+				}
+			}
+			summary := summarizeLongTermBucket(total, yellow)
+			summary.WindowSeconds = float64(days * 24 * 60 * 60)
+			out.Windows = append(out.Windows, domain.LongTermWindow{Days: days, Summary: summary})
+		}
+		result.Nodes = append(result.Nodes, out)
+	}
+	return result
+}
+
+func mergeLongTermBucket(total *longTermBucket, bucket longTermBucket) {
+	total.Samples += bucket.Samples
+	total.Success += bucket.Success
+	total.Failure += bucket.Failure
+	if bucket.MaxFail > total.MaxFail {
+		total.MaxFail = bucket.MaxFail
+	}
+	for i, count := range bucket.Bins {
+		total.Bins[i] += count
+	}
 }
 
 func summarizeLongTermBucket(bucket longTermBucket, yellow float64) domain.StabilitySummary {

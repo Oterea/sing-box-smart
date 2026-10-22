@@ -392,6 +392,27 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .longterm-line-none{stroke:#aeb9c1}
 .longterm-p90{fill:none;stroke:#8b9aa5;stroke-width:1;stroke-dasharray:3 3;stroke-linecap:round}
 .longterm-axis{fill:#8b9aa5;font-size:10px}
+.longterm-overview-panel{margin-top:24px}
+.longterm-overview-controls{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px 16px}
+.longterm-control-group{display:flex;align-items:center;gap:5px;white-space:nowrap;color:#718091;font-size:12px}
+.longterm-control{height:30px;padding:0 9px;border:0;background:#e6ebef;color:#536a7b;font-size:12px;line-height:30px;cursor:pointer;box-shadow:none}
+.longterm-control:hover{background:#dbe4e9;color:#2b4052}
+.longterm-control.active{background:var(--blue);color:#fff}
+.longterm-overview-table{min-width:900px}
+.longterm-overview-table .col-node{width:250px}
+.longterm-overview-table .col-overview-metric{width:150px}
+.longterm-overview-table .longterm-node-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#2b4052;font-size:13px;font-weight:600;text-align:left}
+.longterm-overview-table td{font-variant-numeric:tabular-nums;white-space:nowrap}
+.longterm-value{color:#2b4052;font-weight:600}
+.longterm-rank{color:#718091;font-size:12px}
+.longterm-group-row th{padding:10px 24px 8px;background:#f1f5f7;color:#536a7b;text-align:left;font-size:13px;font-weight:650}
+.longterm-group-row .subtle{margin-left:8px;font-size:11px;font-weight:400}
+.longterm-group-dot{display:inline-block;width:8px;height:8px;margin-right:8px;background:#aeb9c1}
+.longterm-group-dot.tone-good{background:var(--green)}
+.longterm-group-dot.tone-medium{background:var(--amber)}
+.longterm-group-dot.tone-bad{background:var(--red)}
+@media(max-width:900px){.longterm-overview-controls{justify-content:flex-start;width:100%}}
+@media(max-width:700px){.longterm-overview-panel{margin-top:18px}.longterm-overview-controls{display:block;overflow-x:auto;padding-bottom:2px;white-space:nowrap}.longterm-control-group{display:inline-flex;margin-right:14px}.longterm-overview-table{min-width:900px}}
 @media(max-width:700px){.node-detail-dialog{width:calc(100% - 20px);height:min(720px,calc(100dvh - 20px));max-height:calc(100dvh - 20px);padding:16px}.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stability-chart-heading{align-items:flex-start;flex-direction:column;gap:4px}}
 @media(max-width:420px){.detail-grid{grid-template-columns:1fr}.detail-metric{min-height:42px}.node-detail-heading h2{font-size:18px}}
 

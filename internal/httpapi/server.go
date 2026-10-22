@@ -27,6 +27,7 @@ type Service interface {
 type stabilityService interface {
 	NodeStability(context.Context, string, time.Time) (domain.NodeStability, error)
 	NodeLongTerm(context.Context, string) (domain.LongTermStability, error)
+	LongTermOverview(context.Context) (domain.LongTermOverview, error)
 	SubscribeStability(string) (<-chan domain.StabilityUpdate, func())
 }
 
@@ -134,6 +135,21 @@ func Handler(service Service) http.Handler {
 		data, err := service.NodeLongTerm(ctx, r.PathValue("id"))
 		if err != nil {
 			write(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+			return
+		}
+		write(w, http.StatusOK, data)
+	})
+	mux.HandleFunc("GET /api/nodes/stability/overview", func(w http.ResponseWriter, r *http.Request) {
+		service, ok := service.(stabilityService)
+		if !ok {
+			write(w, http.StatusNotImplemented, map[string]string{"error": "长期稳定性不可用"})
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+		defer cancel()
+		data, err := service.LongTermOverview(ctx)
+		if err != nil {
+			write(w, http.StatusServiceUnavailable, map[string]string{"error": err.Error()})
 			return
 		}
 		write(w, http.StatusOK, data)

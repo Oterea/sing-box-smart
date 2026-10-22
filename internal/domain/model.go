@@ -95,6 +95,20 @@ type LongTermStability struct {
 	YellowMS   int           `json:"yellow_ms"`
 	Timezone   string        `json:"timezone"`
 }
+type LongTermWindow struct {
+	Days    int              `json:"days"`
+	Summary StabilitySummary `json:"summary"`
+}
+type LongTermNodeOverview struct {
+	ID      string           `json:"id"`
+	Name    string           `json:"name"`
+	Windows []LongTermWindow `json:"windows"`
+}
+type LongTermOverview struct {
+	Timezone string                 `json:"timezone"`
+	YellowMS int                    `json:"yellow_ms"`
+	Nodes    []LongTermNodeOverview `json:"nodes"`
+}
 type StabilityUpdate struct {
 	Sequence     uint64           `json:"sequence"`
 	NodeSequence uint64           `json:"node_sequence"`

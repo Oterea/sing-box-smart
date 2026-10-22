@@ -39,26 +39,29 @@ type request struct {
 type requestAction string
 
 const (
-	requestControl         requestAction = "control"
-	requestAPI             requestAction = "api"
-	requestSnapshot        requestAction = "snapshot"
-	requestRuntimeConfig   requestAction = "runtime-config"
-	requestRuntimeSettings requestAction = "runtime-settings"
-	requestNodeStability   requestAction = "node-stability"
-	requestNodeLongTerm    requestAction = "node-longterm"
+	requestControl          requestAction = "control"
+	requestAPI              requestAction = "api"
+	requestSnapshot         requestAction = "snapshot"
+	requestRuntimeConfig    requestAction = "runtime-config"
+	requestRuntimeSettings  requestAction = "runtime-settings"
+	requestNodeStability    requestAction = "node-stability"
+	requestNodeLongTerm     requestAction = "node-longterm"
+	requestLongTermOverview requestAction = "longterm-overview"
 )
 
 type longTermRecorder interface {
 	Record(string, string, string, domain.Probe) error
 	Flush() error
 	Query(string, string, time.Time, float64) domain.LongTermStability
+	Overview(string, []domain.Node, time.Time, float64) domain.LongTermOverview
 }
 type response struct {
-	config    config.Config
-	snapshot  domain.Snapshot
-	stability domain.NodeStability
-	longTerm  domain.LongTermStability
-	err       error
+	config           config.Config
+	snapshot         domain.Snapshot
+	stability        domain.NodeStability
+	longTerm         domain.LongTermStability
+	longTermOverview domain.LongTermOverview
+	err              error
 }
 type observation struct {
 	id         string
@@ -209,6 +212,10 @@ func (a *App) NodeStability(ctx context.Context, id string, since time.Time) (do
 func (a *App) NodeLongTerm(ctx context.Context, id string) (domain.LongTermStability, error) {
 	r, e := a.request(ctx, request{action: requestNodeLongTerm, target: id})
 	return r.longTerm, e
+}
+func (a *App) LongTermOverview(ctx context.Context) (domain.LongTermOverview, error) {
+	r, e := a.request(ctx, request{action: requestLongTermOverview})
+	return r.longTermOverview, e
 }
 func (a *App) SubscribeStability(id string) (<-chan domain.StabilityUpdate, func()) {
 	return a.stabilityHub.Subscribe(id)

@@ -118,6 +118,7 @@ function render(s){
  if(s.instance_id)stateInstance=s.instance_id;
  if(Number.isFinite(Number(s.revision)))stateRevision=Number(s.revision);
  state=s;
+ syncLongTermOverview(s);
  if(typeof SmartSettings!=='undefined')SmartSettings.update(s.settings);
  const prefs=s.settings;
  if(prefs?.delay_green_ms){

@@ -40,6 +40,8 @@ func (a *App) Run(ctx context.Context) {
 				} else {
 					r.reply <- response{longTerm: a.longTerm.Query(a.airport.ID, r.target, time.Now(), float64(a.cfg.DelayYellow))}
 				}
+			} else if r.action == requestLongTermOverview {
+				r.reply <- response{longTermOverview: a.longTerm.Overview(a.airport.ID, a.airport.Nodes, time.Now(), float64(a.cfg.DelayYellow))}
 			} else if r.action == requestRuntimeSettings {
 				r.reply <- response{err: a.applySettings(ctx, r.settings)}
 			} else if r.action == requestSnapshot {
