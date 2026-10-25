@@ -409,7 +409,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .longterm-overview-table .longterm-node-choice{width:100%;cursor:default;pointer-events:none}
 .longterm-overview-table td{font-variant-numeric:tabular-nums;white-space:nowrap}
 .longterm-overview-table .detail-button{width:100%;height:40px;min-height:40px;padding:0 8px;font-size:13px;font-weight:600;line-height:1.5}
-.node-table .node-choice{width:238px;max-width:100%;margin-left:auto;margin-right:auto}
+.node-table .node-choice{display:flex;align-items:center;justify-content:center;width:238px;max-width:100%;margin-left:auto;margin-right:auto}
 .node-table .detail-button{width:76px;margin-left:auto;margin-right:auto}
 .longterm-value{color:#2b4052;font-weight:600}
 .longterm-rank{color:#718091;font-size:12px}
