@@ -12,8 +12,8 @@ header{height:100px;display:flex;align-items:center;justify-content:space-betwee
 .brand strong{color:var(--green);font-weight:650}
 .brand small{display:block;font-size:10px;letter-spacing:2px;font-weight:500;color:var(--muted);margin-top:2px}
 .header-right{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}
-.service-status{display:flex;align-items:center;gap:8px;min-width:92px;color:#567465;font-size:12px;white-space:nowrap}
-.service-status .live-dot{flex-shrink:0}
+.service-status{display:flex;align-items:center;gap:clamp(7px,.6vw,9px);min-width:92px;color:#567465;font-size:clamp(13px,calc(12px + .2vw),15px);white-space:nowrap}
+.service-status .live-dot{width:clamp(9px,.6vw,11px);height:clamp(9px,.6vw,11px);flex-shrink:0}
 .service-status[data-tone="warning"]{color:#866419}
 .service-status[data-tone="warning"] .live-dot{background:var(--amber);animation-name:live-breathe-warning}
 .service-status[data-tone="muted"]{color:#718091}
