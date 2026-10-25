@@ -42,7 +42,7 @@ function serviceStatus(s, elapsed, observationSeconds) {
 }
 function updateServiceStatus(s, elapsed, observationSeconds) {
  const status=$('service-status'), text=$('service-status-text');
- if(!status||!text)return;
+ if(!status||!text||!status.dataset)return;
  const [label,toneName,title]=serviceStatus(s,elapsed,observationSeconds);
  text.textContent=label;status.dataset.tone=toneName;status.title=title;status.setAttribute('aria-label',title);
 }
