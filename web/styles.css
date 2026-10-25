@@ -401,8 +401,14 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .longterm-overview-table{min-width:900px}
 .longterm-overview-table .col-node{width:250px}
 .longterm-overview-table .col-overview-metric{width:150px}
+.longterm-overview-table .col-detail{width:100px}
+.longterm-overview-table thead th{padding-left:12px;padding-right:12px;text-align:center}
+.longterm-overview-table tbody td{padding-left:12px;padding-right:12px;text-align:center}
+.longterm-overview-table tbody td:first-child{padding-left:12px}
+.longterm-overview-table tbody td:last-child{padding-right:12px}
 .longterm-overview-table .longterm-node-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#2b4052;font-size:13px;font-weight:600;text-align:left}
 .longterm-overview-table td{font-variant-numeric:tabular-nums;white-space:nowrap}
+.longterm-overview-table .detail-button{width:100%;height:40px;min-height:40px;padding:0 8px;font-size:13px;font-weight:600;line-height:1.5}
 .longterm-value{color:#2b4052;font-weight:600}
 .longterm-rank{color:#718091;font-size:12px}
 .longterm-group-row th{padding:10px 24px 8px;background:#f1f5f7;color:#536a7b;text-align:left;font-size:13px;font-weight:650}
