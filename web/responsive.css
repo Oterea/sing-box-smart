@@ -24,7 +24,7 @@ header {height:auto;min-height:clamp(80px, 6.95vw, 100px);gap:var(--ui-space)}
 .brand-logo {display:block;flex-shrink:0;width:clamp(36px,3.06vw,44px);height:clamp(40px,3.34vw,48px);object-fit:contain}
 .brand small {font-size:clamp(.5625rem, .7vw, .625rem)}
 .header-actions {gap:clamp(8px, 1.53vw, 22px);flex-shrink:0}
-.service-status {min-width:clamp(76px, 7vw, 92px);font-size:var(--ui-small)}
+header > .service-status {min-width:clamp(76px, 7vw, 92px);font-size:var(--ui-small)}
 .button,.header-actions #detection-toggle,.header-actions #recheck {
   padding:var(--ui-control-y) var(--ui-control-x);
   font-size:var(--ui-small);
@@ -84,7 +84,6 @@ footer {font-size:var(--ui-note);padding:var(--ui-space) 0}
 @media(max-width:560px) {
   header {flex-wrap:wrap;padding-block:16px;row-gap:14px}
   .header-actions {order:3;flex-basis:100%;justify-content:flex-end;margin-left:auto}
-  .service-status {order:0;min-width:76px}
   .panel-heading {align-items:flex-start;flex-wrap:wrap}
   .connection-state {width:100%}
   .connection-state #mode-note {flex-basis:100%;padding-left:16px}
