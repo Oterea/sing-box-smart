@@ -46,6 +46,5 @@ for asset in $(opkg files luci-app-sing-box-smart | sed -n '\|^/www/luci-static/
 done
 write_status restarting '正在重启服务' 90
 /etc/init.d/sing-box-smart restart || fail 'smart 服务重启失败'
-/etc/init.d/rpcd restart || fail 'LuCI 服务重启失败'
 write_status success '更新完成' 100
 printf '%s\n' '更新完成'

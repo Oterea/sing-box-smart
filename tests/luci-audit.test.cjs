@@ -7,6 +7,7 @@ const view = fs.readFileSync('package/luci-app-sing-box-smart/htdocs/luci-static
 const updateStatus = fs.readFileSync('package/luci-app-sing-box-smart/root/usr/libexec/sing-box-smart-update-status', 'utf8');
 const init = fs.readFileSync('deploy/sing-box-smart.init', 'utf8');
 const packer = fs.readFileSync('scripts/build-ipk.py', 'utf8');
+const updateInstall = fs.readFileSync('package/luci-app-sing-box-smart/root/usr/libexec/sing-box-smart-update-install', 'utf8');
 const menu = JSON.parse(fs.readFileSync('package/luci-app-sing-box-smart/root/usr/share/luci/menu.d/luci-app-sing-box-smart.json', 'utf8'));
 
 test('LuCI ACL is least privilege and exposes only fixed init actions', () => {
@@ -50,4 +51,10 @@ test('IPK builder uses the target opkg tar.gz container', () => {
  assert.match(packer, /tarfile\.open\(path, mode='w:gz'\)/);
  assert.match(packer, /write_ipk\(path/);
  assert.doesNotMatch(packer, /\['ar',\s*'r'/);
+});
+
+test('LuCI updates preserve the active WRT login session', () => {
+ assert.doesNotMatch(packer, /rpcd restart/);
+ assert.doesNotMatch(updateInstall, /rpcd restart/);
+ assert.match(updateInstall, /sing-box-smart restart/);
 });
