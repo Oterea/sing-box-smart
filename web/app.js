@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 let nodeList;
-let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailStream = null, detailRequestController = null, detailLongTermController = null, detailRequestToken = 0, detailUpdateChain = Promise.resolve(), detailNodeSequence = 0, detailSummaryKey = '', detailSamplesKey = '', detailView = 'realtime', detailFollowLatest = true;
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailStream = null, detailRequestController = null, detailLongTermController = null, detailRequestToken = 0, detailUpdateChain = Promise.resolve(), detailNodeSequence = 0, detailSummaryKey = '', detailSamplesKey = '', detailView = 'realtime', detailFollowLatest = true, serviceStatusInitialized = false, previousPendingID = '', previousCurrentID = '', previousAirportID = '';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 // Large scores are useful internally for ranking, but are not meaningful in
@@ -29,6 +29,23 @@ const elapsedTime = value => {
 };
 const tone = (value,best) => value == null ? 'none' : value <= best*1.4 ? 'good' : value <= best*2.5 ? 'medium' : 'bad';
 const delayTone = value => value == null ? 'none' : value <= (state?.settings?.delay_green_ms??200) ? 'good' : value <= (state?.settings?.delay_yellow_ms??600) ? 'medium' : 'bad';
+function serviceStatus(s, elapsed, observationSeconds) {
+ if(s.sleeping)return ['自动睡眠','muted','长时间低流量，已自动暂停检测；达到唤醒流量阈值后自动恢复。'];
+ if(s.paused)return ['检测已暂停','muted','检测已暂停，分数和历史保留。'];
+ if(!s.api_healthy)return ['接口异常','error','管理接口不可用：暂停选择，不将接口错误记为节点失败。'];
+ if(s.pending_id)return ['确认切换','warning','正在确认切换目标，读取接口结果后更新当前选择。'];
+ if(s.phase==='startup')return ['启动观察','warning',`启动/恢复观察中：${Math.min(elapsed,observationSeconds).toFixed(1)} / ${observationSeconds} 秒`];
+ if(s.phase==='unavailable')return ['暂无可用节点','error',`暂时全部不可用：每 ${s.settings?.retry_seconds??3} 秒重新检查，保留已有选择。`];
+ if(s.control_active===false)return ['外部控制','muted',`根策略组当前选择 ${s.root_selection||'尚未同步'}，smart 暂不自动切换。`];
+ if(s.selection_mode==='manual')return ['手动选择','muted','手动选择模式：继续检测并更新数据，smart 不会自动切换节点。'];
+ return ['运行中','normal','检测正常运行。'];
+}
+function updateServiceStatus(s, elapsed, observationSeconds) {
+ const status=$('service-status'), text=$('service-status-text');
+ if(!status||!text)return;
+ const [label,toneName,title]=serviceStatus(s,elapsed,observationSeconds);
+ text.textContent=label;status.dataset.tone=toneName;status.title=title;status.setAttribute('aria-label',title);
+}
 const sampleKey = sample => JSON.stringify([sample.at,sample.success,sample.score,sample.delay_ms,sample.error]);
 // Both sections share the same header, column definitions and row renderer.
 function tableHeading() {
@@ -155,7 +172,12 @@ function render(s){
  const current=s.nodes.find(n=>n.id===s.current_id);
  const elapsed=(new Date(s.now)-new Date(s.started_at))/1000;
  const observationSeconds=s.observation_seconds||s.startup_seconds;
- $('status-line').textContent=s.paused?'检测已暂停，分数和历史保留。':s.sleeping?'长时间低流量，已自动暂停检测；达到唤醒流量阈值后自动恢复。':!s.api_healthy?'管理接口不可用：暂停选择，不将接口错误记为节点失败。':s.control_active===false?`根策略组当前选择 ${s.root_selection||'尚未同步'}，smart 暂不自动切换。`:s.pending_id?'正在确认切换目标，读取接口结果后更新当前选择。':s.phase==='startup'?`启动/恢复观察中：${Math.min(elapsed,observationSeconds).toFixed(1)} / ${observationSeconds} 秒 · 观察结束后开始自动判断。`:s.phase==='unavailable'?`暂时全部不可用：每 ${s.settings?.retry_seconds??3} 秒重新检查，保留已有选择。`:s.selection_mode==='manual'?'手动选择模式：继续检测并更新数据，smart 不会自动切换节点。':'';
+ updateServiceStatus(s,elapsed,observationSeconds);
+ if(serviceStatusInitialized){
+  if(!previousPendingID&&s.pending_id){const target=s.nodes.find(node=>node.id===s.pending_id);toast(`正在确认切换目标：${target?.name||'候选节点'}`);}
+  if(previousAirportID===s.airport_id&&previousCurrentID&&s.current_id&&previousCurrentID!==s.current_id&&!s.pending_id){const target=s.nodes.find(node=>node.id===s.current_id);toast(`已切换到：${target?.name||'新节点'}`);}
+ }
+ previousPendingID=s.pending_id||'';previousCurrentID=s.current_id||'';previousAirportID=s.airport_id||'';serviceStatusInitialized=true;
  const valid=s.nodes.filter(n=>n.score!=null), best=valid.length?Math.min(...valid.map(n=>n.score)):Infinity;
  const sorted=[...s.nodes].sort((a,b)=>(a.score??Infinity)-(b.score??Infinity)||a.id.localeCompare(b.id));
  const selected=current??{id:'',name:'等待首次选择',checks:0,history:[],score:null,delay_ms:null,last_success:false};
@@ -189,7 +211,7 @@ function render(s){
  $('updated').textContent='更新于 '+time(s.now);
 }
 function toast(message){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4500);}
-async function refresh(){try{const headers=stateEtag?{'If-None-Match':stateEtag}:{};const r=await fetch('/api/state',{headers});if(r.status===304)return;if(!r.ok)throw new Error('状态读取失败');stateEtag=r.headers.get('ETag')||'';render(await r.json());}catch(e){$('connection').parentElement.dataset.health='error';$('connection').textContent='连接中断';$('status-line').textContent='暂时无法连接后端，当前显示的是上次数据。';}}
+async function refresh(){try{const headers=stateEtag?{'If-None-Match':stateEtag}:{};const r=await fetch('/api/state',{headers});if(r.status===304)return;if(!r.ok)throw new Error('状态读取失败');stateEtag=r.headers.get('ETag')||'';render(await r.json());}catch(e){$('connection').parentElement.dataset.health='error';$('connection').textContent='连接中断';const status=$('service-status'),text=$('service-status-text');if(status&&text){status.dataset.tone='error';status.title='暂时无法连接后端，当前显示的是上次数据。';status.setAttribute('aria-label',status.title);text.textContent='连接中断';}}}
 async function control(action,id=''){
  if(busy)return;busy=true;if(state)render(state);
  try{const r=await fetch('/api/control/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});const data=await r.json();if(!r.ok)throw new Error(data.error||'操作失败');toast(action==='recheck'?'已安排当前策略组节点检查':action==='pause'?'检测已暂停':action==='resume'?'已继续检测':action==='auto'?'已开启自动选择':action==='manual'?'已开启手动选择':'请求已受理，等待后端确认。');}
