@@ -3,12 +3,12 @@
 const overviewElement=id=>document.getElementById(id);
 let longTermOverviewData=null, longTermOverviewAirport='', longTermOverviewLoadedAt=0, longTermOverviewController=null, longTermOverviewLoadingAirport='', longTermOverviewThresholdKey='', longTermOverviewRetryAt=0, longTermOverviewError='', longTermOverviewState=null;
 let longTermOverviewWindow=14, longTermOverviewSorts=['p50','p90','success','high'], longTermOverviewExpanded={};
-const longTermOverviewMetrics=[{key:'p50',label:'P50 / 排名',direction:'asc'},{key:'p90',label:'P90 / 排名',direction:'asc'},{key:'success',label:'成功率 / 排名',direction:'desc'},{key:'high',label:'高延迟 / 排名',direction:'asc'}];
+const longTermOverviewMetrics=[{key:'p50',label:'P50（ms）/ 排名',direction:'asc'},{key:'p90',label:'P90（ms）/ 排名',direction:'asc'},{key:'success',label:'成功率（%）/ 排名',direction:'desc'},{key:'high',label:'高延迟（%）/ 排名',direction:'asc'}];
 const longTermOverviewGroups=['稳定低延迟','稳定中延迟','稳定高延迟','不稳定','样本不足'];
 function overviewSummary(node,days){return (node.windows||[]).find(window=>Number(window.days)===days)?.summary||{};}
 function overviewEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function overviewValue(summary,key){const value=key==='p50'?Number(summary.p50_ms):key==='p90'?Number(summary.p90_ms):key==='success'?Number(summary.success_rate):Number(summary.high_latency_rate);return Number.isFinite(value)?value:null;}
-function overviewFormat(summary,key){const value=overviewValue(summary,key);if(value==null)return '—';return key==='p50'||key==='p90'?Math.round(value)+' ms':(value*100).toFixed(1)+'%';}
+function overviewFormat(summary,key){const value=overviewValue(summary,key);if(value==null)return '—';return key==='p50'||key==='p90'?String(Math.round(value)):(value*100).toFixed(1);}
 function overviewEligible(summary,key){return Number(summary.samples)>=10&&overviewValue(summary,key)!=null;}
 function overviewRanks(nodes,days){
  const result=new Map();
