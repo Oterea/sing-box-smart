@@ -404,7 +404,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .longterm-overview-table tbody td{text-align:center}
 .longterm-overview-table .longterm-node-choice{cursor:default;pointer-events:none}
 .longterm-overview-table td{font-variant-numeric:tabular-nums;white-space:nowrap}
-.longterm-overview-table .longterm-node-choice{width:238px;max-width:100%;margin-left:auto;margin-right:auto}
+.longterm-overview-table .longterm-node-choice{width:100%;max-width:none}
 .longterm-metric{display:flex;align-items:center;justify-content:center;width:100%;height:var(--ui-row);min-height:var(--ui-row);padding:0 8px;background:#edf3f5;color:#2b4052;box-shadow:none;font-variant-numeric:tabular-nums}
 .longterm-value{font-weight:600}
 .longterm-rank{color:#718091;font-size:inherit;font-weight:600}
