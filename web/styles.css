@@ -398,21 +398,16 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .longterm-control{height:30px;padding:0 9px;border:0;background:#e6ebef;color:#536a7b;font-size:12px;line-height:30px;cursor:pointer;box-shadow:none}
 .longterm-control:hover{background:#dbe4e9;color:#2b4052}
 .longterm-control.active{background:var(--blue);color:#fff}
-.longterm-overview-table{min-width:900px}
-.longterm-overview-table .col-node{width:238px}
-.longterm-overview-table .col-overview-metric{width:150px}
-.longterm-overview-table .col-detail{width:100px}
-.longterm-overview-table thead th{padding-left:12px;padding-right:12px;text-align:center}
-.longterm-overview-table tbody td{padding-left:12px;padding-right:12px;text-align:center}
-.longterm-overview-table tbody td:first-child{padding-left:12px}
-.longterm-overview-table tbody td:last-child{padding-right:12px}
+.longterm-overview-table{min-width:680px}
+.longterm-overview-table .col-overview-metric{width:clamp(112px,10vw,150px)}
+.longterm-overview-table thead th,
+.longterm-overview-table tbody td{text-align:center}
 .longterm-overview-table .longterm-node-choice{cursor:default;pointer-events:none}
 .longterm-overview-table td{font-variant-numeric:tabular-nums;white-space:nowrap}
 .longterm-overview-table .longterm-node-choice{width:238px;max-width:100%;margin-left:auto;margin-right:auto}
-.longterm-overview-table .detail-button{width:76px;height:40px;min-height:40px;margin-left:auto;margin-right:auto;padding:0 8px;font-size:13px;font-weight:600;line-height:1.5}
 .longterm-value{color:#2b4052;font-weight:600}
 .longterm-rank{color:#718091;font-size:12px}
-.longterm-group-row th{padding:10px 24px 8px;background:#f1f5f7;color:#536a7b;text-align:left;font-size:13px;font-weight:650}
+.longterm-group-row th{padding:10px var(--ui-pad-x) 8px;background:#f1f5f7;color:#536a7b;text-align:left;font-size:13px;font-weight:650}
 .longterm-group-row .subtle{margin-left:8px;font-size:11px;font-weight:400}
 .longterm-group-dot{display:inline-block;width:8px;height:8px;margin-right:8px;background:#aeb9c1}
 .longterm-group-dot.tone-good{background:var(--green)}
@@ -420,7 +415,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .longterm-group-dot.tone-bad{background:var(--red)}
 .longterm-group-toggle-row td{padding:0;text-align:center}
 @media(max-width:900px){.longterm-overview-controls{justify-content:flex-start;width:100%}}
-@media(max-width:700px){.longterm-overview-panel{margin-top:18px}.longterm-overview-controls{display:block;overflow-x:auto;padding-bottom:2px;white-space:nowrap}.longterm-control-group{display:inline-flex;margin-right:14px}.longterm-overview-table{min-width:900px}}
+@media(max-width:700px){.longterm-overview-panel{margin-top:18px}.longterm-overview-controls{display:block;overflow-x:auto;padding-bottom:2px;white-space:nowrap}.longterm-control-group{display:inline-flex;margin-right:14px}.longterm-overview-table{min-width:680px}}
 @media(max-width:700px){.longterm-overview-table .longterm-node-choice{width:100%}}
 @media(max-width:700px){.node-detail-dialog{width:calc(100% - 20px);height:min(720px,calc(100dvh - 20px));max-height:calc(100dvh - 20px);padding:16px}.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stability-chart-heading{align-items:flex-start;flex-direction:column;gap:4px}}
 @media(max-width:420px){.detail-grid{grid-template-columns:1fr}.detail-metric{min-height:42px}.node-detail-heading h2{font-size:18px}}
