@@ -238,7 +238,8 @@ select{border:0!important;box-shadow:0 1px 0 #dce5e7;background:transparent}
 @media(max-width:900px){.top-card{grid-template-columns:1fr;gap:18px}.top-health{max-width:360px}}
 .top-airports .card-label{width:100%}
 .top-airports .airport-options{width:100%}
-.top-airports .card-label>.service-status{margin-left:auto!important;margin-right:0}
+.top-airports .card-label{justify-content:flex-start;gap:12px}
+.top-airports .card-label>.service-status{margin-left:0!important;margin-right:0}
 @media(max-width:700px){.toolbar{margin-top:16px}.top-card{padding:18px 16px}.airport-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* One compact header row and centered policy-group choices. */
