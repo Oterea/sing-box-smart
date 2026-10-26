@@ -15,6 +15,8 @@
   --ui-row: clamp(2.125rem, 2.78vw, 2.5rem);
   --ui-cell-y: clamp(9px, .97vw, 14px);
   --ui-cell-x: clamp(7px, .83vw, 12px);
+  --ui-dialog-width: min(900px, calc(100% - 32px));
+  --ui-dialog-height: min(720px, calc(100dvh - 32px));
 }
 
 body {font-size:var(--ui-body)}
@@ -81,7 +83,24 @@ header > .service-status {min-width:clamp(76px, 7vw, 92px);font-size:var(--ui-sm
 .sleep-history {margin-inline:var(--ui-pad-x)}
 footer {font-size:var(--ui-note);padding:var(--ui-space) 0}
 
+/* Both native dialogs use the same responsive frame. Their contents remain
+   independently scrollable inside that frame. */
+.settings-dialog,.node-detail-dialog {
+  width:var(--ui-dialog-width);
+  height:var(--ui-dialog-height);
+  max-height:var(--ui-dialog-height);
+}
+.table-scroll,.longterm-overview-controls {overscroll-behavior-x:contain}
+.longterm-overview-controls {scrollbar-width:thin;scrollbar-color:#c7d1d8 transparent}
+.longterm-overview-controls::-webkit-scrollbar {height:6px}
+.longterm-overview-controls::-webkit-scrollbar-thumb {background:#c7d1d8}
+.longterm-overview-controls::-webkit-scrollbar-track {background:transparent}
+
 @media(max-width:560px) {
+  :root {
+    --ui-dialog-width: calc(100% - 20px);
+    --ui-dialog-height: min(720px, calc(100dvh - 20px));
+  }
   header {flex-wrap:wrap;padding-block:16px;row-gap:14px}
   .header-actions {order:3;flex-basis:100%;justify-content:flex-end;margin-left:auto}
   .panel-heading {align-items:flex-start;flex-wrap:wrap}

@@ -33,7 +33,7 @@ function overviewTable(nodes,days,snapshot){
 }
 function renderLongTermOverview(){
  const panel=overviewElement('longterm-overview-panel'),body=overviewElement('longterm-overview-body');if(!panel||!body)return;
- for(const button of panel.querySelectorAll('[data-longterm-window]'))button.classList.toggle('active',Number(button.dataset.longtermWindow)===longTermOverviewWindow);
+ for(const button of panel.querySelectorAll('[data-longterm-window]')){const active=Number(button.dataset.longtermWindow)===longTermOverviewWindow;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));}
  for(const button of panel.querySelectorAll('[data-longterm-sort]')){const active=longTermOverviewSorts.includes(button.dataset.longtermSort);button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));}
  const columns=overviewColumnCount();
  if(longTermOverviewError){body.innerHTML=`<tr><td colspan="${columns}" class="empty">${overviewEscape(longTermOverviewError)}，稍后自动重试</td></tr>`;return;}
