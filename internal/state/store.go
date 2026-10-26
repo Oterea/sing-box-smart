@@ -55,6 +55,16 @@ func (s *Store) Record(id string, p domain.Probe) {
 	}
 }
 func (s *Store) Views(current, phase string, thresholds ...int) []domain.NodeView {
+	return s.ViewsAt(time.Now(), current, phase, thresholds...)
+}
+
+// ViewsAt builds a consistent snapshot using one caller-provided instant.
+// Keeping the clock at the boundary prevents nodes near a window cutoff from
+// being summarized against slightly different times in the same response.
+func (s *Store) ViewsAt(now time.Time, current, phase string, thresholds ...int) []domain.NodeView {
+	if now.IsZero() {
+		now = time.Now()
+	}
 	green, yellow := 200, 600
 	if len(thresholds) >= 2 {
 		green, yellow = thresholds[0], thresholds[1]
@@ -76,7 +86,7 @@ func (s *Store) Views(current, phase string, thresholds ...int) []domain.NodeVie
 		if phase == "unavailable" {
 			frequency = "3 秒重试"
 		}
-		x := domain.NodeView{ID: n.Info.ID, Name: n.Info.Name, Score: v, ScoreOverflow: overflow, Checks: n.Checks, LastSuccess: n.Last.Success, Current: n.Info.ID == current, Probing: n.Plan.InFlight, Frequency: frequency, RecoveryRemaining: n.Plan.RecoveryStep, Tier: n.Tier, Samples: append([]domain.Sample{}, n.History...), JitterMS: n.Metrics.J, JitterPenalty: score.JitterPenalty(n.Metrics), Stability: n.Stability.Summary(time.Now(), float64(green), float64(yellow))}
+		x := domain.NodeView{ID: n.Info.ID, Name: n.Info.Name, Score: v, ScoreOverflow: overflow, Checks: n.Checks, LastSuccess: n.Last.Success, Current: n.Info.ID == current, Probing: n.Plan.InFlight, Frequency: frequency, RecoveryRemaining: n.Plan.RecoveryStep, Tier: n.Tier, Samples: append([]domain.Sample{}, n.History...), JitterMS: n.Metrics.J, JitterPenalty: score.JitterPenalty(n.Metrics), Stability: n.Stability.Summary(now, float64(green), float64(yellow))}
 		if n.Checks > 0 {
 			t := n.Last.At
 			x.LastAt = &t

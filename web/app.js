@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 let nodeList;
-let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailStream = null, detailRequestController = null, detailLongTermController = null, detailRequestToken = 0, detailUpdateChain = Promise.resolve(), detailNodeSequence = 0, detailSummaryKey = '', detailSamplesKey = '', detailView = 'realtime', detailFollowLatest = true, serviceStatusInitialized = false, previousPendingID = '', previousCurrentID = '', previousAirportID = '';
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, streamReconnectTimer = 0, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailStream = null, detailRequestController = null, detailLongTermController = null, detailRequestToken = 0, detailUpdateChain = Promise.resolve(), detailNodeSequence = 0, detailSummaryKey = '', detailSamplesKey = '', detailView = 'realtime', detailFollowLatest = true, serviceStatusInitialized = false, previousPendingID = '', previousCurrentID = '', previousAirportID = '';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 // Large scores are useful internally for ranking, but are not meaningful in
@@ -238,7 +238,7 @@ async function poll(){if(!streamOpen||Date.now()-lastStreamEvent>3000)await refr
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
 
 function connectStream(){
- if(!window.EventSource)return;
+ if(!window.EventSource||stream||streamReconnectTimer)return;
  stream=new EventSource('/api/events');
  stream.addEventListener('state',event=>{try{
   stateEtag='';lastStreamEvent=Date.now();
@@ -253,9 +253,10 @@ function connectStream(){
   streamOpen=true;
  }catch(_){}});
  stream.onopen=()=>{streamOpen=true;refresh();};
- stream.onerror=()=>{streamOpen=false;stream.close();setTimeout(connectStream,3000);};
+ stream.onerror=()=>{streamOpen=false;if(stream){stream.close();stream=null;}if(!streamReconnectTimer)streamReconnectTimer=setTimeout(()=>{streamReconnectTimer=0;connectStream();},3000);};
 }
 connectStream();
+window.addEventListener('pagehide',()=>{if(streamReconnectTimer){clearTimeout(streamReconnectTimer);streamReconnectTimer=0;}if(stream){stream.close();stream=null;}if(detailStream)closeDetailStream();});
 
 $('api-test').addEventListener('click',async()=>{const button=$('api-test');button.disabled=true;try{const r=await fetch('/api/config/api/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api:$('api-address').value.trim()})});const data=await r.json();if(!r.ok)throw new Error(data.error);toast('连接正常，策略组可读取');}catch(e){toast(e.message);}finally{button.disabled=false;}});
 

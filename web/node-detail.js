@@ -153,6 +153,7 @@ async function loadNodeDetail() {
 }
 function closeDetailStream() {
  if(detailStream){detailStream.close();detailStream=null;}
+ if(detailTimer){clearTimeout(detailTimer);detailTimer=0;}
 }
 function connectDetailStream() {
  closeDetailStream();

@@ -2,6 +2,7 @@ package state
 
 import (
 	"sing-box-smart/internal/domain"
+	"sing-box-smart/internal/stability"
 	"testing"
 	"time"
 )
@@ -60,5 +61,17 @@ func TestViewsShowRecoveryAndStartupOverrides(t *testing.T) {
 	}
 	if got := s.Views("other", "unavailable")[0].Frequency; got != "3 秒重试" {
 		t.Fatalf("unavailable frequency=%q", got)
+	}
+}
+
+func TestViewsAtUsesOneSnapshotClock(t *testing.T) {
+	now := time.Date(2026, 10, 26, 12, 0, 0, 0, time.UTC)
+	s := New([]domain.Node{{ID: "a"}, {ID: "b"}}, 3)
+	for _, id := range []string{"a", "b"} {
+		s.Record(id, domain.Probe{Success: true, DelayMS: 120, At: now.Add(-stability.Window + time.Second)})
+	}
+	views := s.ViewsAt(now, "", "normal")
+	if len(views) != 2 || views[0].Stability.Samples != 1 || views[1].Stability.Samples != 1 {
+		t.Fatalf("views did not use the supplied clock: %+v", views)
 	}
 }

@@ -11,30 +11,34 @@ function overviewValue(summary,key){const value=key==='p50'?Number(summary.p50_m
 function overviewFormat(summary,key){const value=overviewValue(summary,key);if(value==null)return '—';return key==='p50'||key==='p90'?String(Math.round(value)):key==='success'||key==='high'?(value*100).toFixed(1):String(Math.round(value));}
 function overviewEligible(summary,key){return Number(summary.samples)>=10&&overviewValue(summary,key)!=null;}
 function overviewRanks(nodes,days){
+ const summaries=new Map(nodes.map(node=>[node.id,overviewSummary(node,days)]));
  const result=new Map();
  for(const metric of longTermOverviewMetrics){
-  const values=nodes.map(node=>({id:node.id,value:overviewValue(overviewSummary(node,days),metric.key)})).filter(item=>{const summary=overviewSummary(nodes.find(node=>node.id===item.id),days);return overviewEligible(summary,metric.key);});
+  const values=nodes.map(node=>({id:node.id,value:overviewValue(summaries.get(node.id),metric.key)})).filter(item=>overviewEligible(summaries.get(item.id),metric.key));
   values.sort((a,b)=>(a.value-b.value)*(metric.direction==='asc'?1:-1)||a.id.localeCompare(b.id));
   let previous=null,rank=0;
   for(let index=0;index<values.length;index++){if(previous===null||values[index].value!==previous){rank=index+1;previous=values[index].value;}if(!result.has(values[index].id))result.set(values[index].id,{});result.get(values[index].id)[metric.key]=rank;}
  }
  return result;
 }
+function overviewColumnCount(){return longTermOverviewMetrics.length+2;}
 function overviewClass(summary,snapshot=longTermOverviewState){return stabilityConclusion(summary,Number(snapshot?.settings?.delay_green_ms??200),Number(snapshot?.settings?.delay_yellow_ms??600));}
 function overviewSort(nodes,days){return [...nodes].sort((a,b)=>{const as=overviewSummary(a,days),bs=overviewSummary(b,days);for(const key of longTermOverviewSorts){const metric=longTermOverviewMetrics.find(item=>item.key===key),av=overviewValue(as,key),bv=overviewValue(bs,key);if(av==null&&bv==null)continue;if(av==null)return 1;if(bv==null)return -1;if(av!==bv)return(av-bv)*(metric.direction==='asc'?1:-1);}return a.name.localeCompare(b.name);});}
 function overviewTable(nodes,days,snapshot){
  const ranks=overviewRanks(nodes,days),groups=new Map(longTermOverviewGroups.map(group=>[group,[]]));
  for(const node of nodes){const label=overviewClass(overviewSummary(node,days))[0];(groups.get(label)||groups.get('样本不足')).push(node);}
  const configured=Number(snapshot?.settings?.long_term_display_limit??5),limit=Number.isInteger(configured)&&configured>=1&&configured<=1000?configured:5;
- return longTermOverviewGroups.map(group=>{const rows=overviewSort(groups.get(group)||[],days);if(!rows.length)return '';const visible=longTermOverviewExpanded[group]?rows:rows.slice(0,limit),tone=group==='稳定低延迟'?'good':group==='稳定中延迟'?'medium':group==='样本不足'?'none':'bad';const toggle=rows.length>limit?`<tr class="longterm-group-toggle-row"><td colspan="7"><div class="node-list-controls"><button class="button secondary" data-longterm-toggle-group="${overviewEscape(group)}" type="button">${longTermOverviewExpanded[group]?`收起至前 ${limit} 个`:`显示全部（还有 ${rows.length-limit} 个）`}</button></div></td></tr>`:'';return `<tr class="longterm-group-row"><th colspan="7"><span class="longterm-group-dot tone-${tone}"></span>${group}<span class="subtle">${rows.length} 个</span></th></tr>`+visible.map(node=>{const summary=overviewSummary(node,days);return `<tr><td><button class="node-choice longterm-node-choice" title="${overviewEscape(node.name)}" type="button" tabindex="-1" aria-disabled="true">${overviewEscape(node.name)}</button></td>${longTermOverviewMetrics.map(metric=>`<td><span class="longterm-metric"><span class="longterm-value">${overviewEscape(overviewFormat(summary,metric.key))}</span><span class="longterm-rank"> / ${overviewEscape(String(ranks.get(node.id)?.[metric.key]??'—'))}</span></span></td>`).join('')}<td><button class="detail-button" data-detail-node="${overviewEscape(node.id)}" type="button">详情</button></td></tr>`;}).join('')+toggle;}).join('');
+ const columns=overviewColumnCount();
+ return longTermOverviewGroups.map(group=>{const rows=overviewSort(groups.get(group)||[],days);if(!rows.length)return '';const visible=longTermOverviewExpanded[group]?rows:rows.slice(0,limit),tone=group==='稳定低延迟'?'good':group==='稳定中延迟'?'medium':group==='样本不足'?'none':'bad';const toggle=rows.length>limit?`<tr class="longterm-group-toggle-row"><td colspan="${columns}"><div class="node-list-controls"><button class="button secondary" data-longterm-toggle-group="${overviewEscape(group)}" type="button">${longTermOverviewExpanded[group]?`收起至前 ${limit} 个`:`显示全部（还有 ${rows.length-limit} 个）`}</button></div></td></tr>`:'';return `<tr class="longterm-group-row"><th colspan="${columns}"><span class="longterm-group-dot tone-${tone}"></span>${group}<span class="subtle">${rows.length} 个</span></th></tr>`+visible.map(node=>{const summary=overviewSummary(node,days);return `<tr><td><button class="node-choice longterm-node-choice" title="${overviewEscape(node.name)}" type="button" tabindex="-1" aria-disabled="true">${overviewEscape(node.name)}</button></td>${longTermOverviewMetrics.map(metric=>`<td><span class="longterm-metric"><span class="longterm-value">${overviewEscape(overviewFormat(summary,metric.key))}</span><span class="longterm-rank"> / ${overviewEscape(String(ranks.get(node.id)?.[metric.key]??'—'))}</span></span></td>`).join('')}<td><button class="detail-button" data-detail-node="${overviewEscape(node.id)}" type="button">详情</button></td></tr>`;}).join('')+toggle;}).join('');
 }
 function renderLongTermOverview(){
  const panel=overviewElement('longterm-overview-panel'),body=overviewElement('longterm-overview-body');if(!panel||!body)return;
  for(const button of panel.querySelectorAll('[data-longterm-window]'))button.classList.toggle('active',Number(button.dataset.longtermWindow)===longTermOverviewWindow);
  for(const button of panel.querySelectorAll('[data-longterm-sort]')){const active=longTermOverviewSorts.includes(button.dataset.longtermSort);button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));}
- if(longTermOverviewError){body.innerHTML=`<tr><td colspan="7" class="empty">${overviewEscape(longTermOverviewError)}，稍后自动重试</td></tr>`;return;}
- if(!longTermOverviewData){body.innerHTML='<tr><td colspan="7" class="empty">正在读取长期表现…</td></tr>';return;}
- const nodes=longTermOverviewData.nodes||[];body.innerHTML=nodes.length?overviewTable(nodes,longTermOverviewWindow,longTermOverviewState):'<tr><td colspan="7" class="empty">暂无长期表现数据</td></tr>';
+ const columns=overviewColumnCount();
+ if(longTermOverviewError){body.innerHTML=`<tr><td colspan="${columns}" class="empty">${overviewEscape(longTermOverviewError)}，稍后自动重试</td></tr>`;return;}
+ if(!longTermOverviewData){body.innerHTML=`<tr><td colspan="${columns}" class="empty">正在读取长期表现…</td></tr>`;return;}
+ const nodes=longTermOverviewData.nodes||[];body.innerHTML=nodes.length?overviewTable(nodes,longTermOverviewWindow,longTermOverviewState):`<tr><td colspan="${columns}" class="empty">暂无长期表现数据</td></tr>`;
 }
 async function loadLongTermOverview(airportID,force=false){
  if(!airportID||(!force&&longTermOverviewLoadingAirport===airportID)||(!force&&Date.now()<longTermOverviewRetryAt)||(!force&&airportID===longTermOverviewAirport&&longTermOverviewData&&Date.now()-longTermOverviewLoadedAt<300000))return;

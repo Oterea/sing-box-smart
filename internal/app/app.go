@@ -231,7 +231,7 @@ func (a *App) snapshot() domain.Snapshot {
 		lastActivity = &v
 	}
 	now := time.Now()
-	nodes := a.store.Views(a.current, a.phase, a.cfg.DelayGreen, a.cfg.DelayYellow)
+	nodes := a.store.ViewsAt(now, a.current, a.phase, a.cfg.DelayGreen, a.cfg.DelayYellow)
 	for i := range nodes {
 		n := &nodes[i]
 		switch {
