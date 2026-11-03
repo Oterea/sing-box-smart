@@ -1,6 +1,6 @@
 include $(TOPDIR)/rules.mk
 PKG_NAME:=sing-box-smart
-PKG_VERSION:=0.2.0
+PKG_VERSION?=0.2.0
 PKG_RELEASE:=1
 PKG_LICENSE:=MIT
 PKG_BUILD_DEPENDS:=golang/host

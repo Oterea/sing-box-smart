@@ -147,7 +147,38 @@ go run ./cmd/sing-box-smart \
   -settings connection.json
 ```
 
-在 OpenWrt 上，推荐通过生成的 IPK 安装；`deploy/sing-box-smart.conf` 和 `deploy/sing-box-smart.init` 是服务配置和启动脚本示例。真实模式的完整说明见 [docs/real-mode.md](docs/real-mode.md)。
+GitHub Actions 使用 OpenWrt 25.12 SDK 构建 APK，并发布到 `latest` Release。`deploy/sing-box-smart.conf` 和 `deploy/sing-box-smart.init` 是服务配置和启动脚本示例。真实模式的完整说明见 [docs/real-mode.md](docs/real-mode.md)。
+
+### 安装 APK
+
+ImmortalWrt 25.12 使用 `apk` 管理软件包。下面两种方式都需要同时安装核心服务包和 LuCI 管理页面包。
+
+#### SSH 命令行安装
+
+登录路由器后执行：
+
+```sh
+cd /tmp
+wget -O sing-box-smart.apk \
+  https://github.com/Oterea/sing-box-smart/releases/download/latest/sing-box-smart-latest.apk
+wget -O luci-app-sing-box-smart.apk \
+  https://github.com/Oterea/sing-box-smart/releases/download/latest/luci-app-sing-box-smart-latest.apk
+apk add --allow-untrusted \
+  ./sing-box-smart.apk \
+  ./luci-app-sing-box-smart.apk
+/etc/init.d/sing-box-smart enable
+/etc/init.d/sing-box-smart restart
+```
+
+`--allow-untrusted` 用于安装 GitHub Release 中的自建 APK。安装完成后，监控面板地址默认为 `http://路由器地址:9797/`。
+
+#### LuCI 页面安装
+
+1. 登录路由器的 LuCI 管理页面。
+2. 打开“系统 → 软件包”。
+3. 使用本地上传或安装入口，先上传 `sing-box-smart-latest.apk`，再上传 `luci-app-sing-box-smart-latest.apk`。
+4. 如果页面提示软件包未签名，允许安装本地 APK。
+5. 安装完成后，在“系统 → 启动项”中启用并启动 `sing-box-smart`。
 
 ## 开发和测试
 
@@ -156,7 +187,12 @@ make run                 # 本地模拟模式，默认 http://127.0.0.1:8787
 make test                # Go 测试和竞态检测
 make check               # go vet
 node --test tests/*.cjs  # 前端和 LuCI 审计测试
-python3 scripts/build-ipk.py
+```
+
+GitHub Actions 使用 OpenWrt 25.12 SDK 构建 APK；本地构建请在对应的 OpenWrt 25.12 SDK 中执行：
+
+```sh
+make package/sing-box-smart/compile package/luci-app-sing-box-smart/compile
 ```
 
 代码按小模块组合：探测、评分、状态、分层、恢复、调度、切换、事件推送和 HTTP 接口相互分离。组件组装集中在 `internal/app`，便于单独测试和替换真实/模拟网关。
