@@ -26,12 +26,12 @@ define Package/sing-box-smart/conffiles
 endef
 
 define Package/sing-box-smart/install
- $(call GoPackage/Package/Install/Bin,$(1))
- $(INSTALL_DIR) $(1)/etc/init.d
- $(INSTALL_BIN) $(CURDIR)/../../deploy/sing-box-smart.init $(1)/etc/init.d/sing-box-smart
- $(INSTALL_CONF) $(CURDIR)/../../deploy/sing-box-smart.conf $(1)/etc/sing-box-smart.conf
- $(INSTALL_DIR) $(1)/lib/upgrade/keep.d
- $(INSTALL_DATA) $(CURDIR)/../../deploy/sing-box-smart.keep $(1)/lib/upgrade/keep.d/sing-box-smart
+	$(call GoPackage/Package/Install/Bin,$(1))
+	$(INSTALL_DIR) $(1)/etc/init.d
+	$(INSTALL_BIN) $(CURDIR)/../../deploy/sing-box-smart.init $(1)/etc/init.d/sing-box-smart
+	$(INSTALL_CONF) $(CURDIR)/../../deploy/sing-box-smart.conf $(1)/etc/sing-box-smart.conf
+	$(INSTALL_DIR) $(1)/lib/upgrade/keep.d
+	$(INSTALL_DATA) $(CURDIR)/../../deploy/sing-box-smart.keep $(1)/lib/upgrade/keep.d/sing-box-smart
 endef
 $(eval $(call GoBinPackage,sing-box-smart))
 $(eval $(call BuildPackage,sing-box-smart))
