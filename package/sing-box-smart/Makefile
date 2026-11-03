@@ -9,6 +9,11 @@ GO_PKG_BUILD_PKG:=sing-box-smart/cmd/sing-box-smart
 include $(INCLUDE_DIR)/package.mk
 include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
 
+define Build/Prepare
+	mkdir -p $(PKG_BUILD_DIR)
+	cp -a /feed/. $(PKG_BUILD_DIR)/
+endef
+
 define Package/sing-box-smart
  SECTION:=net
  CATEGORY:=Network

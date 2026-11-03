@@ -37,10 +37,14 @@ jobs:
             exit 1
           fi
           echo "PACKAGE_VERSION=${major}.${minor}.${patch}" >> "$GITHUB_ENV"
+      - name: Set OpenWrt package version
+        run: |
+          sed -i "s/^PKG_VERSION?.*/PKG_VERSION:=${PACKAGE_VERSION}/" package/sing-box-smart/Makefile
+          sed -i "s/^PKG_VERSION?.*/PKG_VERSION:=${PACKAGE_VERSION}/" package/luci-app-sing-box-smart/Makefile
       - name: Build OpenWrt APK packages
         uses: openwrt/gh-action-sdk@main
         env:
-          ARCH: aarch64_generic-25.12.2
+          ARCH: aarch64_generic-openwrt-25.12
           PACKAGES: sing-box-smart luci-app-sing-box-smart
           PKG_VERSION: ${{ env.PACKAGE_VERSION }}
           V: s
