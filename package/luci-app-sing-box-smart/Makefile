@@ -3,3 +3,5 @@ PKG_VERSION?=0.2.0
 LUCI_TITLE:=LuCI support for sing-box-smart
 LUCI_DEPENDS:=+luci-base +sing-box-smart +uclient-fetch +jsonfilter
 include $(TOPDIR)/feeds/luci/luci.mk
+
+# call BuildPackage - OpenWrt buildroot signature
