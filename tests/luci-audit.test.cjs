@@ -8,6 +8,7 @@ const updateStatus = fs.readFileSync('package/luci-app-sing-box-smart/root/usr/l
 const init = fs.readFileSync('deploy/sing-box-smart.init', 'utf8');
 const packer = fs.readFileSync('scripts/build-ipk.py', 'utf8');
 const updateInstall = fs.readFileSync('package/luci-app-sing-box-smart/root/usr/libexec/sing-box-smart-update-install', 'utf8');
+const updateCheck = fs.readFileSync('package/luci-app-sing-box-smart/root/usr/libexec/sing-box-smart-update-check', 'utf8');
 const menu = JSON.parse(fs.readFileSync('package/luci-app-sing-box-smart/root/usr/share/luci/menu.d/luci-app-sing-box-smart.json', 'utf8'));
 
 test('LuCI ACL is least privilege and exposes only fixed init actions', () => {
@@ -33,8 +34,10 @@ test('LuCI view cannot execute user supplied commands and serializes controls', 
  assert.match(view, /progress\+'%'/);
  assert.match(updateStatus, /state.*success/);
  assert.match(updateStatus, /rm -f.*\$status/);
- assert.match(view, /当前版本 ·/);
- assert.match(view, /最新版本 ·/);
+ assert.match(view, /已是最新版本 ·/);
+ assert.match(view, /发现新版本 ·/);
+ assert.match(updateCheck, /lib\/apk\/db\/installed/);
+ assert.doesNotMatch(updateCheck, /apk info -e sing-box-smart/);
  assert.doesNotMatch(view, /fs\.exec\([^,]+,\s*\[[^\]]*https?:/);
  assert.doesNotMatch(view, /sbs-link-card|sbs-arrow|打开 smart 面板.*↗/);
 });

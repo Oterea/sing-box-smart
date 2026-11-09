@@ -6,15 +6,28 @@ trap 'rm -f "$tmp"' EXIT
 uclient-fetch -q -O "$tmp" "$manifest_url?check=$(date +%s)-$$" || { printf '%s\n' '无法连接更新源' >&2; exit 1; }
 version="$(jsonfilter -i "$tmp" -e '@.version')" || version=''
 if command -v apk >/dev/null 2>&1; then
-    current="$(apk info -e sing-box-smart 2>/dev/null && apk info sing-box-smart 2>/dev/null | sed -n 's/^version: //p' | head -n 1)"
+    # `apk info -e` only confirms that a package exists and prints its name;
+    # it is not a version query. Read the installed package database instead.
+    current="$(awk -v package='sing-box-smart' '
+        $0 == "P:" package { found=1; next }
+        found && /^V:/ { sub(/^V:/, ""); print; exit }
+        found && /^P:/ { exit }
+    ' /lib/apk/db/installed 2>/dev/null || true)"
 elif command -v opkg >/dev/null 2>&1; then
     current="$(opkg status sing-box-smart 2>/dev/null | sed -n 's/^Version: //p' | head -n 1)"
 else
     current=''
 fi
 [ -n "$version" ] || { printf '%s\n' '更新清单无效' >&2; exit 1; }
-if [ "$version" = "$current" ]; then
-    printf '{"available":false,"version":"%s","current":"%s"}\n' "$version" "$current"
+# OpenWrt APK packages normally carry a release suffix (for example -r1),
+# while the release manifest contains the package version only.
+normalized_version="${version#v}"
+normalized_current="${current#v}"
+normalized_current="${normalized_current%-r[0-9]*}"
+if [ -z "$normalized_current" ]; then
+    printf '{"available":false,"current_known":false,"version":"%s","current":""}\n' "$version"
+elif [ "$normalized_version" = "$normalized_current" ]; then
+    printf '{"available":false,"current_known":true,"version":"%s","current":"%s"}\n' "$version" "$current"
 else
-    printf '{"available":true,"version":"%s","current":"%s"}\n' "$version" "$current"
+    printf '{"available":true,"current_known":true,"version":"%s","current":"%s"}\n' "$version" "$current"
 fi

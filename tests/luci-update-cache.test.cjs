@@ -17,7 +17,7 @@ test('update checks bypass stale manifests and isolate concurrent temporary file
   const log=path.join(dir,'fetch.log');
   const options={env:{...process.env,PATH:dir+':'+process.env.PATH,FETCH_LOG:log}};
   const results=await Promise.all([execFile('/bin/sh',[root+'sing-box-smart-update-check'],options),execFile('/bin/sh',[root+'sing-box-smart-update-check'],options)]);
-  for(const r of results)assert.deepEqual(JSON.parse(r.stdout),{available:true,version:'0.2.38',current:'0.2.37'});
+  for(const r of results)assert.deepEqual(JSON.parse(r.stdout),{available:true,current_known:true,version:'0.2.38',current:'0.2.37'});
   const files=fs.readFileSync(log,'utf8').trim().split('\n');
   assert.equal(new Set(files).size,2);
   for(const file of files)assert.equal(fs.existsSync(file),false,'temporary manifest must be removed');

@@ -58,10 +58,16 @@ return view.extend({
    return fs.exec(updateCheckPath,[]).then(function(r) {
     if (r.code !== 0) throw new Error(r.stderr || '更新检查失败');
     const result = JSON.parse(r.stdout || '{}');
-    updateText.textContent = result.available ? '最新版本 · '+result.version+'（当前 '+(result.current||'未知')+'）' : '当前版本 · '+(result.current||result.version||'未知');
+    if (result.current_known === false || !result.current) {
+     updateText.textContent = '无法确认当前版本 · 请重试';
+    } else if (result.available) {
+     updateText.textContent = '发现新版本 · '+result.version+'（当前 '+result.current+'）';
+    } else {
+     updateText.textContent = '已是最新版本 · '+result.current;
+    }
     updateText.classList.toggle('is-available',Boolean(result.available));
     updateButton.dataset.available = result.available ? 'yes' : 'no';
-    updateButton.textContent = result.available ? '立即更新' : '检查更新';
+    updateButton.textContent = result.available ? '更新' : '检查更新';
     updateButton.disabled = updating;
    }).catch(function() {
     updateText.textContent = '暂时无法检查';
