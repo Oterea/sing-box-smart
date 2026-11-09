@@ -12,10 +12,10 @@ const menu = JSON.parse(fs.readFileSync('package/luci-app-sing-box-smart/root/us
 
 test('LuCI ACL is least privilege and exposes only fixed init actions', () => {
  assert.deepEqual(acl.read.ubus, {service:['list']});
- assert.deepEqual(Object.keys(acl.read.file).sort(), ['/etc/init.d/sing-box-smart enabled','/usr/bin/sing-box-smart service-settings read','/usr/libexec/sing-box-smart-update-check','/usr/libexec/sing-box-smart-update-status'].sort());
- assert.deepEqual(Object.keys(acl.write.file).sort(), ['disable','enable','restart','start','stop'].map(a => `/etc/init.d/sing-box-smart ${a}`).concat(['/usr/libexec/sing-box-smart-update-start','/usr/bin/sing-box-smart service-settings apply','/etc/sing-box-smart/service.pending.json']).sort());
+ assert.deepEqual(Object.keys(acl.read.file).sort(), ['/etc/init.d/sing-box-smart enabled','/usr/bin/sing-box-smart config-settings check','/usr/bin/sing-box-smart config-settings read','/usr/libexec/sing-box-smart-update-check','/usr/libexec/sing-box-smart-update-status'].sort());
+ assert.deepEqual(Object.keys(acl.write.file).sort(), ['disable','enable','restart','start','stop'].map(a => `/etc/init.d/sing-box-smart ${a}`).concat(['/usr/libexec/sing-box-smart-update-start','/usr/bin/sing-box-smart config-settings apply','/etc/sing-box-smart/config.pending.json']).sort());
  assert.equal('ubus' in acl.write, false);
- assert.deepEqual(acl.write.file['/etc/sing-box-smart/service.pending.json'],['write']);
+ assert.deepEqual(acl.write.file['/etc/sing-box-smart/config.pending.json'],['write']);
 });
 
 test('LuCI view cannot execute user supplied commands and serializes controls', () => {
@@ -29,6 +29,7 @@ test('LuCI view cannot execute user supplied commands and serializes controls', 
  assert.match(view, /sing-box-smart-update-check/);
  assert.match(view, /sing-box-smart-update-start/);
  assert.match(view, /sing-box-smart-update-status/);
+ assert.match(view, /config-settings/);
  assert.match(view, /progress\+'%'/);
  assert.match(updateStatus, /state.*success/);
  assert.match(updateStatus, /rm -f.*\$status/);

@@ -4,7 +4,7 @@
 'require fs';
 'require poll';
 'require ui';
-'require sing-box-smart.settings as serviceSettings';
+'require sing-box-smart.coreconfig as coreConfig';
 const serviceName = 'sing-box-smart';
 const initPath = '/etc/init.d/' + serviceName;
 const updateCheckPath = '/usr/libexec/sing-box-smart-update-check';
@@ -12,7 +12,7 @@ const updateStartPath = '/usr/libexec/sing-box-smart-update-start';
 const updateStatusPath = '/usr/libexec/sing-box-smart-update-status';
 const list = rpc.declare({object:'service',method:'list',params:['name'],expect:{'':{}}});
 return view.extend({
- load: function() { return Promise.all([list(serviceName), fs.exec(initPath,['enabled']), fs.exec('/usr/bin/sing-box-smart',['service-settings','read'])]); },
+ load: function() { return Promise.all([list(serviceName), fs.exec(initPath,['enabled']), fs.exec('/usr/bin/sing-box-smart',['config-settings','read'])]); },
  render: function(data) {
   // Packaging versions the view, settings module and CSS together.
   const styleURL = L.resource('sing-box-smart/style.css');
@@ -24,12 +24,12 @@ return view.extend({
   const statusLine = E('div',{class:'sbs-status'},[dot,status]);
   const auto = E('input',{type:'checkbox',checked:data[1].code === 0});
   const autoLabel = E('label',{class:'sbs-autostart'},[auto,E('span',{},['开机自动启动'])]);
-  let savedService={};
-  try {if(data[2].code!==0)throw Error(data[2].stderr||'读取服务设置失败');savedService=JSON.parse(data[2].stdout||'{}');}
+  let savedConfig={};
+  try {if(data[2].code!==0)throw Error(data[2].stderr||'读取核心配置失败');savedConfig=JSON.parse(data[2].stdout||'{}');}
   catch(error){ui.addNotification(null,E('p',{},[error.message]));}
   const monitorLink = E('a',{class:'sbs-button sbs-open',href:window.location.protocol+'//'+window.location.hostname+':9797/',target:'_blank',rel:'noopener'},['监控面板']);
   function setMonitorAddress(settings){const port=(settings.listen||'').match(/:(\d+)$/);if(port)monitorLink.href=window.location.protocol+'//'+window.location.hostname+':'+port[1]+'/';}
-  setMonitorAddress(savedService);
+  setMonitorAddress(savedConfig.service||{});
   const actions = [];
   const updateText = E('span',{class:'sbs-update-text'},['正在检查更新…']);
   const updateButton = E('button',{type:'button',class:'cbi-button sbs-button sbs-update-button'},['检查更新']);
@@ -148,9 +148,9 @@ return view.extend({
       E('div',{class:'sbs-auto-row'},[autoLabel])
      ]),
      versionBlock,
-     serviceSettings.render(savedService,function(settings){
+     coreConfig.render(savedConfig,function(settings){
       if(busy)throw Error('服务正忙，请稍后重试');
-      setMonitorAddress(settings);
+      setMonitorAddress(settings.service||{});
       setBusy(true);
       return fs.exec(initPath,['restart']).then(function(result){if(result.code!==0)throw Error(result.stderr||'重启失败，设置已保存');return list(serviceName).then(update);}).finally(function(){setBusy(false);});
      },function(){return !busy && !updating;})

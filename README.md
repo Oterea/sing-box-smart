@@ -158,7 +158,7 @@ go run ./cmd/sing-box-smart \
   -settings connection.json
 ```
 
-GitHub Actions 使用 OpenWrt 25.12 SDK 构建 APK，并发布到 `latest` Release。`deploy/sing-box-smart.conf` 和 `deploy/sing-box-smart.init` 是服务配置和启动脚本示例。真实模式的完整说明见 [docs/real-mode.md](docs/real-mode.md)。
+GitHub Actions 使用 OpenWrt 25.12 SDK 构建 APK，并发布到 `latest` Release。`deploy/sing-box-smart.init` 是服务启动脚本示例；启动配置保存在 `/etc/sing-box-smart/` 下的 JSON 文件中。真实模式的完整说明见 [docs/real-mode.md](docs/real-mode.md)。
 
 ### 安装 APK
 

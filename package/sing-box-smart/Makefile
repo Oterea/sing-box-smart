@@ -22,14 +22,19 @@ define Package/sing-box-smart
 endef
 
 define Package/sing-box-smart/conffiles
-/etc/sing-box-smart.conf
+/etc/sing-box-smart/connection.json
+/etc/sing-box-smart/runtime.json
+/etc/sing-box-smart/service.json
 endef
 
 define Package/sing-box-smart/install
 	$(call GoPackage/Package/Install/Bin,$(1))
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) $(CURDIR)/../../deploy/sing-box-smart.init $(1)/etc/init.d/sing-box-smart
-	$(INSTALL_CONF) $(CURDIR)/../../deploy/sing-box-smart.conf $(1)/etc/sing-box-smart.conf
+	$(INSTALL_DIR) $(1)/etc/sing-box-smart
+	$(INSTALL_CONF) $(CURDIR)/../../deploy/defaults/connection.json $(1)/etc/sing-box-smart/connection.json
+	$(INSTALL_CONF) $(CURDIR)/../../deploy/defaults/runtime.json $(1)/etc/sing-box-smart/runtime.json
+	$(INSTALL_CONF) $(CURDIR)/../../deploy/defaults/service.json $(1)/etc/sing-box-smart/service.json
 	$(INSTALL_DIR) $(1)/lib/upgrade/keep.d
 	$(INSTALL_DATA) $(CURDIR)/../../deploy/sing-box-smart.keep $(1)/lib/upgrade/keep.d/sing-box-smart
 endef

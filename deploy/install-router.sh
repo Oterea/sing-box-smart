@@ -8,8 +8,11 @@ cp -f /etc/init.d/sbwatch /etc/init.d/sbwatch.backup
 
 cp -f /tmp/sing-box-smart-arm64-v2 /usr/bin/sing-box-smart
 chmod 755 /usr/bin/sing-box-smart
-cp -f /tmp/sing-box-smart.conf /etc/sing-box-smart.conf
-chmod 600 /etc/sing-box-smart.conf
+mkdir -p /etc/sing-box-smart
+[ -e /etc/sing-box-smart/connection.json ] || cp -f /tmp/connection.json /etc/sing-box-smart/connection.json
+[ -e /etc/sing-box-smart/runtime.json ] || cp -f /tmp/runtime.json /etc/sing-box-smart/runtime.json
+[ -e /etc/sing-box-smart/service.json ] || cp -f /tmp/service.json /etc/sing-box-smart/service.json
+chmod 600 /etc/sing-box-smart/*.json
 cp -f /tmp/sing-box-smart.init /etc/init.d/sing-box-smart
 chmod 755 /etc/init.d/sing-box-smart
 

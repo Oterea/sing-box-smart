@@ -66,6 +66,8 @@
 .sbs-page .sbs-control-block,.sbs-page .sbs-service-details,.sbs-page .sbs-version-block {min-width:0;margin:0;padding:0;border:0;background:transparent;box-shadow:none}
 .sbs-page .sbs-service-title {margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;color:var(--sbs-ink);font-size:var(--sbs-heading-size);line-height:1.5;font-weight:500}
 .sbs-service-settings {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,max(260px,calc(50% - 9px))),1fr));gap:14px 18px;margin-top:12px}
+.sbs-core-runtime {grid-column:1 / -1}
+.sbs-core-runtime textarea {width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.45;resize:vertical}
 .sbs-service-field {display:grid;grid-template-rows:auto 1fr auto;gap:6px;min-width:0}
 .sbs-service-field label {display:block;margin:0;color:var(--sbs-control-text);font-size:var(--sbs-font);font-weight:500}
 .sbs-setting-help {margin:0;color:var(--sbs-muted);font-size:12px;line-height:1.6;overflow-wrap:anywhere}

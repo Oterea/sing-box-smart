@@ -17,7 +17,10 @@
         "/usr/libexec/sing-box-smart-update-status": [
           "exec"
         ],
-        "/usr/bin/sing-box-smart service-settings read": [
+        "/usr/bin/sing-box-smart config-settings read": [
+          "exec"
+        ],
+        "/usr/bin/sing-box-smart config-settings check": [
           "exec"
         ]
       }
@@ -42,10 +45,10 @@
         "/usr/libexec/sing-box-smart-update-start": [
           "exec"
         ],
-        "/usr/bin/sing-box-smart service-settings apply": [
+        "/usr/bin/sing-box-smart config-settings apply": [
           "exec"
         ],
-        "/etc/sing-box-smart/service.pending.json": [
+        "/etc/sing-box-smart/config.pending.json": [
           "write"
         ]
       }

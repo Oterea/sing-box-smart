@@ -24,11 +24,13 @@ test('changing thresholds invalidates unchanged node rows so cached colors repai
  assert.notEqual(before,after);
 });
 
-test('LuCI service settings stage JSON with restricted ACL and never invoke a user command',()=>{
- const module=fs.readFileSync('package/luci-app-sing-box-smart/htdocs/luci-static/resources/sing-box-smart/settings.js','utf8');
+test('LuCI core settings stage JSON with restricted ACL and never invoke a user command',()=>{
+ const module=fs.readFileSync('package/luci-app-sing-box-smart/htdocs/luci-static/resources/sing-box-smart/coreconfig.js','utf8');
  const acl=JSON.parse(fs.readFileSync('package/luci-app-sing-box-smart/root/usr/share/rpcd/acl.d/luci-app-sing-box-smart.json','utf8'))['luci-app-sing-box-smart'];
- assert.match(module,/fs\.write\('\/etc\/sing-box-smart\/service\.pending\.json',JSON\.stringify\(settings\),384\)/);
- assert.match(module,/fs\.exec\('\/usr\/bin\/sing-box-smart',\['service-settings','apply'\]\)/);
- assert.deepEqual(acl.write.file['/etc/sing-box-smart/service.pending.json'],['write']);
- assert.equal(acl.write.file['/etc/sing-box-smart/service.json'],undefined);
+ assert.match(module,/fs\.write\('\/etc\/sing-box-smart\/config\.pending\.json',JSON\.stringify\(next\),384\)/);
+ assert.match(module,/fs\.exec\('\/usr\/bin\/sing-box-smart',\['config-settings','apply'\]\)/);
+ assert.match(module,/运行参数 JSON/);
+ assert.match(module,/config-settings','check/);
+ assert.deepEqual(acl.write.file['/etc/sing-box-smart/config.pending.json'],['write']);
+ assert.equal(acl.write.file['/etc/sing-box-smart/config.json'],undefined);
 });

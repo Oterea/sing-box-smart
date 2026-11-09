@@ -41,7 +41,9 @@ subprocess.run(['go','build','-trimpath','-ldflags=-s -w','-o',str(OUT/'sing-box
 package('sing-box-smart','aarch64_generic',[
  ('usr/bin/sing-box-smart',(OUT/'sing-box-smart').read_bytes(),0o755),
  ('etc/init.d/sing-box-smart',(ROOT/'deploy/sing-box-smart.init').read_bytes(),0o755),
- ('etc/sing-box-smart.conf',(ROOT/'deploy/sing-box-smart.conf').read_bytes(),0o600),
- ('lib/upgrade/keep.d/sing-box-smart',(ROOT/'deploy/sing-box-smart.keep').read_bytes(),0o644)],'libc',['/etc/sing-box-smart.conf'])
+ ('etc/sing-box-smart/connection.json',(ROOT/'deploy/defaults/connection.json').read_bytes(),0o600),
+ ('etc/sing-box-smart/runtime.json',(ROOT/'deploy/defaults/runtime.json').read_bytes(),0o600),
+ ('etc/sing-box-smart/service.json',(ROOT/'deploy/defaults/service.json').read_bytes(),0o600),
+ ('lib/upgrade/keep.d/sing-box-smart',(ROOT/'deploy/sing-box-smart.keep').read_bytes(),0o644)],'libc',['/etc/sing-box-smart/connection.json','/etc/sing-box-smart/runtime.json','/etc/sing-box-smart/service.json'])
 p=ROOT/'package/luci-app-sing-box-smart'
 package('luci-app-sing-box-smart','all',collect_luci_files(p,VERSION),'luci-base, sing-box-smart, uclient-fetch, jsonfilter')

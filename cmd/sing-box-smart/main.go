@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"sing-box-smart/internal/app"
 	"sing-box-smart/internal/config"
+	"sing-box-smart/internal/configbundle"
 	"sing-box-smart/internal/demo"
 	"sing-box-smart/internal/events"
 	"sing-box-smart/internal/gateway"
@@ -35,15 +36,19 @@ func run() error {
 		if len(os.Args) != 3 {
 			return fmt.Errorf("需要 read 或 apply")
 		}
-		return serviceconfig.Command(os.Args[2], serviceconfig.Path, serviceconfig.Pending, "/etc/sing-box-smart.conf", os.Stdout)
+		return serviceconfig.Command(os.Args[2], serviceconfig.Path, serviceconfig.Pending, os.Stdout)
+	}
+	if len(os.Args) > 1 && os.Args[1] == "config-settings" {
+		if len(os.Args) != 3 {
+			return fmt.Errorf("需要 read 或 apply")
+		}
+		return configbundle.Command(os.Args[2], os.Stdout)
 	}
 	cfg := config.Default()
-	var pins string
 	flag.StringVar(&cfg.Mode, "mode", cfg.Mode, "demo or real")
 	flag.StringVar(&cfg.API, "api", cfg.API, "sing-box Clash API base URL")
 	flag.StringVar(&cfg.Root, "root", cfg.Root, "root selector used for discovery, health and selection")
 	flag.StringVar(&cfg.TestURL, "test-url", cfg.TestURL, "URL used for delay checks")
-	flag.StringVar(&pins, "pins", "", "optional compatibility selectors: Name=selector,Name=selector")
 	flag.StringVar(&cfg.Listen, "listen", cfg.Listen, "HTTP listen address")
 	flag.StringVar(&cfg.LogDir, "log-dir", cfg.LogDir, "log directory")
 	flag.StringVar(&cfg.LogLevel, "log-level", cfg.LogLevel, "log level: debug, info, warn, error")
@@ -62,15 +67,8 @@ func run() error {
 	} else if saved.API != "" {
 		cfg.API, cfg.Root, cfg.Pattern = saved.API, saved.Root, saved.Pattern
 	}
-	if pins != "" {
-		parsed, err := config.ParsePins(pins)
-		if err != nil {
-			return err
-		}
-		cfg.Pins = parsed
-	}
 	if cfg.SettingsPath != "" {
-		serviceSettings, err := serviceconfig.Load(filepath.Join(filepath.Dir(cfg.SettingsPath), "service.json"), serviceconfig.Settings{Listen: cfg.Listen, GRPCAddress: cfg.GRPCAddress, GRPCSecret: cfg.GRPCSecret, LogDir: cfg.LogDir})
+		serviceSettings, err := serviceconfig.Load(filepath.Join(filepath.Dir(cfg.SettingsPath), "service.json"), serviceconfig.Defaults())
 		if err != nil {
 			return fmt.Errorf("读取服务设置: %w", err)
 		}

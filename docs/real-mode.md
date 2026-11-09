@@ -31,7 +31,7 @@ HTTP 节点失败响应和外层超时计为节点失败；其他连接错误计
 
 ## OpenWrt
 
-示例服务配置 `deploy/sing-box-smart.conf` 监听 `0.0.0.0:9797`，调用本机 API `127.0.0.1:9695`。LuCI 管理 init 服务启动、停止、重启、自启动；监控页面暂停/继续检测不等于停止进程。
+默认服务配置监听 `0.0.0.0:9797`，调用本机 API `127.0.0.1:9695`。启动配置位于 `/etc/sing-box-smart/connection.json`、`runtime.json` 和 `service.json`。LuCI 管理 init 服务启动、停止、重启、自启动；监控页面暂停/继续检测不等于停止进程。
 
 已有 `/etc/sing-box-smart/connection.json` 会优先覆盖启动配置中的 API、root、pattern。重启会清空评分和历史，保留该连接文件。参数未提供定时间隔的 CLI 开关，当前间隔在 `internal/config.Default` 中配置。
 

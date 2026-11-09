@@ -2,14 +2,25 @@ package real
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"sing-box-smart/internal/config"
 	"testing"
 )
 
+func newIPv4Server(h http.Handler) *httptest.Server {
+	l, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		panic(err)
+	}
+	s := &httptest.Server{Listener: l, Config: &http.Server{Handler: h}}
+	s.Start()
+	return s
+}
+
 func TestClientUsesClashAPI(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := newIPv4Server(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == "GET" && r.URL.Path == "/proxies/pei PIN":
 			w.Header().Set("Content-Type", "application/json")
@@ -54,7 +65,7 @@ func TestProbeTransportErrorIsAPIError(t *testing.T) {
 }
 
 func TestDynamicDiscoveryFallsBackToPinsWhenCatalogHasNoMatchingSelector(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := newIPv4Server(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
 		case "/proxies":
