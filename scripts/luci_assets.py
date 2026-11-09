@@ -26,7 +26,7 @@ def collect_luci_files(package_root, version):
         name = name.replace('resources/sing-box-smart/', f'resources/sing-box-smart/{release}/')
         data = source.read_bytes()
         if source.name == 'app.js':
-            data = data.replace(b'sing-box-smart.settings as serviceSettings', f'sing-box-smart.{release}.settings as serviceSettings'.encode())
+            data = data.replace(b'sing-box-smart.coreconfig as coreConfig', f'sing-box-smart.{release}.coreconfig as coreConfig'.encode())
             data = data.replace(b'sing-box-smart/style.css', f'sing-box-smart/{release}/style.css'.encode())
         files.append(('www/' + name, data, source.stat().st_mode & 0o777))
     return files
