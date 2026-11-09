@@ -17,7 +17,8 @@ func TestLongTermAggregatesTimeBucketsAndReloads(t *testing.T) {
 	}
 	// Keep the fixture inside the 14-day retention window. A fixed historical
 	// date eventually becomes validly pruned by Flush as calendar time advances.
-	base := time.Now().In(calendar.Location).Add(-time.Hour)
+	now := time.Now().In(calendar.Location).Add(-time.Hour)
+	base := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 7, 0, 0, calendar.Location)
 	for _, probe := range []domain.Probe{
 		{At: base, Success: true, DelayMS: 100},
 		{At: base.Add(2 * time.Minute), Success: true, DelayMS: 300},
