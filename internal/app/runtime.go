@@ -74,6 +74,8 @@ func (a *App) Run(ctx context.Context) {
 					}
 				}
 				a.airports = result.airports
+				a.rootSelection = ""
+				a.controlActive = false
 				a.reset(airport)
 			} else {
 				a.lastHealth = time.Now()

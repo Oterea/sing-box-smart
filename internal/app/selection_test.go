@@ -92,6 +92,21 @@ func TestInitialSelectionUsesActualAirportWithoutEnteringManual(t *testing.T) {
 	}
 }
 
+func TestRepeatedSelectionErrorsDoNotPostponeHealthRecovery(t *testing.T) {
+	a, err := New(context.Background(), config.Default(), demo.New(), log.New(io.Discard, "", 0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer a.probeCancel()
+	a.healthy = false
+	firstFailure := time.Now().Add(-10 * time.Second)
+	a.lastHealth = firstFailure
+	a.applySelectionObservation(selectionObservation{generation: a.generation, epoch: a.selectionEpoch, err: context.DeadlineExceeded})
+	if !a.lastHealth.Equal(firstFailure) {
+		t.Fatalf("repeated selection error postponed health retry: got %v want %v", a.lastHealth, firstFailure)
+	}
+}
+
 func TestUnmanagedRootStopsWritesAndCanBeSelectedAgain(t *testing.T) {
 	a, err := New(context.Background(), config.Default(), demo.New(), log.New(io.Discard, "", 0))
 	if err != nil {
