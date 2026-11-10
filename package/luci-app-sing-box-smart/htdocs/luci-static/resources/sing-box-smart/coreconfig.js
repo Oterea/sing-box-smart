@@ -11,6 +11,18 @@ function field(form, controls, key, label, help, value, type) {
  ]));
 }
 
+function secretControl(input) {
+ const toggle=E('button',{type:'button',class:'cbi-button sbs-button sbs-secret-toggle','aria-controls':input.id,'aria-pressed':'false','aria-label':'显示 gRPC 密钥'},['显示']);
+ toggle.addEventListener('click',function(){
+  const visible=input.type==='password';
+  input.type=visible?'text':'password';
+  toggle.textContent=visible?'隐藏':'显示';
+  toggle.setAttribute('aria-pressed',String(visible));
+  toggle.setAttribute('aria-label',visible?'隐藏 gRPC 密钥':'显示 gRPC 密钥');
+ });
+ return E('div',{class:'sbs-secret-control'},[input,toggle]);
+}
+
 return L.Class.extend({
  render: function(initial,onApply,canSave) {
   const form=E('div',{class:'sbs-service-settings'});
@@ -22,14 +34,15 @@ return L.Class.extend({
   field(form,controls,'pattern','策略组匹配规则','用于发现可监控的 selector 策略组。',connection.pattern);
   field(form,controls,'listen','smart 监听地址','端口冲突会导致 smart 核心无法启动。',service.listen);
   field(form,controls,'grpc_address','gRPC 地址','仅用于睡眠监控；不使用时可以留空。',service.grpc_address);
-  field(form,controls,'grpc_secret','gRPC 密钥','与 sing-box 原生 gRPC API 保持一致。',service.grpc_secret,'password');
-  field(form,controls,'log_dir','日志目录','目录必须是绝对路径且可写。',service.log_dir);
-  const runtime=E('textarea',{id:'sbs-core-runtime','class':'cbi-input-text','rows':'14','spellcheck':'false'},[JSON.stringify(initial.runtime||{},null,2)]);
-  form.appendChild(E('div',{class:'sbs-service-field sbs-core-runtime'},[
-   E('label',{'for':'sbs-core-runtime'},['运行参数 JSON']),
-   E('p',{class:'sbs-setting-help'},['9797 正常时可在运行设置中修改；核心未启动时可在这里修复运行参数。']),runtime
+  const secret=E('input',{id:'sbs-core-grpc_secret','aria-describedby':'sbs-core-help-grpc_secret',type:'password',value:service.grpc_secret||'',autocomplete:'off',class:'cbi-input-text'});
+  controls.grpc_secret=secret;
+  form.appendChild(E('div',{class:'sbs-service-field'},[
+   E('label',{'for':'sbs-core-grpc_secret'},['gRPC 密钥']),
+   E('p',{id:'sbs-core-help-grpc_secret',class:'sbs-setting-help'},['与 sing-box 原生 gRPC API 保持一致。']),
+   secretControl(secret)
   ]));
-  const status=E('p',{class:'sbs-setting-help'},['保存前会校验 JSON、地址、策略组参数和服务参数。']);
+  field(form,controls,'log_dir','日志目录','目录必须是绝对路径且可写。',service.log_dir);
+  const status=E('p',{class:'sbs-setting-help'},['运行参数由 9797 运行设置管理；这里仅修改核心启动和连接配置。']);
   const check=E('button',{type:'button',class:'cbi-button sbs-button'},['检查 sing-box']);
   check.addEventListener('click',function(){
    if(!canSave()){ui.addNotification(null,E('p',{},['服务正忙，请稍后检查。']));return;}
@@ -54,8 +67,6 @@ return L.Class.extend({
    next.service.grpc_address=controls.grpc_address.value.trim();
    next.service.grpc_secret=controls.grpc_secret.value;
    next.service.log_dir=controls.log_dir.value.trim();
-   try { next.runtime=JSON.parse(runtime.value); }
-   catch(error) { save.disabled=false; ui.addNotification(null,E('p',{},['运行参数 JSON 格式无效：'+error.message])); return; }
    save.disabled=true;
    fs.write('/etc/sing-box-smart/config.pending.json',JSON.stringify(next),384)
     .then(function(){return fs.exec('/usr/bin/sing-box-smart',['config-settings','apply']);})

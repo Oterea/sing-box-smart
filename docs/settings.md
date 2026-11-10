@@ -3,7 +3,7 @@
 ## 在哪里修改
 
 - **9797 → 运行设置**：检测频率、探测地址与超时、自动睡眠、日志级别、延迟颜色和高级判断参数。保存后立即生效，不重启服务。
-- **LuCI → sing-box-smart → 核心配置**：当 smart 核心未启动、无法打开 9797 时，仍可修改 API 地址、根策略组、匹配规则、监听地址、gRPC、日志目录和运行参数 JSON，并保存后重启 smart。
+- **LuCI → sing-box-smart → 核心配置**：当 smart 核心未启动、无法打开 9797 时，仍可修改 API 地址、根策略组、匹配规则、监听地址、gRPC 和日志目录，并保存后重启 smart。这里不编辑运行参数 JSON，运行参数统一在 9797 中修改。
 - API 地址、根策略组和匹配正则在 9797 正常时也可以从连接设置修改；LuCI 核心配置是故障恢复入口。
 
 LuCI 的“检查 sing-box”按钮调用独立的 `config-settings check` 命令，不依赖 smart 面板进程；它会直接检查 API、根策略组和策略组发现结果。检查失败时仍可先保存本地配置，修正 sing-box 后再重启 smart。
@@ -52,12 +52,9 @@ LuCI 的“检查 sing-box”按钮调用独立的 `config-settings check` 命�
 
 OpenWrt 中的文件：
 
-- `/etc/sing-box-smart/connection.json`：sing-box API、根策略组和匹配规则。
-- `/etc/sing-box-smart/runtime.json`：探测、评分、睡眠和显示参数。
-- `/etc/sing-box-smart/service.json`：监听、gRPC 和日志目录。
 - `/etc/sing-box-smart/connection.json`：API、根策略组、匹配正则。
-- `/etc/sing-box-smart/runtime.json`：9797 运行设置，覆盖对应启动值。
-- `/etc/sing-box-smart/service.json`：LuCI 服务设置，覆盖对应启动值。
+- `/etc/sing-box-smart/runtime.json`：9797 运行设置。
+- `/etc/sing-box-smart/service.json`：LuCI 核心启动设置，包括监听、gRPC 和日志目录。
 
 新文件以临时文件写入、同步后原子替换，权限为 0600。设置目录已在系统升级保留列表中，软件包更新也不会覆盖这些用户生成文件。其他平台的运行设置位于 `-settings` 文件所在目录的 `runtime.json`，服务设置为同目录 `service.json`。
 
