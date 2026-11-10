@@ -24,9 +24,20 @@ jobs:
         run: |
           test -n "$APK_SIGN_PRIVATE_KEY"
           apk_tool="$RUNNER_TEMP/openwrt-apk"
-          sdk_url='https://downloads.openwrt.org/releases/25.12.2/targets/armsr/armv8/openwrt-sdk-25.12.2-armsr-armv8_gcc-14.3.0_musl.Linux-x86_64.tar.zst'
+          sdk_archive="$RUNNER_TEMP/sdk.tar.zst"
           mkdir -p "$RUNNER_TEMP/sdk"
-          curl --fail --location "$sdk_url" -o "$RUNNER_TEMP/sdk.tar.zst"
+          downloaded=0
+          for sdk_url in \
+            'https://downloads.openwrt.org/releases/25.12.2/targets/armsr/armv8/openwrt-sdk-25.12.2-armsr-armv8_gcc-14.3.0_musl.Linux-x86_64.tar.zst' \
+            'https://mirror.sjtu.edu.cn/openwrt/releases/25.12.2/targets/armsr/armv8/openwrt-sdk-25.12.2-armsr-armv8_gcc-14.3.0_musl.Linux-x86_64.tar.zst'; do
+            echo "Trying OpenWrt SDK: $sdk_url"
+            if curl --fail --location --connect-timeout 20 --max-time 300 "$sdk_url" -o "$sdk_archive"; then
+              downloaded=1
+              break
+            fi
+            rm -f "$sdk_archive"
+          done
+          test "$downloaded" = 1
           tar --zstd -x -f "$RUNNER_TEMP/sdk.tar.zst" --strip-components=1 -C "$RUNNER_TEMP/sdk"
           apk_tool="$RUNNER_TEMP/sdk/staging_dir/host/bin/apk"
           key="$RUNNER_TEMP/sing-box-smart-private.pem"
@@ -45,10 +56,8 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          APK_SIGN_PUBLIC_KEY: ${{ secrets.APK_SIGN_PUBLIC_KEY }}
         run: |
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
-          test -n "$APK_SIGN_PUBLIC_KEY"
-          printf '%s' "$APK_SIGN_PUBLIC_KEY" > public/public-key.pem
+          cp public-key.pem public/public-key.pem
           npx --yes wrangler@4 pages deploy public --project-name sing-box-smart
