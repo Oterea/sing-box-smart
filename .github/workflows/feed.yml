@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: publish-feed
+  cancel-in-progress: true
+
 env:
   OPENWRT_SDK_URLS: >-
     https://downloads.openwrt.org/releases/25.12.2/targets/armsr/armv8/openwrt-sdk-25.12.2-armsr-armv8_gcc-14.3.0_musl.Linux-x86_64.tar.zst
@@ -18,6 +22,15 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+      - name: Set package version
+        run: |
+          # Run 8 published 0.2.0-r1. Each later run advances one decimal digit.
+          version_index=$((20 + GITHUB_RUN_NUMBER - 8))
+          version="$((version_index / 100)).$(((version_index / 10) % 10)).$((version_index % 10))"
+          sed -i "s/^PKG_VERSION?=.*/PKG_VERSION?=$version/" \
+            package/sing-box-smart/Makefile package/luci-app-sing-box-smart/Makefile
+          echo "Publishing sing-box-smart and LuCI $version-r1"
+          grep '^PKG_VERSION?=' package/sing-box-smart/Makefile package/luci-app-sing-box-smart/Makefile
       - uses: openwrt/gh-action-sdk@main
         env:
           ARCH: aarch64_generic-openwrt-25.12
