@@ -1,0 +1,53 @@
+name: publish-feed
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: openwrt/gh-action-sdk@main
+        env:
+          ARCH: aarch64_generic-openwrt-25.12
+          PACKAGES: sing-box-smart luci-app-sing-box-smart
+          V: s
+      - name: Prepare signed feed
+        env:
+          APK_SIGN_PRIVATE_KEY: ${{ secrets.APK_SIGN_PRIVATE_KEY }}
+        run: |
+          test -n "$APK_SIGN_PRIVATE_KEY"
+          apk_tool="$RUNNER_TEMP/openwrt-apk"
+          sdk_url='https://downloads.openwrt.org/releases/25.12.2/targets/armsr/armv8/openwrt-sdk-25.12.2-armsr-armv8_gcc-14.3.0_musl.Linux-x86_64.tar.zst'
+          mkdir -p "$RUNNER_TEMP/sdk"
+          curl --fail --location "$sdk_url" -o "$RUNNER_TEMP/sdk.tar.zst"
+          tar --zstd -x -f "$RUNNER_TEMP/sdk.tar.zst" --strip-components=1 -C "$RUNNER_TEMP/sdk"
+          apk_tool="$RUNNER_TEMP/sdk/staging_dir/host/bin/apk"
+          key="$RUNNER_TEMP/sing-box-smart-private.pem"
+          printf '%s' "$APK_SIGN_PRIVATE_KEY" > "$key"
+          mkdir -p public/openwrt-25.12/aarch64_generic
+          find bin/packages -type f -name 'sing-box-smart-*.apk' -exec cp {} public/openwrt-25.12/aarch64_generic/ \;
+          find bin/packages -type f -name 'luci-app-sing-box-smart-*.apk' -exec cp {} public/openwrt-25.12/aarch64_generic/ \;
+          for package in public/openwrt-25.12/aarch64_generic/*.apk; do
+            "$apk_tool" --allow-untrusted adbsign --sign-key "$key" --reset-signatures "$package"
+          done
+          "$apk_tool" mkndx --allow-untrusted --sign-key "$key" \
+            --output public/openwrt-25.12/aarch64_generic/packages.adb \
+            public/openwrt-25.12/aarch64_generic/*.apk
+      - name: Publish feed to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          APK_SIGN_PUBLIC_KEY: ${{ secrets.APK_SIGN_PUBLIC_KEY }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test -n "$APK_SIGN_PUBLIC_KEY"
+          printf '%s' "$APK_SIGN_PUBLIC_KEY" > public/public-key.pem
+          npx --yes wrangler@4 pages deploy public --project-name sing-box-smart

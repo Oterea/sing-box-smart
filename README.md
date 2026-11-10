@@ -18,9 +18,9 @@
 - [工作机制](#工作机制)
 - [面板和接口](#面板和接口)
 - [OpenWrt / LuCI](#openwrt--luci)
-  - [安装 APK](#安装-apk)
-    - [SSH 命令行安装](#ssh-命令行安装)
-    - [LuCI 页面安装](#luci-页面安装)
+  - [从 Feed 安装](#从-feed-安装)
+  - [直接安装 APK](#直接安装-apk)
+  - [卸载](#卸载)
 - [开发和测试](#开发和测试)
 - [已知边界](#已知边界)
 
@@ -163,13 +163,24 @@ go run ./cmd/sing-box-smart \
 
 GitHub Actions 使用 OpenWrt 25.12 SDK 构建 APK，并发布到 `latest` Release。`deploy/sing-box-smart.init` 是服务启动脚本示例；启动配置保存在 `/etc/sing-box-smart/` 下的 JSON 文件中。真实模式的完整说明见 [docs/real-mode.md](docs/real-mode.md)。
 
-### 安装 APK
+### 从 Feed 安装
 
-ImmortalWrt 25.12 使用 `apk` 管理软件包。下面两种方式都需要同时安装核心服务包和 LuCI 管理页面包。
+推荐使用 Feed，Feed 会处理签名、版本和依赖。下载并执行仓库中的 `install.sh`：
 
-#### SSH 命令行安装
+```sh
+wget -O - https://raw.githubusercontent.com/Oterea/sing-box-smart/main/install.sh | sh
+```
 
-登录路由器后执行：
+也可以只配置 Feed，不立即安装：
+
+```sh
+wget -O - https://raw.githubusercontent.com/Oterea/sing-box-smart/main/feed.sh | sh
+apk add sing-box-smart luci-app-sing-box-smart
+```
+
+### 直接安装 APK
+
+这是 Feed 不可用时的备用方式：
 
 ```sh
 cd /tmp
@@ -184,15 +195,7 @@ apk add --allow-untrusted \
 
 `--allow-untrusted` 用于安装 GitHub Release 中的自建 APK。核心包首次安装时会自动启用并启动服务，监控面板地址默认为 `http://路由器地址:9797/`。
 
-#### LuCI 页面安装
-
-1. 登录路由器的 LuCI 管理页面。
-2. 打开“系统 → 软件包”。
-3. 使用本地上传或安装入口，先上传 `sing-box-smart-latest.apk`，再上传 `luci-app-sing-box-smart-latest.apk`。
-4. 如果页面提示软件包未签名，允许安装本地 APK。
-5. 安装完成后，核心包会自动启用并启动 `sing-box-smart`。
-
-#### 卸载
+### 卸载
 
 完整卸载时先停止服务，再移除两个 APK：
 
@@ -200,7 +203,7 @@ apk add --allow-untrusted \
 apk del --purge luci-app-sing-box-smart sing-box-smart
 ```
 
-卸载钩子会清理配置、日志、更新临时文件、LuCI 缓存和系统升级保留文件。重新安装会重新使用仓库中的默认 JSON。
+也可以执行仓库中的 `uninstall.sh`，它还会删除 Feed 配置和公钥。卸载钩子会清理配置、日志、更新临时文件、LuCI 缓存和系统升级保留文件。重新安装会重新使用仓库中的默认 JSON。
 
 ## 开发和测试
 
