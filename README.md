@@ -17,7 +17,7 @@
 
 - [工作机制](#工作机制)
 - [面板和接口](#面板和接口)
-- [OpenWrt / LuCI](#openwrt--luci)
+- [安装/卸载](#安装卸载)
   - [安装](#安装)
   - [卸载](#卸载)
 - [开发和测试](#开发和测试)
@@ -124,7 +124,7 @@ score = L / (p³ × (1 - f)³) × jitter_penalty
 
 主要 HTTP 接口见 [docs/api.md](docs/api.md)。
 
-## OpenWrt / LuCI
+## 安装/卸载
 
 仓库同时提供：
 
