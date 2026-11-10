@@ -54,7 +54,7 @@ test('LuCI menu and init script point at the packaged service', () => {
 });
 
 test('LuCI updates preserve the active WRT login session', () => {
- assert.doesNotMatch(packer, /rpcd restart/);
+ assert.doesNotMatch(corePackage, /rpcd restart/);
  assert.doesNotMatch(updateInstall, /rpcd restart/);
  assert.match(updateInstall, /sing-box-smart restart/);
 });
