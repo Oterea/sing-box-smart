@@ -8,38 +8,55 @@ on:
 permissions:
   contents: read
 
+env:
+  OPENWRT_SDK_URLS: >-
+    https://downloads.openwrt.org/releases/25.12.2/targets/armsr/armv8/openwrt-sdk-25.12.2-armsr-armv8_gcc-14.3.0_musl.Linux-x86_64.tar.zst
+    https://mirror.sjtu.edu.cn/openwrt/releases/25.12.2/targets/armsr/armv8/openwrt-sdk-25.12.2-armsr-armv8_gcc-14.3.0_musl.Linux-x86_64.tar.zst
+
 jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: openwrt/gh-action-sdk@main
         env:
           ARCH: aarch64_generic-openwrt-25.12
           PACKAGES: sing-box-smart luci-app-sing-box-smart
           V: s
-      - name: Prepare signed feed
-        env:
-          APK_SIGN_PRIVATE_KEY: ${{ secrets.APK_SIGN_PRIVATE_KEY }}
+      - name: Restore OpenWrt SDK cache
+        id: sdk-cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ runner.temp }}/openwrt-sdk
+          key: openwrt-sdk-25.12.2-armsr-armv8-apktools-${{ runner.os }}
+      - name: Download and extract OpenWrt APK tooling
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
         run: |
-          test -n "$APK_SIGN_PRIVATE_KEY"
-          apk_tool="$RUNNER_TEMP/openwrt-apk"
-          sdk_archive="$RUNNER_TEMP/sdk.tar.zst"
-          mkdir -p "$RUNNER_TEMP/sdk"
+          mkdir -p "$RUNNER_TEMP/openwrt-sdk"
+          sdk_archive="$RUNNER_TEMP/openwrt-sdk.tar.zst"
           downloaded=0
-          for sdk_url in \
-            'https://downloads.openwrt.org/releases/25.12.2/targets/armsr/armv8/openwrt-sdk-25.12.2-armsr-armv8_gcc-14.3.0_musl.Linux-x86_64.tar.zst' \
-            'https://mirror.sjtu.edu.cn/openwrt/releases/25.12.2/targets/armsr/armv8/openwrt-sdk-25.12.2-armsr-armv8_gcc-14.3.0_musl.Linux-x86_64.tar.zst'; do
+          for sdk_url in $OPENWRT_SDK_URLS; do
             echo "Trying OpenWrt SDK: $sdk_url"
-            if curl --fail --location --connect-timeout 20 --max-time 300 "$sdk_url" -o "$sdk_archive"; then
+            if curl --fail --location --silent --show-error \
+              --retry 5 --retry-all-errors --retry-delay 5 \
+              --connect-timeout 20 --max-time 300 "$sdk_url" \
+              -o "$sdk_archive"; then
               downloaded=1
               break
             fi
             rm -f "$sdk_archive"
           done
           test "$downloaded" = 1
-          tar --zstd -x -f "$RUNNER_TEMP/sdk.tar.zst" --strip-components=1 -C "$RUNNER_TEMP/sdk"
-          apk_tool="$RUNNER_TEMP/sdk/staging_dir/host/bin/apk"
+          tar --zstd -x -f "$sdk_archive" \
+            --strip-components=1 -C "$RUNNER_TEMP/openwrt-sdk"
+          rm -f "$sdk_archive"
+          test -x "$RUNNER_TEMP/openwrt-sdk/staging_dir/host/bin/apk"
+      - name: Prepare signed feed
+        env:
+          APK_SIGN_PRIVATE_KEY: ${{ secrets.APK_SIGN_PRIVATE_KEY }}
+        run: |
+          test -n "$APK_SIGN_PRIVATE_KEY"
+          apk_tool="$RUNNER_TEMP/openwrt-sdk/staging_dir/host/bin/apk"
           key="$RUNNER_TEMP/sing-box-smart-private.pem"
           printf '%s' "$APK_SIGN_PRIVATE_KEY" > "$key"
           mkdir -p public/openwrt-25.12/aarch64_generic
