@@ -164,16 +164,16 @@ GitHub Actions 使用 OpenWrt 25.12 SDK 构建并签名 APK，发布到 Cloudfla
 
 ### 从 Feed 安装
 
-推荐使用 Feed，Feed 会处理签名、版本和依赖。下载并执行仓库中的 `install.sh`：
+推荐使用 Feed，Feed 会处理签名、版本和依赖。下载并执行 Pages 上的 `install.sh`：
 
 ```sh
-wget -O - https://raw.githubusercontent.com/Oterea/sing-box-smart/main/install.sh | sh
+wget -O - https://sing-box-smart.pages.dev/install.sh | sh
 ```
 
-也可以只配置 Feed，不立即安装：
+也可以只配置 Pages Feed，不立即安装：
 
 ```sh
-wget -O - https://raw.githubusercontent.com/Oterea/sing-box-smart/main/feed.sh | sh
+wget -O - https://sing-box-smart.pages.dev/feed.sh | sh
 apk add sing-box-smart luci-app-sing-box-smart
 ```
 
@@ -185,7 +185,7 @@ apk add sing-box-smart luci-app-sing-box-smart
 apk del --purge luci-app-sing-box-smart sing-box-smart
 ```
 
-也可以执行仓库中的 `uninstall.sh`，它还会删除 Feed 配置和公钥。卸载钩子会清理配置、日志、LuCI 缓存和系统升级保留文件。重新安装会重新使用仓库中的默认 JSON。
+也可以执行 Pages 上的 `uninstall.sh`，它还会删除 Feed 配置和公钥。卸载钩子会清理配置、日志、LuCI 缓存和系统升级保留文件。重新安装会重新使用仓库中的默认 JSON。
 
 ## 开发和测试
 

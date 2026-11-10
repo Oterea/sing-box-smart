@@ -63,6 +63,7 @@ test('Feed is the only supported installation path', () => {
  assert.match(install, /feed\.sh/);
  assert.match(install, /apk add sing-box-smart luci-app-sing-box-smart/);
  assert.match(uninstall, /apk del --purge luci-app-sing-box-smart sing-box-smart/);
- assert.doesNotMatch(install, /opkg|allow-untrusted|github\.com\/.*\/releases/);
+ assert.match(install, /sing-box-smart\.pages\.dev\/feed\.sh/);
+ assert.doesNotMatch(install, /opkg|allow-untrusted|github\.com\/.*\/releases|raw\.githubusercontent\.com/);
  assert.doesNotMatch(uninstall, /opkg|allow-untrusted/);
 });

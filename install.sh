@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-feed_url='https://raw.githubusercontent.com/Oterea/sing-box-smart/main/feed.sh'
+feed_url='https://sing-box-smart.pages.dev/feed.sh'
 tmp="/tmp/sing-box-smart-feed.$$"
 trap 'rm -f "$tmp"' EXIT
 wget -q -O "$tmp" "$feed_url"
