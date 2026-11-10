@@ -48,7 +48,7 @@ func TestSettingsHTTPValidationAndOrigins(t *testing.T) {
 	}
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest("GET", "http://smart/api/settings", nil))
-	if response.Code != 200 || !strings.Contains(response.Body.String(), `"delay_green_ms":200`) {
+	if response.Code != 200 || !strings.Contains(response.Body.String(), `"delay_green_ms":300`) {
 		t.Fatal("read settings failed")
 	}
 }

@@ -16,7 +16,7 @@ SSE 首条消息包含 `full:true` 和全部节点，后续 `full:false` 的 `no
 | 接口 | JSON 请求体 | 行为 |
 | --- | --- | --- |
 | `POST /api/control/airport` | `{ "id": "tolink PIN" }` | 选择策略组，确认后重新启动观察；写入当前配置的根策略组 |
-| `POST /api/control/node` | `{ "id": "实际节点名称" }` | 对目标最多进行 3 次确认探测后手动选择，不受自动 1.4 倍门槛约束；检测继续运行，但不会再自动切换 |
+| `POST /api/control/node` | `{ "id": "实际节点名称" }` | 对目标最多进行 3 次确认探测后手动选择，不受自动 1.5 倍门槛约束；检测继续运行，但不会再自动切换 |
 | `POST /api/control/auto` | `{}` | 开启 smart 自动选择；保持当前节点，后续按正常评分和切换条件决定是否切换 |
 | `POST /api/control/manual` | `{}` | 开启手动选择；保持 sing-box 当前节点，继续检测和更新数据 |
 | `POST /api/control/recheck` | `{}` | 将当前组所有节点安排为到期；已有在途探测不重复启动 |
@@ -47,10 +47,10 @@ SSE 首条消息包含 `full:true` 和全部节点，后续 `full:false` 的 `no
 
 | 接口 | JSON 请求体 | 行为 |
 | --- | --- | --- |
-| `POST /api/config` | `{ "api": "http://127.0.0.1:9695", "root": "proxy", "pattern": "PIN$" }` | 一次验证、发现并应用完整连接设置；推荐面板使用此接口 |
+| `POST /api/config` | `{ "api": "http://127.0.0.1:9695", "root": "proxy", "pattern": "SMART$" }` | 一次验证、发现并应用完整连接设置；推荐面板使用此接口 |
 | `POST /api/config/api/test` | `{ "api": "http://127.0.0.1:9695" }` | 用独立客户端读取策略组，成功返回 200，不替换活动连接 |
 | `POST /api/config/api` | `{ "api": "http://127.0.0.1:9695" }` | 验证可读取、保存连接、替换客户端、重置启动观察 |
-| `POST /api/config/filters` | `{ "root": "proxy", "pattern": "PIN$" }` | 验证正则、读取匹配策略组、保存并重置启动观察 |
+| `POST /api/config/filters` | `{ "root": "proxy", "pattern": "SMART$" }` | 验证正则、读取匹配策略组、保存并重置启动观察 |
 
 `/api/config/api` 和 `/api/config/filters` 保留用于兼容分步调用；面板使用 `/api/config`，避免地址和策略组设置分两次生效。完整接口只有在新客户端发现成功后才替换当前连接。
 

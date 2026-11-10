@@ -22,7 +22,7 @@ function overviewRanks(nodes,days){
  return result;
 }
 function overviewColumnCount(){return longTermOverviewMetrics.length+2;}
-function overviewClass(summary,snapshot=longTermOverviewState){return stabilityConclusion(summary,Number(snapshot?.settings?.delay_green_ms??200),Number(snapshot?.settings?.delay_yellow_ms??600));}
+function overviewClass(summary,snapshot=longTermOverviewState){return stabilityConclusion(summary,Number(snapshot?.settings?.delay_green_ms??300),Number(snapshot?.settings?.delay_yellow_ms??600));}
 function overviewSort(nodes,days){return [...nodes].sort((a,b)=>{const as=overviewSummary(a,days),bs=overviewSummary(b,days);for(const key of longTermOverviewSorts){const metric=longTermOverviewMetrics.find(item=>item.key===key),av=overviewValue(as,key),bv=overviewValue(bs,key);if(av==null&&bv==null)continue;if(av==null)return 1;if(bv==null)return -1;if(av!==bv)return(av-bv)*(metric.direction==='asc'?1:-1);}return a.name.localeCompare(b.name);});}
 function overviewTable(nodes,days,snapshot){
  const ranks=overviewRanks(nodes,days),groups=new Map(longTermOverviewGroups.map(group=>[group,[]]));

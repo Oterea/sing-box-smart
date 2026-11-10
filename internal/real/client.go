@@ -58,7 +58,7 @@ type apiError struct {
 func New(c config.Config) *Client {
 	pattern := c.Pattern
 	if pattern == "" {
-		pattern = "PIN$"
+		pattern = "SMART$"
 	}
 	return &Client{base: strings.TrimRight(c.API, "/"), root: c.Root, pattern: pattern, testURL: c.TestURL, pins: c.Pins, hc: &http.Client{Transport: &http.Transport{MaxIdleConns: 64, MaxIdleConnsPerHost: 64, IdleConnTimeout: 90 * time.Second, DialContext: (&net.Dialer{Timeout: 3 * time.Second}).DialContext}}}
 }

@@ -29,7 +29,7 @@ gRPC 断开时活动源会自动重连，不主动发送睡眠指令。空闲判
 推荐在 LuCI 服务设置中填写 gRPC 地址与密钥，在 9797 运行设置中启用并调整睡眠参数。下面是兼容的命令行初始值，面板保存值优先；详见 [面板设置](settings.md)。
 
 ```sh
--grpc 127.0.0.1:9090 \
+-grpc 127.0.0.1:9696 \
 -grpc-secret '你的 secret' \
 -sleep-monitor=true \
 -sleep-idle=10m \

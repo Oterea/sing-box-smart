@@ -20,7 +20,7 @@ func TestDefaultReadAndAtomicValidatedApply(t *testing.T) {
 	if err := json.Unmarshal(out.Bytes(), &s); err != nil {
 		t.Fatal(err)
 	}
-	if s.GRPCAddress != Defaults().GRPCAddress || s.GRPCSecret != "" {
+	if s.GRPCAddress != Defaults().GRPCAddress || s.GRPCSecret != Defaults().GRPCSecret {
 		t.Fatalf("incorrect defaults %+v", s)
 	}
 	s.Listen = "127.0.0.1:9798"

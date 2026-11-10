@@ -28,7 +28,7 @@ const elapsedTime = value => {
  return [hours?`${hours} 小时`:'',minutes?`${minutes} 分钟`:'',seconds||!total?`${seconds} 秒`:''].filter(Boolean).join(' ');
 };
 const tone = (value,best) => value == null ? 'none' : value <= best*1.4 ? 'good' : value <= best*2.5 ? 'medium' : 'bad';
-const delayTone = value => value == null ? 'none' : value <= (state?.settings?.delay_green_ms??200) ? 'good' : value <= (state?.settings?.delay_yellow_ms??600) ? 'medium' : 'bad';
+const delayTone = value => value == null ? 'none' : value <= (state?.settings?.delay_green_ms??300) ? 'good' : value <= (state?.settings?.delay_yellow_ms??600) ? 'medium' : 'bad';
 function serviceStatus(s, elapsed, observationSeconds) {
  if(s.sleeping)return ['自动睡眠','muted','长时间低流量，已自动暂停检测；达到唤醒流量阈值后自动恢复。'];
  if(s.paused)return ['检测已暂停','muted','检测已暂停，分数和历史保留。'];
@@ -156,7 +156,7 @@ function render(s){
  $('selection-manual').classList.toggle('active',s.selection_mode==='manual');
  const apiInput=$('api-address');
  if(apiInput && apiInput.dataset && !apiInput.dataset.loaded){apiInput.value=s.api_address||'';apiInput.dataset.loaded='yes';}
- if($('group-root') && $('group-root').dataset && !$('group-root').dataset.loaded){$('group-root').value=s.group_root||'proxy';$('group-pattern').value=s.group_pattern||'PIN$';$('group-root').dataset.loaded='yes';}
+ if($('group-root') && $('group-root').dataset && !$('group-root').dataset.loaded){$('group-root').value=s.group_root||'proxy';$('group-pattern').value=s.group_pattern||'SMART$';$('group-root').dataset.loaded='yes';}
  $('connection').parentElement.dataset.health=s.api_healthy?'ok':'error';
  $('connection').textContent=s.api_healthy?'后端已连接':'管理接口异常';
  $('mode-note-text').textContent=s.mode==='real'?'真实模式 · 已连接 sing-box API':'模拟模式 · 切换仅作用于模拟接口';

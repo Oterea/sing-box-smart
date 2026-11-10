@@ -1,1 +1,1 @@
-{"listen":"0.0.0.0:9797","grpc_address":"127.0.0.1:9090","grpc_secret":"","log_dir":"/var/log/sing-box-smart"}
+{"listen":"0.0.0.0:9797","grpc_address":"127.0.0.1:9696","grpc_secret":"singbox","log_dir":"/var/log/sing-box-smart"}

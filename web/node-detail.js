@@ -1,5 +1,5 @@
 function stabilityLabel(summary) {
- return stabilityConclusion(summary,Number(state?.settings?.delay_green_ms??200),Number(state?.settings?.delay_yellow_ms??600));
+ return stabilityConclusion(summary,Number(state?.settings?.delay_green_ms??300),Number(state?.settings?.delay_yellow_ms??600));
 }
 function detailMetric(id,label,value) { return `<div class="detail-metric"><span>${esc(label)}</span><strong id="${id}">${esc(value)}</strong></div>`; }
 function paintDetailChart(scroll, samples) {
@@ -56,14 +56,14 @@ function updateDetailChart(chart, samples, preserveScroll, followLatest) {
  });
 }
 function longTermSummaryText(summary) {
- return stabilityConclusion(summary,Number(state?.settings?.delay_green_ms??200),Number(state?.settings?.delay_yellow_ms??600))[0];
+ return stabilityConclusion(summary,Number(state?.settings?.delay_green_ms??300),Number(state?.settings?.delay_yellow_ms??600))[0];
 }
 function renderLongTerm(data) {
  const content=$('node-detail-content');
  if(!content)return;
  const days=(data?.days||[]).slice().sort((a,b)=>a.date.localeCompare(b.date)).reverse();
  if(!days.length){content.innerHTML='<div class="detail-empty">暂无 14 天聚合数据</div>';return;}
- const thresholds={green:Number(state?.settings?.delay_green_ms??200),yellow:Number(state?.settings?.delay_yellow_ms??600)};
+ const thresholds={green:Number(state?.settings?.delay_green_ms??300),yellow:Number(state?.settings?.delay_yellow_ms??600)};
  content.innerHTML=days.map(day=>`<section class="longterm-day"><div class="longterm-day-heading"><strong>${esc(day.date)}</strong><span class="subtle">${esc(longTermSummaryText(day.summary))} · P50 ${esc(detailMs(day.summary?.p50_ms))} · P90 ${esc(detailMs(day.summary?.p90_ms))}</span></div>${longTermChart(day,thresholds)}</section>`).join('');
 }
 async function loadLongTerm() {

@@ -24,7 +24,7 @@ type Settings struct {
 }
 
 func Defaults() Settings {
-	return Settings{Listen: "0.0.0.0:9797", GRPCAddress: "127.0.0.1:9090", LogDir: "/var/log/sing-box-smart"}
+	return Settings{Listen: "0.0.0.0:9797", GRPCAddress: "127.0.0.1:9696", GRPCSecret: "singbox", LogDir: "/var/log/sing-box-smart"}
 }
 func validAddress(value string, ipOnly bool) bool {
 	host, port, err := net.SplitHostPort(value)
