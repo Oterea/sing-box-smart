@@ -49,6 +49,14 @@ func (a *App) applySelectionObservation(o selectionObservation) {
 		return
 	}
 	if o.err != nil || o.root == "" {
+		if o.err != nil {
+			if a.healthy {
+				a.events.Record("api", "管理接口异常，等待 sing-box 恢复")
+			}
+			a.healthy = false
+			a.lastHealth = time.Now()
+			a.revision++
+		}
 		// Unknown current selection cannot safely authorize automatic writes.
 		if a.controlActive {
 			a.controlActive = false

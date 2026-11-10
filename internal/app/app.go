@@ -69,6 +69,10 @@ type observation struct {
 	probe      domain.Probe
 	err        error
 }
+type healthResult struct {
+	airports []domain.Airport
+	err      error
+}
 type changed struct {
 	kind, target string
 	result       switching.Result
@@ -107,7 +111,7 @@ type App struct {
 	requests                               chan request
 	results                                chan observation
 	changes                                chan changed
-	health                                 chan error
+	health                                 chan healthResult
 	selection                              chan selectionObservation
 	rootCtx, probeCtx                      context.Context
 	probeCancel                            context.CancelFunc
@@ -136,7 +140,7 @@ func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.L
 		return nil, err
 	}
 	probeCtx, probeCancel := context.WithCancel(ctx)
-	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger, MinLevel: minLevel}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), selection: make(chan selectionObservation, 1), activityEvents: make(chan activity.Event, 256), sleepController: sleep.New(sleep.Config{Enabled: cfg.SleepEnabled, IdleAfter: cfg.SleepIdleAfter, QuietBytes: cfg.SleepQuietBytes, WakeWindow: cfg.SleepWakeWindow, WakeBytes: cfg.SleepWakeBytes}, time.Now()), sleepRecords: sleep.NewRecorder(3), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel, longTerm: longTerm}
+	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger, MinLevel: minLevel}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan healthResult, 1), selection: make(chan selectionObservation, 1), activityEvents: make(chan activity.Event, 256), sleepController: sleep.New(sleep.Config{Enabled: cfg.SleepEnabled, IdleAfter: cfg.SleepIdleAfter, QuietBytes: cfg.SleepQuietBytes, WakeWindow: cfg.SleepWakeWindow, WakeBytes: cfg.SleepWakeBytes}, time.Now()), sleepRecords: sleep.NewRecorder(3), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel, longTerm: longTerm}
 	a.stabilityHub = stability.NewHub()
 	a.apiAddress, a.groupRoot, a.groupPattern = cfg.API, cfg.Root, cfg.Pattern
 	a.reset(airports[0])

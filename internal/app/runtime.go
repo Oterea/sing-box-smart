@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"sing-box-smart/internal/discovery"
 	"sing-box-smart/internal/domain"
 	"sing-box-smart/internal/recovery"
 	"sing-box-smart/internal/score"
@@ -55,12 +56,25 @@ func (a *App) Run(ctx context.Context) {
 			a.observe(ctx, p)
 		case c := <-a.changes:
 			a.switched(c)
-		case err := <-a.health:
+		case result := <-a.health:
 			a.healthBusy = false
 			a.revision++
-			if err == nil {
+			if result.err == nil && len(result.airports) > 0 {
 				a.healthy = true
 				a.events.Record("api", "管理接口恢复，继续检查")
+				// The sing-box process may have recreated its selector catalog while
+				// it was restarting. Rebuild smart's observation state so stale
+				// selectors and cancelled probes cannot keep the app stuck offline.
+				selected := a.airport.ID
+				airport := result.airports[0]
+				for _, candidate := range result.airports {
+					if candidate.ID == selected {
+						airport = candidate
+						break
+					}
+				}
+				a.airports = result.airports
+				a.reset(airport)
 			} else {
 				a.lastHealth = time.Now()
 			}
@@ -95,11 +109,17 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 			a.lastHealth = now
 			client, timeout := a.client, a.cfg.Timeout
 			go func() {
-				c, cancel := context.WithTimeout(ctx, timeout)
-				defer cancel()
-				err := client.Health(c)
+				healthCtx, cancelHealth := context.WithTimeout(ctx, timeout)
+				err := client.Health(healthCtx)
+				cancelHealth()
+				var airports []domain.Airport
+				if err == nil {
+					discoveryCtx, cancelDiscovery := context.WithTimeout(ctx, timeout)
+					airports, err = discovery.Load(discoveryCtx, client)
+					cancelDiscovery()
+				}
 				select {
-				case a.health <- err:
+				case a.health <- healthResult{airports: airports, err: err}:
 				case <-ctx.Done():
 				}
 			}()
