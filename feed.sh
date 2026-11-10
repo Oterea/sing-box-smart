@@ -18,7 +18,7 @@ arch="${DISTRIB_ARCH:-$(cat /etc/apk/arch 2>/dev/null || true)}"
 repository_url='https://sing-box-smart.pages.dev'
 feed_url="$repository_url/openwrt-25.12/$arch"
 key='/etc/apk/keys/sing-box-smart.pem'
-repo='/etc/apk/repositories.d/sing-box-smart.list'
+repo='/etc/apk/repositories.d/customfeeds.list'
 mkdir -p "$(dirname "$key")" "$(dirname "$repo")"
 
 tmp="${key}.tmp.$$"

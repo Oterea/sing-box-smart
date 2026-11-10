@@ -182,6 +182,8 @@ wget -O - https://sing-box-smart.pages.dev/install.sh | sh
 wget -O - https://sing-box-smart.pages.dev/feed.sh | sh
 ```
 
+Feed 地址会写入 `/etc/apk/repositories.d/customfeeds.list`，签名公钥会保存到 `/etc/apk/keys/sing-box-smart.pem`。
+
 再安装软件包：
 
 ```sh

@@ -59,6 +59,7 @@ test('Feed is the only supported installation path', () => {
  assert.match(feed, /25\.12/);
  assert.match(feed, /aarch64_generic/);
  assert.match(feed, /\/etc\/apk\/repositories\.d/);
+ assert.match(feed, /customfeeds\.list/);
  assert.match(feed, /packages\.adb/);
  assert.match(install, /feed\.sh/);
  assert.match(install, /apk add sing-box-smart luci-app-sing-box-smart/);
