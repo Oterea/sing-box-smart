@@ -38,5 +38,33 @@ define Package/sing-box-smart/install
 	$(INSTALL_DIR) $(1)/lib/upgrade/keep.d
 	$(INSTALL_DATA) $(CURDIR)/../../deploy/sing-box-smart.keep $(1)/lib/upgrade/keep.d/sing-box-smart
 endef
+
+define Package/sing-box-smart/postinst
+#!/bin/sh
+[ -n "$${IPKG_INSTROOT}" ] && exit 0
+/etc/init.d/sing-box-smart enable
+/etc/init.d/sing-box-smart restart || /etc/init.d/sing-box-smart start
+exit 0
+endef
+
+define Package/sing-box-smart/prerm
+#!/bin/sh
+[ -x /etc/init.d/sing-box-smart ] && /etc/init.d/sing-box-smart stop || :
+exit 0
+endef
+
+define Package/sing-box-smart/postrm
+#!/bin/sh
+case "$${1:-}" in
+remove|purge)
+	rm -rf /etc/sing-box-smart /var/log/sing-box-smart
+	rm -rf /tmp/sing-box-smart-update /tmp/sing-box-smart-update.lock
+	rm -f /tmp/sing-box-smart-update.status /tmp/sing-box-smart-update.log
+	rm -f /lib/upgrade/keep.d/sing-box-smart
+	;;
+esac
+exit 0
+endef
+
 $(eval $(call GoBinPackage,sing-box-smart))
 $(eval $(call BuildPackage,sing-box-smart))

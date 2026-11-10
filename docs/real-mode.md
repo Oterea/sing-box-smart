@@ -35,4 +35,4 @@ HTTP 节点失败响应和外层超时计为节点失败；其他连接错误计
 
 已有 `/etc/sing-box-smart/connection.json` 会优先覆盖启动配置中的 API、root、pattern。重启会清空评分和历史，保留该连接文件。参数未提供定时间隔的 CLI 开关，当前间隔在 `internal/config.Default` 中配置。
 
-`deploy/install-router.sh` 是早期 sbwatch 迁移脚本，会备份、停止并禁用 sbwatch，再安装指定 /tmp 文件；不是通用 ipk 安装步骤。
+25.12 使用 APK 包安装。核心包安装时创建默认配置并启用服务；LuCI 包安装后清理面板缓存。卸载核心包会停止服务并清理配置、日志和更新临时文件。

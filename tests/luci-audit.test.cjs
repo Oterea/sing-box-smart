@@ -6,9 +6,10 @@ const acl = JSON.parse(fs.readFileSync('package/luci-app-sing-box-smart/root/usr
 const view = fs.readFileSync('package/luci-app-sing-box-smart/htdocs/luci-static/resources/view/sing-box-smart/app.js', 'utf8');
 const updateStatus = fs.readFileSync('package/luci-app-sing-box-smart/root/usr/libexec/sing-box-smart-update-status', 'utf8');
 const init = fs.readFileSync('deploy/sing-box-smart.init', 'utf8');
-const packer = fs.readFileSync('scripts/build-ipk.py', 'utf8');
 const updateInstall = fs.readFileSync('package/luci-app-sing-box-smart/root/usr/libexec/sing-box-smart-update-install', 'utf8');
 const updateCheck = fs.readFileSync('package/luci-app-sing-box-smart/root/usr/libexec/sing-box-smart-update-check', 'utf8');
+const corePackage = fs.readFileSync('package/sing-box-smart/Makefile', 'utf8');
+const luciPackage = fs.readFileSync('package/luci-app-sing-box-smart/Makefile', 'utf8');
 const menu = JSON.parse(fs.readFileSync('package/luci-app-sing-box-smart/root/usr/share/luci/menu.d/luci-app-sing-box-smart.json', 'utf8'));
 
 test('LuCI ACL is least privilege and exposes only fixed init actions', () => {
@@ -52,15 +53,18 @@ test('LuCI menu and init script point at the packaged service', () => {
  assert.match(init, /procd_set_param respawn/);
 });
 
-test('IPK builder uses the target opkg tar.gz container', () => {
- assert.match(packer, /def write_ipk\(/);
- assert.match(packer, /tarfile\.open\(path, mode='w:gz'\)/);
- assert.match(packer, /write_ipk\(path/);
- assert.doesNotMatch(packer, /\['ar',\s*'r'/);
-});
-
 test('LuCI updates preserve the active WRT login session', () => {
  assert.doesNotMatch(packer, /rpcd restart/);
  assert.doesNotMatch(updateInstall, /rpcd restart/);
  assert.match(updateInstall, /sing-box-smart restart/);
+});
+
+test('APK lifecycle starts clean installs and purges runtime state on removal', () => {
+ assert.match(corePackage, /Package\/sing-box-smart\/postinst/);
+ assert.match(corePackage, /Package\/sing-box-smart\/prerm/);
+ assert.match(corePackage, /Package\/sing-box-smart\/postrm/);
+ assert.match(corePackage, /rm -rf \/etc\/sing-box-smart \/var\/log\/sing-box-smart/);
+ assert.match(corePackage, /rm -rf \/tmp\/sing-box-smart-update \/tmp\/sing-box-smart-update\.lock/);
+ assert.match(luciPackage, /Package\/luci-app-sing-box-smart\/postinst/);
+ assert.match(luciPackage, /Package\/luci-app-sing-box-smart\/postrm/);
 });
