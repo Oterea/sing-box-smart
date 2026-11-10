@@ -68,4 +68,4 @@ HTTP 快照通过请求通道从事件循环取得。SSE 连接共享一个快�
 
 LuCI JavaScript 通过 rpcd `file.exec` 调固定 init 命令；`service.list` 每 3 秒读取服务状态。开机自动启动状态在页面加载时读取，页面停止服务后仍可用。监控面板提供连接设置与运行设置；运行设置可热更新检测、睡眠、日志级别和延迟颜色。LuCI 通过固定命令校验并保存服务设置，重启 smart 后生效；设置文件不作为 shell 脚本执行。
 
-GitHub Actions 使用 OpenWrt 25.12 SDK 生成 ARM64 `aarch64_generic` 后端 APK 和 `all` LuCI APK，并发布到 `latest` Release。R2S 上使用 `apk add --allow-untrusted` 安装这两个包；配置文件位于 `/etc/sing-box-smart/`，升级时保留运行配置。
+GitHub Actions 使用 OpenWrt 25.12 SDK 生成 ARM64 `aarch64_generic` 后端 APK 和 `all` LuCI APK，签名后发布到 Cloudflare Pages Feed。R2S 通过 Feed 使用 `apk add sing-box-smart luci-app-sing-box-smart` 安装；配置文件位于 `/etc/sing-box-smart/`，升级时保留运行配置。

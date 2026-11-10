@@ -11,12 +11,6 @@
         "/etc/init.d/sing-box-smart enabled": [
           "exec"
         ],
-        "/usr/libexec/sing-box-smart-update-check": [
-          "exec"
-        ],
-        "/usr/libexec/sing-box-smart-update-status": [
-          "exec"
-        ],
         "/usr/bin/sing-box-smart config-settings read": [
           "exec"
         ],
@@ -40,9 +34,6 @@
           "exec"
         ],
         "/etc/init.d/sing-box-smart disable": [
-          "exec"
-        ],
-        "/usr/libexec/sing-box-smart-update-start": [
           "exec"
         ],
         "/usr/bin/sing-box-smart config-settings apply": [

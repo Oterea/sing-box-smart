@@ -19,7 +19,6 @@
 - [面板和接口](#面板和接口)
 - [OpenWrt / LuCI](#openwrt--luci)
   - [从 Feed 安装](#从-feed-安装)
-  - [直接安装 APK](#直接安装-apk)
   - [卸载](#卸载)
 - [开发和测试](#开发和测试)
 - [已知边界](#已知边界)
@@ -161,7 +160,7 @@ go run ./cmd/sing-box-smart \
   -settings connection.json
 ```
 
-GitHub Actions 使用 OpenWrt 25.12 SDK 构建 APK，并发布到 `latest` Release。`deploy/sing-box-smart.init` 是服务启动脚本示例；启动配置保存在 `/etc/sing-box-smart/` 下的 JSON 文件中。真实模式的完整说明见 [docs/real-mode.md](docs/real-mode.md)。
+GitHub Actions 使用 OpenWrt 25.12 SDK 构建并签名 APK，发布到 Cloudflare Pages Feed。`deploy/sing-box-smart.init` 是服务启动脚本示例；启动配置保存在 `/etc/sing-box-smart/` 下的 JSON 文件中。真实模式的完整说明见 [docs/real-mode.md](docs/real-mode.md)。
 
 ### 从 Feed 安装
 
@@ -178,23 +177,6 @@ wget -O - https://raw.githubusercontent.com/Oterea/sing-box-smart/main/feed.sh |
 apk add sing-box-smart luci-app-sing-box-smart
 ```
 
-### 直接安装 APK
-
-这是 Feed 不可用时的备用方式：
-
-```sh
-cd /tmp
-wget -O sing-box-smart.apk \
-  https://github.com/Oterea/sing-box-smart/releases/download/latest/sing-box-smart-latest.apk
-wget -O luci-app-sing-box-smart.apk \
-  https://github.com/Oterea/sing-box-smart/releases/download/latest/luci-app-sing-box-smart-latest.apk
-apk add --allow-untrusted \
-  ./sing-box-smart.apk \
-  ./luci-app-sing-box-smart.apk
-```
-
-`--allow-untrusted` 用于安装 GitHub Release 中的自建 APK。核心包首次安装时会自动启用并启动服务，监控面板地址默认为 `http://路由器地址:9797/`。
-
 ### 卸载
 
 完整卸载时先停止服务，再移除两个 APK：
@@ -203,7 +185,7 @@ apk add --allow-untrusted \
 apk del --purge luci-app-sing-box-smart sing-box-smart
 ```
 
-也可以执行仓库中的 `uninstall.sh`，它还会删除 Feed 配置和公钥。卸载钩子会清理配置、日志、更新临时文件、LuCI 缓存和系统升级保留文件。重新安装会重新使用仓库中的默认 JSON。
+也可以执行仓库中的 `uninstall.sh`，它还会删除 Feed 配置和公钥。卸载钩子会清理配置、日志、LuCI 缓存和系统升级保留文件。重新安装会重新使用仓库中的默认 JSON。
 
 ## 开发和测试
 

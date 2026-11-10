@@ -58,8 +58,6 @@ define Package/sing-box-smart/postrm
 case "$${1:-}" in
 remove|purge)
 	rm -rf /etc/sing-box-smart /var/log/sing-box-smart
-	rm -rf /tmp/sing-box-smart-update /tmp/sing-box-smart-update.lock
-	rm -f /tmp/sing-box-smart-update.status /tmp/sing-box-smart-update.log
 	rm -f /lib/upgrade/keep.d/sing-box-smart
 	;;
 esac

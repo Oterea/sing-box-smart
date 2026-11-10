@@ -40,7 +40,7 @@
 @keyframes sbs-status-breathe {0%,100%{opacity:.55;box-shadow:0 0 0 0 rgba(4,199,102,.45)}50%{opacity:1;box-shadow:0 0 0 5px rgba(4,199,102,0)}}
 @media(prefers-reduced-motion:reduce) {.sbs-status-dot.is-running {animation:none}}
 
-/* One sizing rule for service actions, links, update and settings save. */
+/* One sizing rule for service actions, links and settings save. */
 .sbs-page .sbs-button {
   display:inline-flex;align-items:center;justify-content:center;
   width:var(--sbs-button-width);height:32px!important;min-height:32px!important;
@@ -55,15 +55,13 @@
 .sbs-page .sbs-button.start:hover:not(:disabled) {background:color-mix(in srgb,var(--sbs-blue) 94%,#000)!important}
 .sbs-actions {display:flex;flex-wrap:wrap;gap:8px;margin-top:var(--sbs-space)}
 .sbs-actions .sbs-button {min-width:0}
-.sbs-page .sbs-open,.sbs-page .sbs-update-button {width:88px;flex:0 0 88px}
+.sbs-page .sbs-open {width:88px;flex:0 0 88px}
 .sbs-auto-row {display:flex;align-items:center;gap:12px;margin-top:var(--sbs-space)}
 .sbs-autostart {display:inline-flex;align-items:center;gap:10px;min-height:24px;margin:0;color:var(--sbs-control-text);font-size:var(--sbs-font);font-weight:400;cursor:pointer}
 .sbs-autostart input[type=checkbox] {appearance:auto!important;position:static;opacity:1;width:16px;height:16px;margin:0;flex:0 0 16px;accent-color:var(--sbs-blue);cursor:pointer}
 .sbs-autostart input:disabled {cursor:default}
-.sbs-update-text {display:block;min-width:0;margin-top:12px;color:var(--sbs-muted);font-size:var(--sbs-font);line-height:1.6;overflow-wrap:anywhere}
-.sbs-update-text.is-available {color:var(--sbs-hover-text);font-weight:500}
 
-.sbs-page .sbs-control-block,.sbs-page .sbs-service-details,.sbs-page .sbs-version-block {min-width:0;margin:0;padding:0;border:0;background:transparent;box-shadow:none}
+.sbs-page .sbs-control-block,.sbs-page .sbs-service-details {min-width:0;margin:0;padding:0;border:0;background:transparent;box-shadow:none}
 .sbs-page .sbs-service-title {margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;color:var(--sbs-ink);font-size:var(--sbs-heading-size);line-height:1.5;font-weight:500}
 .sbs-service-settings {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,max(260px,calc(50% - 9px))),1fr));gap:14px 18px;margin-top:12px}
 .sbs-core-runtime {grid-column:1 / -1}
