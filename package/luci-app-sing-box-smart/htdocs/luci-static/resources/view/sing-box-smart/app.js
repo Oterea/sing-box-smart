@@ -69,8 +69,8 @@ return view.extend({
     updateButton.dataset.available = result.available ? 'yes' : 'no';
     updateButton.textContent = result.available ? '更新' : '检查更新';
     updateButton.disabled = updating;
-   }).catch(function() {
-    updateText.textContent = '暂时无法检查';
+   }).catch(function(error) {
+    updateText.textContent = error.message || '暂时无法检查';
     updateButton.dataset.available = 'no';
     updateButton.disabled = updating;
    });

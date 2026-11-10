@@ -13,10 +13,9 @@ if command -v apk >/dev/null 2>&1; then
         found && /^V:/ { sub(/^V:/, ""); print; exit }
         found && /^P:/ { exit }
     ' /lib/apk/db/installed 2>/dev/null || true)"
-elif command -v opkg >/dev/null 2>&1; then
-    current="$(opkg status sing-box-smart 2>/dev/null | sed -n 's/^Version: //p' | head -n 1)"
 else
-    current=''
+    printf '%s\n' '未找到 apk 包管理器' >&2
+    exit 1
 fi
 [ -n "$version" ] || { printf '%s\n' '更新清单无效' >&2; exit 1; }
 # OpenWrt APK packages normally carry a release suffix (for example -r1),

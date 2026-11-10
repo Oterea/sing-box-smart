@@ -13,7 +13,8 @@ test('update checks bypass stale manifests and isolate concurrent temporary file
  try {
   mock('uclient-fetch',`const fs=require('node:fs');const a=process.argv.slice(2);const dest=a[a.indexOf('-O')+1];const fresh=/[?]check=\\d+-\\d+$/.test(a.at(-1));fs.appendFileSync(process.env.FETCH_LOG,dest+'\\n');fs.writeFileSync(dest,JSON.stringify({version:fresh?'0.2.38':'0.2.37'}));`);
   mock('jsonfilter',`const fs=require('node:fs');const a=process.argv.slice(2);console.log(JSON.parse(fs.readFileSync(a[a.indexOf('-i')+1])).version);`);
-  mock('opkg',`console.log('Version: 0.2.37');`);
+  mock('apk',`process.exit(0);`);
+  mock('awk',`console.log('0.2.37');`);
   const log=path.join(dir,'fetch.log');
   const options={env:{...process.env,PATH:dir+':'+process.env.PATH,FETCH_LOG:log}};
   const results=await Promise.all([execFile('/bin/sh',[root+'sing-box-smart-update-check'],options),execFile('/bin/sh',[root+'sing-box-smart-update-check'],options)]);

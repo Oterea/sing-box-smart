@@ -37,6 +37,8 @@ test('LuCI view cannot execute user supplied commands and serializes controls', 
  assert.match(view, /已是最新版本 ·/);
  assert.match(view, /发现新版本 ·/);
  assert.match(updateCheck, /lib\/apk\/db\/installed/);
+ assert.match(updateCheck, /command -v apk/);
+ assert.doesNotMatch(updateCheck, /opkg/);
  assert.doesNotMatch(updateCheck, /apk info -e sing-box-smart/);
  assert.doesNotMatch(view, /fs\.exec\([^,]+,\s*\[[^\]]*https?:/);
  assert.doesNotMatch(view, /sbs-link-card|sbs-arrow|打开 smart 面板.*↗/);
