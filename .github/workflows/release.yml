@@ -77,4 +77,7 @@ jobs:
         run: |
           gh release view latest >/dev/null 2>&1 || gh release create latest --target "${GITHUB_SHA}" --title "Latest" --notes "自动构建的最新 sing-box-smart 包" --prerelease
           gh release edit latest --target "${GITHUB_SHA}" --title "Latest" --notes "自动构建的最新 sing-box-smart 包"
+          for asset in $(gh release view latest --json assets --jq '.assets[].name | select(endswith(".ipk"))'); do
+            gh release delete-asset latest "$asset" --yes
+          done
           gh release upload latest dist/sing-box-smart-latest.apk dist/luci-app-sing-box-smart-latest.apk dist/sing-box-smart-release.json --clobber

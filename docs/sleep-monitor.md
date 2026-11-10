@@ -38,7 +38,7 @@ gRPC 断开时活动源会自动重连，不主动发送睡眠指令。空闲判
 -sleep-wake-bytes=1048576
 ```
 
-OpenWrt 的配置文件对应 `GRPC_ADDR`、`GRPC_SECRET`、`SLEEP_MONITOR`、`SLEEP_IDLE`、`SLEEP_QUIET_BYTES`、`SLEEP_WAKE_WINDOW` 和 `SLEEP_WAKE_BYTES`。
+OpenWrt 中，gRPC 地址和密钥保存在 `/etc/sing-box-smart/service.json` 的 `grpc_address`、`grpc_secret`；睡眠开关和阈值保存在 `/etc/sing-box-smart/runtime.json` 的 `sleep_enabled`、`sleep_idle_seconds`、`quiet_bytes`、`wake_window_seconds` 和 `wake_bytes`。
 
 必须先在 sing-box 中启用原生 `api` service。gRPC 地址建议只监听软路由本机地址，并配置 secret。
 
