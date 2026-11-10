@@ -28,7 +28,7 @@
 
 ### 1. 发现策略组和节点
 
-程序连接配置的 sing-box Clash API，读取根策略组（默认 `proxy`）的直接成员，只选出名称符合匹配规则的 `selector` 策略组。默认匹配规则是 `PIN$`，因此 `tolink PIN`、`pei PIN` 等组会被自动发现，不需要把机场名称写死在代码中。根组没有可用成员时才使用目录扫描；`-pins` 只作为动态发现失败时的兼容回退配置。
+程序连接配置的 sing-box Clash API，读取根策略组（默认 `proxy`）的直接成员，只选出名称符合匹配规则的 `selector` 策略组。默认匹配规则是 `SMART$`，因此名称以 `SMART` 结尾的组会被自动发现，不需要把机场名称写死在代码中。根组没有可用成员时才使用目录扫描；`-pins` 只作为动态发现失败时的回退配置。
 
 每个策略组就是一个可切换的机场入口。用户可以在监控面板中选择策略组，程序只检查当前策略组里的节点，切换策略组时重新发现节点并开始新的启动观察阶段。策略组和节点发生重复、空名称或归属异常时会被拒绝，避免两个配置项错误地指向同一个机场。
 
@@ -142,6 +142,9 @@ LuCI 的服务控制只管理 smart 服务本身。暂停/继续检测在 smart 
 smart 面板：      http://路由器地址:9797/
 sing-box API：    http://127.0.0.1:9695
 根策略组：        proxy
+匹配规则：        SMART$
+gRPC 地址：       127.0.0.1:9696
+gRPC 密钥：        singbox
 日志目录：        /var/log/sing-box-smart
 睡眠监控：        默认关闭，需配置 sing-box gRPC API 后启用
 ```
@@ -177,11 +180,9 @@ wget -O luci-app-sing-box-smart.apk \
 apk add --allow-untrusted \
   ./sing-box-smart.apk \
   ./luci-app-sing-box-smart.apk
-/etc/init.d/sing-box-smart enable
-/etc/init.d/sing-box-smart restart
 ```
 
-`--allow-untrusted` 用于安装 GitHub Release 中的自建 APK。安装完成后，监控面板地址默认为 `http://路由器地址:9797/`。
+`--allow-untrusted` 用于安装 GitHub Release 中的自建 APK。核心包首次安装时会自动启用并启动服务，监控面板地址默认为 `http://路由器地址:9797/`。
 
 #### LuCI 页面安装
 
@@ -189,7 +190,17 @@ apk add --allow-untrusted \
 2. 打开“系统 → 软件包”。
 3. 使用本地上传或安装入口，先上传 `sing-box-smart-latest.apk`，再上传 `luci-app-sing-box-smart-latest.apk`。
 4. 如果页面提示软件包未签名，允许安装本地 APK。
-5. 安装完成后，在“系统 → 启动项”中启用并启动 `sing-box-smart`。
+5. 安装完成后，核心包会自动启用并启动 `sing-box-smart`。
+
+#### 卸载
+
+完整卸载时先停止服务，再移除两个 APK：
+
+```sh
+apk del --purge luci-app-sing-box-smart sing-box-smart
+```
+
+卸载钩子会清理配置、日志、更新临时文件、LuCI 缓存和系统升级保留文件。重新安装会重新使用仓库中的默认 JSON。
 
 ## 开发和测试
 

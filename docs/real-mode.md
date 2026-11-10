@@ -17,7 +17,7 @@ go run ./cmd/sing-box-smart \
 
 `-pins` 是可选兼容参数，格式为“显示名称=selector”。目录接口失败或动态目录没有匹配策略组时，它提供回退列表；动态目录成功找到匹配组时优先使用实际策略组。
 
-目录读取成功时忽略 pins，读取 root 的直接成员，选出类型为 Selector 且名字符合正则的组；默认正则 `PIN$`，不要求 PIN 前有空格。此时显示名和 ID 都使用实际组名。root 不存在或没有成员时，代码会扫描整个目录匹配 Selector，因此当前并非始终只搜索 root 内部。
+目录读取成功时忽略 pins，读取 root 的直接成员，选出类型为 Selector 且名字符合正则的组；默认正则 `SMART$`，匹配名称以 SMART 结尾的组。此时显示名和 ID 都使用实际组名。root 不存在或没有成员时，代码会扫描整个目录匹配 Selector，因此当前并非始终只搜索 root 内部。
 
 组成员应是待测节点；发现过程检查非空和重复，但不进一步保证每个成员都是单节点出站。只在启动、重新应用配置时发现，不会自动追踪后续订阅变化。
 
@@ -31,7 +31,7 @@ HTTP 节点失败响应和外层超时计为节点失败；其他连接错误计
 
 ## OpenWrt
 
-默认服务配置监听 `0.0.0.0:9797`，调用本机 API `127.0.0.1:9695`。启动配置位于 `/etc/sing-box-smart/connection.json`、`runtime.json` 和 `service.json`。LuCI 管理 init 服务启动、停止、重启、自启动；监控页面暂停/继续检测不等于停止进程。
+默认服务配置监听 `0.0.0.0:9797`，调用本机 API `127.0.0.1:9695`，gRPC 地址为 `127.0.0.1:9696`，密钥为 `singbox`。默认匹配规则为 `SMART$`。启动配置位于 `/etc/sing-box-smart/connection.json`、`runtime.json` 和 `service.json`。LuCI 管理 init 服务启动、停止、重启、自启动；监控页面暂停/继续检测不等于停止进程。
 
 已有 `/etc/sing-box-smart/connection.json` 会优先覆盖启动配置中的 API、root、pattern。重启会清空评分和历史，保留该连接文件。参数未提供定时间隔的 CLI 开关，当前间隔在 `internal/config.Default` 中配置。
 
