@@ -30,6 +30,11 @@ jobs:
           sed -i "s/^PKG_VERSION?=.*/PKG_VERSION?=$version/" \
             package/sing-box-smart/Makefile package/luci-app-sing-box-smart/Makefile
           python3 scripts/luci_assets.py stage package/luci-app-sing-box-smart "$version"
+          release="v${version//[^0-9A-Za-z_]/_}"
+          test -f "package/luci-app-sing-box-smart/htdocs/luci-static/resources/view/sing-box-smart/$release/app.js"
+          test -f "package/luci-app-sing-box-smart/htdocs/luci-static/resources/sing-box-smart/$release/coreconfig.js"
+          test -f "package/luci-app-sing-box-smart/htdocs/luci-static/resources/sing-box-smart/$release/style.css"
+          test ! -e package/luci-app-sing-box-smart/htdocs/luci-static/resources/view/sing-box-smart/app.js
           echo "Publishing sing-box-smart and LuCI $version-r1"
           grep '^PKG_VERSION?=' package/sing-box-smart/Makefile package/luci-app-sing-box-smart/Makefile
       - uses: openwrt/gh-action-sdk@main

@@ -3,6 +3,14 @@
 # rmdir never deletes a file or a directory that still contains resources.
 set -eu
 resource_root="${IPKG_INSTROOT:-}/www/luci-static/resources"
+
+# Remove assets from releases before URL versioning was introduced. They are
+# no longer owned by the APK, so apk cannot remove them during an upgrade.
+rm -f \
+    "$resource_root/sing-box-smart/coreconfig.js" \
+    "$resource_root/sing-box-smart/style.css" \
+    "${IPKG_INSTROOT:-}/www/luci-static/resources/view/sing-box-smart/app.js"
+
 for base in "$resource_root/sing-box-smart" "$resource_root/view/sing-box-smart"; do
     for directory in "$base"/v[0-9]*; do
         [ -d "$directory" ] || continue

@@ -15,6 +15,17 @@ define Package/luci-app-sing-box-smart/postrm
 #!/bin/sh
 case "$${1:-}" in
 remove|purge)
+	root="$${IPKG_INSTROOT:-}"
+	resource_root="$$root/www/luci-static/resources"
+	rm -f \
+		"$$resource_root/sing-box-smart/coreconfig.js" \
+		"$$resource_root/sing-box-smart/style.css" \
+		"$$root/www/luci-static/resources/view/sing-box-smart/app.js"
+	for base in "$$resource_root/sing-box-smart" "$$resource_root/view/sing-box-smart"; do \
+		for directory in "$$base"/v[0-9]*; do \
+			[ -d "$$directory" ] && rmdir "$$directory" 2>/dev/null || :; \
+		done; \
+	done
 	rm -f /tmp/luci-indexcache /tmp/luci-indexcache.* /tmp/luci-modulecache/*
 	;;
 esac
