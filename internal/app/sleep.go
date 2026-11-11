@@ -30,6 +30,7 @@ func (a *App) enterSleep() {
 	a.sleepRecords.Start(time.Now(), "idle")
 	a.generation++
 	a.probeCancel()
+	a.resetBackgroundSchedule()
 	a.probeCtx, a.probeCancel = context.WithCancel(a.rootCtx)
 	next := time.Now().Add(time.Duration(a.cfg.SleepMinutes) * time.Minute)
 	for _, n := range a.store.Nodes {
@@ -54,6 +55,7 @@ func (a *App) wakeFromSleepWithReason(event activity.Event, reason string) {
 	a.sleepRecords.EndWithSource(now, reason, source)
 	a.sleepController.WakeAt(now)
 	a.sleeping = false
+	a.resetBackgroundSchedule()
 	a.probeCtx, a.probeCancel = context.WithCancel(a.rootCtx)
 	a.revision++
 	a.started = now

@@ -40,3 +40,22 @@ func TestReclassifyUsesBackgroundCurrent(t *testing.T) {
 		t.Fatal("background current node was not classified as current")
 	}
 }
+
+func TestUpdateAirportRefreshesMembershipAndPreservesHistory(t *testing.T) {
+	g := New(testAirport(), 4)
+	g.Store.Record("n1", domain.Probe{Success: true, DelayMS: 120, At: time.Unix(1, 0)})
+	g.CurrentID = "n2"
+	g.UpdateAirport(domain.Airport{ID: "a", Name: "测试机场", Selector: "airport", Nodes: []domain.Node{
+		{ID: "n1", Name: "节点 1 新名称"},
+		{ID: "n4", Name: "节点 4"},
+	}}, 4)
+	if len(g.Store.Nodes) != 2 || g.Store.ByID["n2"] != nil || g.Store.ByID["n4"] == nil {
+		t.Fatalf("membership was not refreshed: %+v", g.Store.ByID)
+	}
+	if g.Store.ByID["n1"].Checks != 1 || g.Store.ByID["n1"].Info.Name != "节点 1 新名称" {
+		t.Fatalf("existing node history was not preserved: %+v", g.Store.ByID["n1"])
+	}
+	if g.CurrentID != "" || len(g.Due) != 0 || len(g.InFlight) != 0 {
+		t.Fatalf("stale current or schedule was retained: current=%q due=%v inflight=%v", g.CurrentID, g.Due, g.InFlight)
+	}
+}

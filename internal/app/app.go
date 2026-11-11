@@ -183,15 +183,13 @@ func (a *App) reset(airport domain.Airport) {
 	a.airport = airport
 	// A group that was active may become a background group after a selector
 	// switch. Start its independent schedule from a clean, staggered boundary.
-	a.backgroundScheduleInterval = 0
-	for _, other := range a.backgroundGroups {
-		other.Due = map[string]time.Time{}
-		other.InFlight = map[string]bool{}
-	}
+	a.resetBackgroundSchedule()
 	group := a.backgroundGroups[airport.ID]
 	if group == nil {
 		group = background.New(airport, a.cfg.HistoryLimit)
 		a.backgroundGroups[airport.ID] = group
+	} else {
+		group.UpdateAirport(airport, a.cfg.HistoryLimit)
 	}
 	a.store = group.Store
 	for _, n := range a.store.Nodes {

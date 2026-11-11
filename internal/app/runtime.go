@@ -78,6 +78,7 @@ func (a *App) Run(ctx context.Context) {
 					}
 				}
 				a.airports = result.airports
+				a.reconcileBackgroundGroups(a.airports)
 				a.rootSelection = ""
 				a.controlActive = false
 				a.reset(airport)
@@ -202,12 +203,12 @@ func (a *App) tickBackground(ctx context.Context, now time.Time) {
 			group.Schedule(now, interval)
 		}
 		for _, node := range group.DueNodes(now) {
-			groupID, nodeID := id, node.Info.ID
+			groupID, nodeID, generation := id, node.Info.ID, a.generation
 			runner, probeCtx := a.runner, a.probeCtx
 			go func() {
 				p, err := runner.Run(probeCtx, nodeID)
 				select {
-				case a.results <- observation{groupID: groupID, id: nodeID, probe: p, err: err}:
+				case a.results <- observation{groupID: groupID, id: nodeID, generation: generation, probe: p, err: err}:
 				case <-probeCtx.Done():
 				}
 			}()
@@ -216,6 +217,9 @@ func (a *App) tickBackground(ctx context.Context, now time.Time) {
 }
 
 func (a *App) observeBackground(o observation) {
+	if o.generation != a.generation {
+		return
+	}
 	group := a.backgroundGroups[o.groupID]
 	if group == nil {
 		return
@@ -227,6 +231,7 @@ func (a *App) observeBackground(o observation) {
 	}
 	group.Complete(o.id, now, interval)
 	if o.err != nil {
+		a.revision++
 		return
 	}
 	if o.probe.At.IsZero() {

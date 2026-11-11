@@ -28,6 +28,7 @@ func (a *App) configureAPI(r request) error {
 	a.client = r.client
 	a.runner.Client = r.client
 	a.airports = r.airports
+	a.reconcileBackgroundGroups(a.airports)
 	a.healthy = true
 	a.rootSelection = ""
 	a.controlActive = false

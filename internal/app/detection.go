@@ -35,6 +35,7 @@ func (a *App) pauseDetection() {
 	}
 	a.revision++
 	a.cancelManualCheck("")
+	a.resetBackgroundSchedule()
 	a.generation++
 	a.probeCancel()
 	for _, n := range a.store.Nodes {

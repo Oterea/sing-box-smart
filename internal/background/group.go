@@ -25,6 +25,36 @@ func New(airport domain.Airport, historyLimit int) *Group {
 	}
 }
 
+// UpdateAirport refreshes selector membership while retaining observations for
+// nodes that still exist. New nodes start clean and removed nodes disappear
+// from both the store and the next schedule.
+func (g *Group) UpdateAirport(airport domain.Airport, historyLimit int) {
+	old := g.Store
+	next := state.New(airport.Nodes, historyLimit)
+	for _, node := range next.Nodes {
+		if previous := old.ByID[node.Info.ID]; previous != nil {
+			previous.Info = node.Info
+			previous.Plan.InFlight = false
+			if len(previous.History) > historyLimit {
+				previous.History = previous.History[len(previous.History)-historyLimit:]
+			}
+			node = previous
+		}
+		next.ByID[node.Info.ID] = node
+	}
+	next.Nodes = make([]*state.Node, 0, len(airport.Nodes))
+	for _, info := range airport.Nodes {
+		next.Nodes = append(next.Nodes, next.ByID[info.ID])
+	}
+	g.Store = next
+	g.Airport = airport
+	if g.CurrentID != "" && g.Store.ByID[g.CurrentID] == nil {
+		g.CurrentID = ""
+	}
+	g.Due = map[string]time.Time{}
+	g.InFlight = map[string]bool{}
+}
+
 // Schedule spreads nodes across the interval instead of probing a whole
 // airport selector in one burst.
 func (g *Group) Schedule(now time.Time, interval time.Duration) {

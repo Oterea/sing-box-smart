@@ -64,6 +64,7 @@ func (a *App) applySettings(ctx context.Context, s preferences.Settings) error {
 		a.generation++
 		a.probeCancel()
 		a.probeCtx, a.probeCancel = context.WithCancel(a.rootCtx)
+		a.resetBackgroundSchedule()
 		for _, n := range a.store.Nodes {
 			n.Plan.InFlight = false
 		}
