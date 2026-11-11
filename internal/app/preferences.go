@@ -72,6 +72,15 @@ func (a *App) applySettings(ctx context.Context, s preferences.Settings) error {
 		a.manualCheckPending = map[string]bool{}
 		a.manualCheckRound, a.manualCheckTotal = 0, 0
 	}
+	if old.BackgroundMinutes != s.BackgroundMinutes || old.SleepMinutes != s.SleepMinutes {
+		a.backgroundScheduleInterval = 0
+		if a.sleeping {
+			next := time.Now().Add(time.Duration(a.cfg.SleepMinutes) * time.Minute)
+			for _, n := range a.store.Nodes {
+				n.Plan.NormalDue = next
+			}
+		}
+	}
 	if old.SleepEnabled != s.SleepEnabled || old.TestURL != s.TestURL {
 		a.restartActivity(ctx)
 	}

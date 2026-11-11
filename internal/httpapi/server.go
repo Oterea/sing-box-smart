@@ -31,6 +31,11 @@ type stabilityService interface {
 	SubscribeStability(string) (<-chan domain.StabilityUpdate, func())
 }
 
+type groupedStabilityService interface {
+	NodeStabilityForGroup(context.Context, string, string, time.Time) (domain.NodeStability, error)
+	NodeLongTermForGroup(context.Context, string, string) (domain.LongTermStability, error)
+}
+
 func Handler(service Service) http.Handler {
 	mux := http.NewServeMux()
 	registerSettings(mux, service)
@@ -74,7 +79,13 @@ func Handler(service Service) http.Handler {
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
-		detail, err := service.NodeStability(ctx, r.PathValue("id"), since)
+		var detail domain.NodeStability
+		var err error
+		if grouped, ok := service.(groupedStabilityService); ok && r.URL.Query().Get("group") != "" {
+			detail, err = grouped.NodeStabilityForGroup(ctx, r.URL.Query().Get("group"), r.PathValue("id"), since)
+		} else {
+			detail, err = service.NodeStability(ctx, r.PathValue("id"), since)
+		}
 		if err != nil {
 			write(w, http.StatusNotFound, map[string]string{"error": err.Error()})
 			return
@@ -132,7 +143,13 @@ func Handler(service Service) http.Handler {
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
-		data, err := service.NodeLongTerm(ctx, r.PathValue("id"))
+		var data domain.LongTermStability
+		var err error
+		if grouped, ok := service.(groupedStabilityService); ok && r.URL.Query().Get("group") != "" {
+			data, err = grouped.NodeLongTermForGroup(ctx, r.URL.Query().Get("group"), r.PathValue("id"))
+		} else {
+			data, err = service.NodeLongTerm(ctx, r.PathValue("id"))
+		}
 		if err != nil {
 			write(w, http.StatusNotFound, map[string]string{"error": err.Error()})
 			return

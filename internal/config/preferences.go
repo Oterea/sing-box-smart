@@ -11,7 +11,7 @@ func (c Config) Preferences() preferences.Settings {
 	for i, v := range c.RecoverySteps {
 		steps[i] = int(v / time.Second)
 	}
-	return preferences.Settings{NodeDisplayLimit: c.NodeDisplayLimit, LongTermDisplayLimit: c.LongTermDisplayLimit, TestURL: c.TestURL, Current: int(c.Current / time.Second), ManualCheckCount: c.ManualCheckCount, Candidate: int(c.Candidate / time.Second), Ordinary: int(c.Ordinary / time.Second), Timeout: int(c.Timeout / time.Second), Startup: int(c.Startup / time.Second), Resume: int(c.Resume / time.Second), Recovery: int(c.Recovery / time.Second), SleepEnabled: c.SleepEnabled, SleepIdle: int(c.SleepIdleAfter / time.Second), QuietBytes: c.SleepQuietBytes, WakeWindow: int(c.SleepWakeWindow / time.Second), WakeBytes: c.SleepWakeBytes, LogLevel: c.LogLevel, DelayGreen: c.DelayGreen, DelayYellow: c.DelayYellow, SwitchRatio: c.SwitchRatio, RecoveryDropRatio: c.RecoveryDropRatio, RecoveryDropMinMS: c.RecoveryDropMinMS, RecoveryGoodMaxMS: c.RecoveryGoodMaxMS, RecoverySteps: steps, HistoryLimit: c.HistoryLimit}
+	return preferences.Settings{NodeDisplayLimit: c.NodeDisplayLimit, LongTermDisplayLimit: c.LongTermDisplayLimit, TestURL: c.TestURL, Current: int(c.Current / time.Second), ManualCheckCount: c.ManualCheckCount, BackgroundMinutes: c.BackgroundMinutes, SleepMinutes: c.SleepMinutes, Candidate: int(c.Candidate / time.Second), Ordinary: int(c.Ordinary / time.Second), Timeout: int(c.Timeout / time.Second), Startup: int(c.Startup / time.Second), Resume: int(c.Resume / time.Second), Recovery: int(c.Recovery / time.Second), SleepEnabled: c.SleepEnabled, SleepIdle: int(c.SleepIdleAfter / time.Second), QuietBytes: c.SleepQuietBytes, WakeWindow: int(c.SleepWakeWindow / time.Second), WakeBytes: c.SleepWakeBytes, LogLevel: c.LogLevel, DelayGreen: c.DelayGreen, DelayYellow: c.DelayYellow, SwitchRatio: c.SwitchRatio, RecoveryDropRatio: c.RecoveryDropRatio, RecoveryDropMinMS: c.RecoveryDropMinMS, RecoveryGoodMaxMS: c.RecoveryGoodMaxMS, RecoverySteps: steps, HistoryLimit: c.HistoryLimit}
 }
 func (c *Config) ApplyPreferences(s preferences.Settings) {
 	c.NodeDisplayLimit = s.NodeDisplayLimit
@@ -19,6 +19,8 @@ func (c *Config) ApplyPreferences(s preferences.Settings) {
 	c.TestURL = s.TestURL
 	c.Current = time.Duration(s.Current) * time.Second
 	c.ManualCheckCount = s.ManualCheckCount
+	c.BackgroundMinutes = s.BackgroundMinutes
+	c.SleepMinutes = s.SleepMinutes
 	c.Candidate = time.Duration(s.Candidate) * time.Second
 	c.Ordinary = time.Duration(s.Ordinary) * time.Second
 	c.Timeout = time.Duration(s.Timeout) * time.Second

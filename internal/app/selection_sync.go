@@ -117,6 +117,9 @@ func (a *App) setCurrentNode(id string) {
 		return
 	}
 	a.current = id
+	if group := a.backgroundGroups[a.airport.ID]; group != nil {
+		group.CurrentID = id
+	}
 	a.store.Reclassify(id)
 	if a.phase != "startup" {
 		a.store.Reschedule(time.Now(), id, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)

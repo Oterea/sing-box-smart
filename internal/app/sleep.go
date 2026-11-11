@@ -30,9 +30,12 @@ func (a *App) enterSleep() {
 	a.sleepRecords.Start(time.Now(), "idle")
 	a.generation++
 	a.probeCancel()
+	a.probeCtx, a.probeCancel = context.WithCancel(a.rootCtx)
+	next := time.Now().Add(time.Duration(a.cfg.SleepMinutes) * time.Minute)
 	for _, n := range a.store.Nodes {
 		n.Plan.InFlight = false
 		n.Plan.ClearRecovery()
+		n.Plan.NormalDue = next
 	}
 	a.phase = "sleeping"
 	a.revision++

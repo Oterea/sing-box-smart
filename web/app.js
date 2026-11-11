@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 let nodeList;
-let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, streamReconnectTimer = 0, lastStreamEvent = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailData = null, detailTimer = 0, detailStream = null, detailRequestController = null, detailLongTermController = null, detailRequestToken = 0, detailUpdateChain = Promise.resolve(), detailNodeSequence = 0, detailSummaryKey = '', detailSamplesKey = '', detailView = 'realtime', detailFollowLatest = true, serviceStatusInitialized = false, previousPendingID = '', previousCurrentID = '', previousAirportID = '';
+let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, streamReconnectTimer = 0, lastStreamEvent = 0, lastStateRefresh = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailGroupID = '', detailData = null, detailTimer = 0, detailStream = null, detailRequestController = null, detailLongTermController = null, detailRequestToken = 0, detailUpdateChain = Promise.resolve(), detailNodeSequence = 0, detailSummaryKey = '', detailSamplesKey = '', detailView = 'realtime', detailFollowLatest = true, serviceStatusInitialized = false, previousPendingID = '', previousCurrentID = '', previousAirportID = '', displayGroupID = '';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = value => value == null ? '—' : value >= 10000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString();
 // Large scores are useful internally for ranking, but are not meaningful in
@@ -135,6 +135,18 @@ function render(s){
  if(s.instance_id)stateInstance=s.instance_id;
  if(Number.isFinite(Number(s.revision)))stateRevision=Number(s.revision);
  state=s;
+ const groups=s.groups||[];
+ if(!displayGroupID||!groups.some(group=>group.id===displayGroupID))displayGroupID=s.airport_id;
+ const displayGroup=groups.find(group=>group.id===displayGroupID)||{id:s.airport_id,current_id:s.current_id,nodes:s.nodes};
+ const displayState={...s,airport_id:displayGroup.id,current_id:displayGroup.current_id,nodes:displayGroup.nodes||[]};
+ const displayTabs=$('display-group-tabs');
+ if(displayTabs){
+  const nextTabs=JSON.stringify(groups.map(group=>[group.id,group.name,group.active,group.phase]));
+  if(displayTabs.dataset.key!==nextTabs){
+   displayTabs.innerHTML=groups.map(group=>`<button type="button" role="tab" class="display-group-tab${group.id===displayGroupID?' active':''}" aria-selected="${group.id===displayGroupID}" data-display-group="${esc(group.id)}">${esc(group.name||group.selector)}</button>`).join('');
+   displayTabs.dataset.key=nextTabs;
+  } else for(const button of displayTabs.querySelectorAll('[data-display-group]')){const active=button.dataset.displayGroup===displayGroupID;button.classList.toggle('active',active);button.setAttribute('aria-selected',String(active));}
+ }
  if(typeof syncLongTermOverview==='function')syncLongTermOverview(s);
  if(typeof SmartSettings!=='undefined')SmartSettings.update(s.settings);
  const prefs=s.settings;
@@ -167,10 +179,10 @@ function render(s){
  $('airport-options').innerHTML=s.airports.map(a=>`<button class="airport-option ${a.id===s.airport_id&&s.control_active!==false?'selected':''}" data-airport="${esc(a.id)}" title="${esc(a.selector)}" ${busy||s.paused||s.sleeping||s.pending_id||(a.id===s.airport_id&&s.control_active!==false)?'disabled':''} aria-pressed="${a.id===s.airport_id&&s.control_active!==false}"><strong>${esc(a.selector)}</strong></button>`).join('');
   airportKey=nextAirportKey;
  }
- const available=s.nodes.filter(n=>n.checks>0&&n.last_success).length;
- $('success-summary').textContent=available+' / '+s.nodes.length+' 节点成功';
- $('sample-count').textContent=s.nodes.reduce((v,n)=>v+n.checks,0)+' 次检查';
- const current=s.nodes.find(n=>n.id===s.current_id);
+ const available=displayState.nodes.filter(n=>n.checks>0&&n.last_success).length;
+ $('success-summary').textContent=available+' / '+displayState.nodes.length+' 节点成功';
+ $('sample-count').textContent=displayState.nodes.reduce((v,n)=>v+n.checks,0)+' 次检查';
+ const current=displayState.nodes.find(n=>n.id===displayState.current_id);
  const elapsed=(new Date(s.now)-new Date(s.started_at))/1000;
  const observationSeconds=s.observation_seconds||s.startup_seconds;
  updateServiceStatus(s,elapsed,observationSeconds);
@@ -179,17 +191,16 @@ function render(s){
   if(previousAirportID===s.airport_id&&previousCurrentID&&s.current_id&&previousCurrentID!==s.current_id&&!s.pending_id){const target=s.nodes.find(node=>node.id===s.current_id);toast(`已切换到：${target?.name||'新节点'}`);}
  }
  previousPendingID=s.pending_id||'';previousCurrentID=s.current_id||'';previousAirportID=s.airport_id||'';serviceStatusInitialized=true;
- const valid=s.nodes.filter(n=>n.score!=null), best=valid.length?Math.min(...valid.map(n=>n.score)):Infinity;
- const sorted=[...s.nodes].sort((a,b)=>(a.score??Infinity)-(b.score??Infinity)||a.id.localeCompare(b.id));
- const selected=current??{id:'',name:'等待首次选择',checks:0,history:[],score:null,delay_ms:null,last_success:false};
- syncRows($('selected-node'),[selected],best,s,true);
+ const valid=displayState.nodes.filter(n=>n.score!=null), best=valid.length?Math.min(...valid.map(n=>n.score)):Infinity;
+ const sorted=[...displayState.nodes].sort((a,b)=>(a.score??Infinity)-(b.score??Infinity)||a.id.localeCompare(b.id));
+ syncRows($('selected-node'),[s.nodes.find(n=>n.id===s.current_id)??{id:'',name:'等待首次选择',checks:0,history:[],score:null,delay_ms:null,last_success:false}],best,s,true);
  nodeList??=SmartNodeList.create(30);
- const list=nodeList.view(sorted,s.airport_id,prefs?.node_display_limit??30);
+ const list=nodeList.view(sorted,displayState.airport_id,prefs?.node_display_limit??30);
  $('node-count').textContent=list.canToggle?`${list.visible} / ${list.total}`:list.total;
  $('node-list-controls').hidden=!list.canToggle;
  $('nodes-toggle').textContent=list.expanded?`收起至前 ${list.limit} 个`:`显示全部（还有 ${list.remaining} 个）`;
  $('nodes-toggle').setAttribute('aria-expanded',String(list.expanded));
- syncRows($('nodes'),list.nodes,best,s,false);
+ syncRows($('nodes'),list.nodes,best,displayState,false);
  const kinds={startup:'启动',phase:'状态',switch:'切换',recovery:'复查',sleep:'睡眠',manual:'手动',decision:'判断',api:'接口',error:'错误',unavailable:'故障',grpc:'gRPC',settings:'设置'};
  const nextEventsKey=JSON.stringify(s.events);
  if(nextEventsKey!==eventsKey){
@@ -212,13 +223,14 @@ function render(s){
  $('updated').textContent='更新于 '+time(s.now);
 }
 function toast(message){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4500);}
-async function refresh(){try{const headers=stateEtag?{'If-None-Match':stateEtag}:{};const r=await fetch('/api/state',{headers});if(r.status===304)return;if(!r.ok)throw new Error('状态读取失败');stateEtag=r.headers.get('ETag')||'';render(await r.json());}catch(e){$('connection').parentElement.dataset.health='error';$('connection').textContent='连接中断';const status=$('service-status'),text=$('service-status-text');if(status&&text){status.dataset.tone='error';status.title='暂时无法连接后端，当前显示的是上次数据。';status.setAttribute('aria-label',status.title);text.textContent='连接中断';}}}
+async function refresh(){try{const headers=stateEtag?{'If-None-Match':stateEtag}:{};const r=await fetch('/api/state',{headers});lastStateRefresh=Date.now();if(r.status===304)return;if(!r.ok)throw new Error('状态读取失败');stateEtag=r.headers.get('ETag')||'';render(await r.json());}catch(e){$('connection').parentElement.dataset.health='error';$('connection').textContent='连接中断';const status=$('service-status'),text=$('service-status-text');if(status&&text){status.dataset.tone='error';status.title='暂时无法连接后端，当前显示的是上次数据。';status.setAttribute('aria-label',status.title);text.textContent='连接中断';}}}
 async function control(action,id=''){
  if(busy)return;busy=true;if(state)render(state);
  try{const r=await fetch('/api/control/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});const data=await r.json();if(!r.ok)throw new Error(data.error||'操作失败');toast(action==='recheck'?'已安排当前策略组节点检查':action==='pause'?'检测已暂停':action==='resume'?'已继续检测':action==='auto'?'已开启自动选择':action==='manual'?'已开启手动选择':'请求已受理，等待后端确认。');}
  catch(e){toast(e.message);}finally{busy=false;await refresh();}
 }
 $('airport-options').addEventListener('click',e=>{const button=e.target.closest('[data-airport]');if(button)control('airport',button.dataset.airport);});
+$('display-group-tabs')?.addEventListener('click',e=>{const button=e.target.closest('[data-display-group]');if(!button)return;displayGroupID=button.dataset.displayGroup;if(state)render(state);});
 $('recheck').addEventListener('click',()=>control('recheck'));
 $('detection-toggle').addEventListener('click',()=>{if(state)control((state.paused||state.sleeping)?'resume':'pause');});
 $('selection-auto').addEventListener('click',()=>control('auto'));
@@ -229,13 +241,13 @@ for (const id of ['nodes','selected-node']) {
  body.closest('table').insertAdjacentHTML('afterbegin',tableHeading());
  body.addEventListener('click',e=>{
   const detail=e.target.closest('button[data-detail-node]');
-  if(detail&&!detail.disabled){e.stopPropagation();openNodeDetail(detail.dataset.detailNode);return;}
+  if(detail&&!detail.disabled){e.stopPropagation();openNodeDetail(detail.dataset.detailNode,id==='nodes'?displayGroupID:s.airport_id);return;}
   const button=e.target.closest('button[data-node]');
   if(button&&!button.disabled)control('node',button.dataset.node);
  });
 }
 // Background tabs do not need a full 78-node snapshot every second.
-async function poll(){if(!streamOpen||Date.now()-lastStreamEvent>3000)await refresh();setTimeout(poll,document.hidden?5000:1000);}poll();
+async function poll(){if(!streamOpen||Date.now()-lastStreamEvent>3000||Date.now()-lastStateRefresh>10000)await refresh();setTimeout(poll,document.hidden?5000:1000);}poll();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
 
 function connectStream(){

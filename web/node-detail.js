@@ -73,7 +73,7 @@ async function loadLongTerm() {
  const controller=new AbortController();
  detailLongTermController=controller;
  try {
-  const response=await fetch('/api/node/'+encodeURIComponent(nodeID)+'/stability/long-term',{cache:'no-store',signal:controller.signal});
+  const response=await fetch('/api/node/'+encodeURIComponent(nodeID)+'/stability/long-term?group='+encodeURIComponent(detailGroupID),{cache:'no-store',signal:controller.signal});
   if(!response.ok)throw new Error('长期趋势读取失败');
   const data=await response.json();
   if(detailNodeId!==nodeID)return;
@@ -106,7 +106,7 @@ function renderDetail(data) {
  const summaryChanged=detailSummaryKey!==summaryKey;
  const samplesChanged=detailSamplesKey!==samplesKey;
  if(!summaryChanged&&!samplesChanged&&content.querySelector('.stability-chart-scroll'))return;
- const node=state?.nodes?.find(n=>n.id===detailNodeId);
+ const group=state?.groups?.find(group=>group.id===detailGroupID), node=(group?.nodes||state?.nodes||[]).find(n=>n.id===detailNodeId);
  const name=node?.name||detailNodeId;
  $('node-detail-title').textContent=name+' · 详情';
  const existingChart=content.querySelector('.stability-chart-scroll');
@@ -132,7 +132,8 @@ async function loadNodeDetail() {
   const previous=detailData;
   const cursor=previous?.samples?.length?previous.samples[previous.samples.length-1].at:'';
   const query=cursor?'?since='+encodeURIComponent(cursor):'';
-  const response=await fetch('/api/node/'+encodeURIComponent(nodeID)+'/stability'+query,{cache:'no-store',signal:controller.signal});
+  const separator=query?'&':'?';
+  const response=await fetch('/api/node/'+encodeURIComponent(nodeID)+'/stability'+query+separator+'group='+encodeURIComponent(detailGroupID),{cache:'no-store',signal:controller.signal});
   if(!response.ok)throw new Error('节点详情读取失败');
   const next=await response.json();
   if(token!==detailRequestToken||detailNodeId!==nodeID)return false;
@@ -160,6 +161,7 @@ function connectDetailStream() {
  if(!detailNodeId||!window.EventSource)return;
  const nodeID=detailNodeId;
  detailNodeSequence=0;
+ if(detailGroupID!==state?.airport_id)return;
  const source=new EventSource('/api/node/'+encodeURIComponent(nodeID)+'/stability/events');
  detailStream=source;
  source.addEventListener('stability',event=>{
@@ -189,10 +191,10 @@ function connectDetailStream() {
   if(active&&detailNodeId===nodeID&&!detailTimer){detailTimer=setTimeout(async()=>{detailTimer=0;if(detailNodeId===nodeID){await loadNodeDetail();connectDetailStream();}},3000);}
  };
 }
-function openNodeDetail(id) {
+function openNodeDetail(id,groupID=state?.airport_id) {
  if(!id)return;
  closeDetailStream();
- detailNodeId=id;detailData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();resetDetailView();detailFollowLatest=true;
+ detailNodeId=id;detailGroupID=groupID||state?.airport_id||'';detailData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();resetDetailView();detailFollowLatest=true;
  const dialog=$('node-detail-dialog');
  if(!dialog.open)dialog.showModal();
  dialog.focus({preventScroll:true});
@@ -202,6 +204,6 @@ function openNodeDetail(id) {
 function closeNodeDetail() {
  closeDetailStream();
  detailRequestController?.abort();detailLongTermController?.abort();detailRequestToken++;
- detailNodeId='';detailData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();resetDetailView();detailFollowLatest=true;
+ detailNodeId='';detailGroupID='';detailData=null;detailSummaryKey='';detailSamplesKey='';detailNodeSequence=0;detailUpdateChain=Promise.resolve();resetDetailView();detailFollowLatest=true;
  const dialog=$('node-detail-dialog');if(dialog.open)dialog.close();
 }

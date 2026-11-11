@@ -7,6 +7,7 @@ import (
 	"log"
 	"path/filepath"
 	"sing-box-smart/internal/activity"
+	"sing-box-smart/internal/background"
 	"sing-box-smart/internal/clock"
 	"sing-box-smart/internal/config"
 	"sing-box-smart/internal/discovery"
@@ -64,6 +65,7 @@ type response struct {
 	err              error
 }
 type observation struct {
+	groupID    string
 	id         string
 	generation int
 	probe      domain.Probe
@@ -117,6 +119,8 @@ type App struct {
 	probeCancel                            context.CancelFunc
 	stabilityHub                           *stability.Hub
 	longTerm                               longTermRecorder
+	backgroundGroups                       map[string]*background.Group
+	backgroundScheduleInterval             time.Duration
 	manualCheckPending                     map[string]bool
 	manualCheckRound, manualCheckTotal     int
 }
@@ -142,7 +146,15 @@ func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.L
 		return nil, err
 	}
 	probeCtx, probeCancel := context.WithCancel(ctx)
-	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger, MinLevel: minLevel}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan healthResult, 1), selection: make(chan selectionObservation, 1), activityEvents: make(chan activity.Event, 256), sleepController: sleep.New(sleep.Config{Enabled: cfg.SleepEnabled, IdleAfter: cfg.SleepIdleAfter, QuietBytes: cfg.SleepQuietBytes, WakeWindow: cfg.SleepWakeWindow, WakeBytes: cfg.SleepWakeBytes}, time.Now()), sleepRecords: sleep.NewRecorder(3), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel, longTerm: longTerm, manualCheckPending: map[string]bool{}}
+	groups := make(map[string]*background.Group, len(airports))
+	for _, airport := range airports {
+		group := background.New(airport, cfg.HistoryLimit)
+		if current, err := c.Current(ctx, airport.Selector); err == nil {
+			group.CurrentID = current
+		}
+		groups[airport.ID] = group
+	}
+	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger, MinLevel: minLevel}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan healthResult, 1), selection: make(chan selectionObservation, 1), activityEvents: make(chan activity.Event, 256), sleepController: sleep.New(sleep.Config{Enabled: cfg.SleepEnabled, IdleAfter: cfg.SleepIdleAfter, QuietBytes: cfg.SleepQuietBytes, WakeWindow: cfg.SleepWakeWindow, WakeBytes: cfg.SleepWakeBytes}, time.Now()), sleepRecords: sleep.NewRecorder(3), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel, longTerm: longTerm, manualCheckPending: map[string]bool{}, backgroundGroups: groups}
 	a.stabilityHub = stability.NewHub()
 	a.apiAddress, a.groupRoot, a.groupPattern = cfg.API, cfg.Root, cfg.Pattern
 	a.reset(airports[0])
@@ -169,7 +181,23 @@ func (a *App) reset(airport domain.Airport) {
 	a.probeCtx, a.probeCancel = context.WithCancel(a.rootCtx)
 	now := time.Now()
 	a.airport = airport
-	a.store = state.New(airport.Nodes, a.cfg.HistoryLimit)
+	// A group that was active may become a background group after a selector
+	// switch. Start its independent schedule from a clean, staggered boundary.
+	a.backgroundScheduleInterval = 0
+	for _, other := range a.backgroundGroups {
+		other.Due = map[string]time.Time{}
+		other.InFlight = map[string]bool{}
+	}
+	group := a.backgroundGroups[airport.ID]
+	if group == nil {
+		group = background.New(airport, a.cfg.HistoryLimit)
+		a.backgroundGroups[airport.ID] = group
+	}
+	a.store = group.Store
+	for _, n := range a.store.Nodes {
+		n.Plan.InFlight = false
+		n.Plan.ClearRecovery()
+	}
 	ids := make([]string, 0, len(airport.Nodes))
 	for _, n := range airport.Nodes {
 		ids = append(ids, n.ID)
@@ -240,6 +268,27 @@ func (a *App) snapshot() domain.Snapshot {
 	}
 	now := time.Now()
 	nodes := a.store.ViewsAt(now, a.current, a.phase, a.cfg.DelayGreen, a.cfg.DelayYellow)
+	groups := make([]domain.GroupView, 0, len(a.airports))
+	for _, airport := range a.airports {
+		group := a.backgroundGroups[airport.ID]
+		if group == nil {
+			continue
+		}
+		currentID, phase := group.CurrentID, "background"
+		groupNodes := group.Store.ViewsAt(now, currentID, phase, a.cfg.DelayGreen, a.cfg.DelayYellow)
+		if airport.ID == a.airport.ID {
+			currentID, phase, groupNodes = a.current, a.phase, nodes
+		} else {
+			interval := a.cfg.BackgroundMinutes
+			if a.sleeping {
+				interval = a.cfg.SleepMinutes
+			}
+			for i := range groupNodes {
+				groupNodes[i].Frequency = fmt.Sprintf("%d 分钟", interval)
+			}
+		}
+		groups = append(groups, domain.GroupView{ID: airport.ID, Name: airport.Name, Selector: airport.Selector, Active: airport.ID == a.airport.ID, CurrentID: currentID, Phase: phase, Nodes: groupNodes})
+	}
 	for i := range nodes {
 		n := &nodes[i]
 		switch {
@@ -257,10 +306,39 @@ func (a *App) snapshot() domain.Snapshot {
 			n.Frequency = a.cfg.Ordinary.String()
 		}
 	}
-	return domain.Snapshot{Settings: a.cfg.Preferences(), Revision: a.revision, Paused: a.paused, Sleeping: a.sleeping, SleepEnabled: a.sleepController.Enabled(), LastActivity: lastActivity, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: now, StartupSeconds: a.cfg.Startup.Seconds(), ObservationSeconds: a.observeWindow.Duration().Seconds(), ManualCheckActive: a.manualCheckActive(), ManualCheckRound: a.manualCheckRound, ManualCheckTotal: a.manualCheckTotal, Nodes: nodes, Events: a.events.RecentSnapshot(), SleepRecords: a.sleepRecords.Snapshot(now)}
+	return domain.Snapshot{Settings: a.cfg.Preferences(), Revision: a.revision, Paused: a.paused, Sleeping: a.sleeping, SleepEnabled: a.sleepController.Enabled(), LastActivity: lastActivity, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: now, StartupSeconds: a.cfg.Startup.Seconds(), ObservationSeconds: a.observeWindow.Duration().Seconds(), ManualCheckActive: a.manualCheckActive(), ManualCheckRound: a.manualCheckRound, ManualCheckTotal: a.manualCheckTotal, Nodes: nodes, Groups: groups, Events: a.events.RecentSnapshot(), SleepRecords: a.sleepRecords.Snapshot(now)}
 }
 
 func (a *App) manualCheckActive() bool { return len(a.manualCheckPending) > 0 }
+
+func (a *App) NodeStabilityForGroup(ctx context.Context, groupID, nodeID string, since time.Time) (domain.NodeStability, error) {
+	if groupID == a.airport.ID {
+		return a.NodeStability(ctx, nodeID, since)
+	}
+	group := a.backgroundGroups[groupID]
+	if group == nil {
+		return domain.NodeStability{}, fmt.Errorf("机场策略组不存在")
+	}
+	result, ok := group.Store.NodeStability(nodeID, time.Now(), a.cfg.DelayGreen, a.cfg.DelayYellow, since)
+	if !ok {
+		return domain.NodeStability{}, fmt.Errorf("节点不存在")
+	}
+	return result, nil
+}
+
+func (a *App) NodeLongTermForGroup(ctx context.Context, groupID, nodeID string) (domain.LongTermStability, error) {
+	if groupID == a.airport.ID {
+		return a.NodeLongTerm(ctx, nodeID)
+	}
+	group := a.backgroundGroups[groupID]
+	if group == nil {
+		return domain.LongTermStability{}, fmt.Errorf("机场策略组不存在")
+	}
+	if group.Store.ByID[nodeID] == nil {
+		return domain.LongTermStability{}, fmt.Errorf("节点不存在")
+	}
+	return a.longTerm.Query(groupID, nodeID, time.Now(), float64(a.cfg.DelayYellow)), nil
+}
 
 func recoveryLabel(kind recovery.Kind) string {
 	if kind == recovery.FailureToGood {

@@ -18,6 +18,7 @@ type Config struct {
 	Pins                                                                                []Pin
 	Startup, Resume, Current, Candidate, Ordinary, Recovery, Timeout                    time.Duration
 	ManualCheckCount                                                                    int
+	BackgroundMinutes, SleepMinutes                                                     int
 	SleepEnabled                                                                        bool
 	SleepIdleAfter                                                                      time.Duration
 	SleepQuietBytes, SleepWakeBytes                                                     int64
@@ -29,7 +30,7 @@ type Config struct {
 }
 
 func Default() Config {
-	return Config{NodeDisplayLimit: 30, LongTermDisplayLimit: 5, DelayGreen: 300, DelayYellow: 600, Mode: "demo", API: "http://127.0.0.1:9695", Root: "proxy", Pattern: "SMART$", TestURL: "https://www.gstatic.com/generate_204", Listen: "127.0.0.1:8787", LogDir: "logs", LogLevel: "info", Timezone: clock.DefaultTimezone, Startup: 10 * time.Second, Resume: 5 * time.Second, Current: 3 * time.Second, ManualCheckCount: 5, Candidate: 30 * time.Second, Ordinary: 5 * time.Minute, Recovery: 3 * time.Second, Timeout: 4 * time.Second, SleepIdleAfter: 10 * time.Minute, SleepQuietBytes: 64 * 1024, SleepWakeWindow: 5 * time.Second, SleepWakeBytes: 1024 * 1024, RecoverySteps: []time.Duration{3 * time.Second, 6 * time.Second, 12 * time.Second, 20 * time.Second}, RecoveryDropRatio: .75, RecoveryDropMinMS: 100, RecoveryGoodMaxMS: 400, SwitchRatio: 1.5, HistoryLimit: 24}
+	return Config{NodeDisplayLimit: 30, LongTermDisplayLimit: 5, DelayGreen: 300, DelayYellow: 600, Mode: "demo", API: "http://127.0.0.1:9695", Root: "proxy", Pattern: "SMART$", TestURL: "https://www.gstatic.com/generate_204", Listen: "127.0.0.1:8787", LogDir: "logs", LogLevel: "info", Timezone: clock.DefaultTimezone, Startup: 10 * time.Second, Resume: 5 * time.Second, Current: 3 * time.Second, ManualCheckCount: 5, BackgroundMinutes: 30, SleepMinutes: 60, Candidate: 30 * time.Second, Ordinary: 5 * time.Minute, Recovery: 3 * time.Second, Timeout: 4 * time.Second, SleepIdleAfter: 10 * time.Minute, SleepQuietBytes: 64 * 1024, SleepWakeWindow: 5 * time.Second, SleepWakeBytes: 1024 * 1024, RecoverySteps: []time.Duration{3 * time.Second, 6 * time.Second, 12 * time.Second, 20 * time.Second}, RecoveryDropRatio: .75, RecoveryDropMinMS: 100, RecoveryGoodMaxMS: 400, SwitchRatio: 1.5, HistoryLimit: 24}
 }
 func ParsePins(raw string) ([]Pin, error) {
 	var out []Pin
@@ -76,7 +77,7 @@ func (c Config) Validate() error {
 	if c.SleepEnabled && strings.TrimSpace(c.GRPCAddress) == "" {
 		return fmt.Errorf("sleep monitor requires grpc address")
 	}
-	if c.Startup <= 0 || c.Resume <= 0 || c.Current <= 0 || c.ManualCheckCount < 1 || c.ManualCheckCount > 20 || c.Candidate <= 0 || c.Ordinary <= 0 || c.Recovery <= 0 || c.Timeout <= 0 || c.SleepIdleAfter <= 0 || c.SleepQuietBytes <= 0 || c.SleepWakeWindow <= 0 || c.SleepWakeBytes <= 0 || len(c.RecoverySteps) == 0 || c.RecoveryDropRatio <= 0 || c.RecoveryDropRatio >= 1 || c.RecoveryDropMinMS <= 0 || c.RecoveryGoodMaxMS <= 0 || c.SwitchRatio <= 1 || c.HistoryLimit < 1 {
+	if c.Startup <= 0 || c.Resume <= 0 || c.Current <= 0 || c.ManualCheckCount < 1 || c.ManualCheckCount > 20 || c.BackgroundMinutes < 1 || c.BackgroundMinutes > 1440 || c.SleepMinutes < 1 || c.SleepMinutes > 1440 || c.Candidate <= 0 || c.Ordinary <= 0 || c.Recovery <= 0 || c.Timeout <= 0 || c.SleepIdleAfter <= 0 || c.SleepQuietBytes <= 0 || c.SleepWakeWindow <= 0 || c.SleepWakeBytes <= 0 || len(c.RecoverySteps) == 0 || c.RecoveryDropRatio <= 0 || c.RecoveryDropRatio >= 1 || c.RecoveryDropMinMS <= 0 || c.RecoveryGoodMaxMS <= 0 || c.SwitchRatio <= 1 || c.HistoryLimit < 1 {
 		return fmt.Errorf("invalid timing, ratio, or history settings")
 	}
 	for _, step := range c.RecoverySteps {

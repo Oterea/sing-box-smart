@@ -186,4 +186,17 @@ type Snapshot struct {
 	Nodes              []NodeView           `json:"nodes"`
 	Events             []Event              `json:"events"`
 	SleepRecords       []SleepRecord        `json:"sleep_records"`
+	Groups             []GroupView          `json:"groups"`
+}
+
+// GroupView contains the same node view data for every airport strategy group.
+// The frontend may switch which group is displayed without changing control.
+type GroupView struct {
+	ID        string     `json:"id"`
+	Name      string     `json:"name"`
+	Selector  string     `json:"selector"`
+	Active    bool       `json:"active"`
+	CurrentID string     `json:"current_id"`
+	Phase     string     `json:"phase"`
+	Nodes     []NodeView `json:"nodes"`
 }

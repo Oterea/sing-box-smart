@@ -53,7 +53,11 @@ func (a *App) Run(ctx context.Context) {
 				r.reply <- response{err: a.control(ctx, r.control, r.target)}
 			}
 		case p := <-a.results:
-			a.observe(ctx, p)
+			if p.groupID == "" {
+				a.observe(ctx, p)
+			} else {
+				a.observeBackground(p)
+			}
 		case c := <-a.changes:
 			a.switched(c)
 		case result := <-a.health:
@@ -92,6 +96,7 @@ func (a *App) Run(ctx context.Context) {
 }
 
 func (a *App) tick(ctx context.Context, now time.Time) {
+	a.tickBackground(ctx, now)
 	if a.confirmation.Expired(now) {
 		a.cancelNodeConfirmation("确认超时，取消本次切换")
 	}
@@ -103,6 +108,13 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 		a.startSelectionSync(ctx)
 	}
 	if a.paused || a.sleeping {
+		if a.sleeping && !a.paused {
+			for _, n := range a.store.Nodes {
+				if reason := n.Plan.Due(now, a.phase, n.Info.ID == a.current); reason != "" {
+					a.startProbe(ctx, n, "sleep")
+				}
+			}
+		}
 		return
 	}
 	if !a.healthy {
@@ -159,6 +171,70 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 	}
 }
 
+func (a *App) tickBackground(ctx context.Context, now time.Time) {
+	if a.paused || !a.healthy {
+		return
+	}
+	interval := time.Duration(a.cfg.BackgroundMinutes) * time.Minute
+	if a.sleeping {
+		interval = time.Duration(a.cfg.SleepMinutes) * time.Minute
+	}
+	if a.backgroundScheduleInterval != interval {
+		for _, group := range a.backgroundGroups {
+			group.Schedule(now, interval)
+		}
+		a.backgroundScheduleInterval = interval
+	}
+	for id, group := range a.backgroundGroups {
+		if id == a.airport.ID {
+			continue
+		}
+		if len(group.Due) == 0 {
+			group.Schedule(now, interval)
+		}
+		for _, node := range group.DueNodes(now) {
+			groupID, nodeID := id, node.Info.ID
+			runner, probeCtx := a.runner, a.probeCtx
+			go func() {
+				p, err := runner.Run(probeCtx, nodeID)
+				select {
+				case a.results <- observation{groupID: groupID, id: nodeID, probe: p, err: err}:
+				case <-probeCtx.Done():
+				}
+			}()
+		}
+	}
+}
+
+func (a *App) observeBackground(o observation) {
+	group := a.backgroundGroups[o.groupID]
+	if group == nil {
+		return
+	}
+	now := time.Now()
+	interval := time.Duration(a.cfg.BackgroundMinutes) * time.Minute
+	if a.sleeping {
+		interval = time.Duration(a.cfg.SleepMinutes) * time.Minute
+	}
+	group.Complete(o.id, now, interval)
+	if o.err != nil {
+		return
+	}
+	if o.probe.At.IsZero() {
+		o.probe.At = now
+	}
+	node := group.Store.ByID[o.id]
+	if node == nil {
+		return
+	}
+	group.Store.Record(o.id, o.probe)
+	group.Reclassify()
+	if err := a.longTerm.Record(o.groupID, o.id, node.Info.Name, o.probe); err != nil {
+		a.events.Warn("stability", "long_term_save", "后台长期稳定性数据保存失败", map[string]any{"error": err.Error(), "group": o.groupID})
+	}
+	a.revision++
+}
+
 func (a *App) cancelNodeConfirmation(message string) {
 	if !a.confirmation.Active() {
 		return
@@ -172,7 +248,7 @@ func (a *App) cancelNodeConfirmation(message string) {
 }
 
 func (a *App) startProbe(ctx context.Context, n *state.Node, reason string) {
-	if a.paused || a.sleeping || n.Plan.InFlight {
+	if a.paused || n.Plan.InFlight {
 		return
 	}
 	n.Plan.InFlight = true
@@ -184,14 +260,14 @@ func (a *App) startProbe(ctx context.Context, n *state.Node, reason string) {
 	go func() {
 		p, err := runner.Run(probeCtx, id)
 		select {
-		case a.results <- observation{id, generation, p, err}:
+		case a.results <- observation{id: id, generation: generation, probe: p, err: err}:
 		case <-probeCtx.Done():
 		}
 	}()
 }
 
 func (a *App) observe(ctx context.Context, o observation) {
-	if a.paused || a.sleeping || o.generation != a.generation {
+	if a.paused || o.generation != a.generation {
 		return
 	}
 	n := a.store.ByID[o.id]
@@ -246,7 +322,10 @@ func (a *App) observe(ctx context.Context, o observation) {
 	if signal.Kind == recovery.None && a.phase != "startup" && reason == "normal" && !wasCurrent && wasOrdinary && o.probe.Success && a.store.NearCandidate(o.id, 0.15) {
 		signal = recovery.Signal{Kind: recovery.CandidateNear}
 	}
-	if reason == "manual" {
+	if reason == "sleep" {
+		n.Plan.ClearRecovery()
+		n.Plan.NormalDue = now.Add(time.Duration(a.cfg.SleepMinutes) * time.Minute)
+	} else if reason == "manual" {
 		n.Plan.ClearRecovery()
 		if a.manualCheckActive() {
 			n.Plan.NormalDue = now.Add(24 * time.Hour)
@@ -357,6 +436,9 @@ func (a *App) observe(ctx context.Context, o observation) {
 	// configuration reset, or the total deadline may still be queued. Score it
 	// normally, but do not let that stale result immediately start a new switch.
 	if reason == "confirm" {
+		return
+	}
+	if a.sleeping {
 		return
 	}
 	a.evaluate(ctx)
