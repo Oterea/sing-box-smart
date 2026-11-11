@@ -39,7 +39,9 @@ jobs:
           grep '^PKG_VERSION?=' package/sing-box-smart/Makefile package/luci-app-sing-box-smart/Makefile
       - uses: openwrt/gh-action-sdk@main
         env:
-          ARCH: aarch64_generic-openwrt-25.12
+          # Pin the SDK to the OpenWrt 25.12.2 release. The rolling
+          # 25.12-SNAPSHOT image can change while its checksum is cached.
+          ARCH: aarch64_generic-25.12.2
           PACKAGES: sing-box-smart luci-app-sing-box-smart
           V: s
       - name: Restore OpenWrt SDK cache
