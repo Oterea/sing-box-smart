@@ -29,6 +29,7 @@ jobs:
           version="$((version_index / 100)).$(((version_index / 10) % 10)).$((version_index % 10))"
           sed -i "s/^PKG_VERSION?=.*/PKG_VERSION?=$version/" \
             package/sing-box-smart/Makefile package/luci-app-sing-box-smart/Makefile
+          python3 scripts/luci_assets.py stage package/luci-app-sing-box-smart "$version"
           echo "Publishing sing-box-smart and LuCI $version-r1"
           grep '^PKG_VERSION?=' package/sing-box-smart/Makefile package/luci-app-sing-box-smart/Makefile
       - uses: openwrt/gh-action-sdk@main

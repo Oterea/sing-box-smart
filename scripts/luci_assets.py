@@ -1,6 +1,9 @@
 """Give each LuCI release distinct module and stylesheet URLs."""
 import json
 import re
+import shutil
+import sys
+from pathlib import Path
 
 
 def collect_luci_files(package_root, version):
@@ -30,3 +33,32 @@ def collect_luci_files(package_root, version):
             data = data.replace(b'sing-box-smart/style.css', f'sing-box-smart/{release}/style.css'.encode())
         files.append(('www/' + name, data, source.stat().st_mode & 0o777))
     return files
+
+
+def stage_luci_files(package_root, version):
+    """Rewrite a LuCI package tree with versioned runtime asset paths."""
+    package_root = Path(package_root)
+    staged = package_root.parent / (package_root.name + '.staged')
+    if staged.exists():
+        shutil.rmtree(staged)
+    (staged / 'root').mkdir(parents=True)
+    (staged / 'htdocs').mkdir(parents=True)
+    for name, data, mode in collect_luci_files(package_root, version):
+        if name.startswith('www/'):
+            target = staged / 'htdocs' / name.removeprefix('www/')
+        else:
+            target = staged / 'root' / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+        target.chmod(mode)
+    for directory in ('root', 'htdocs'):
+        original = package_root / directory
+        shutil.rmtree(original)
+        shutil.move(str(staged / directory), str(original))
+    staged.rmdir()
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 4 or sys.argv[1] != 'stage':
+        raise SystemExit('usage: luci_assets.py stage PACKAGE_ROOT VERSION')
+    stage_luci_files(sys.argv[2], sys.argv[3])
