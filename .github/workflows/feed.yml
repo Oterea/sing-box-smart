@@ -37,13 +37,32 @@ jobs:
           test ! -e package/luci-app-sing-box-smart/htdocs/luci-static/resources/view/sing-box-smart/app.js
           echo "Publishing sing-box-smart and LuCI $version-r1"
           grep '^PKG_VERSION?=' package/sing-box-smart/Makefile package/luci-app-sing-box-smart/Makefile
-      - uses: openwrt/gh-action-sdk@main
+      - name: Build packages from OpenWrt Snapshot SDK
+        id: sdk-build
+        continue-on-error: true
+        uses: openwrt/gh-action-sdk@main
         env:
-          # Pin the SDK to the OpenWrt 25.12.2 release. The rolling
-          # 25.12-SNAPSHOT image can change while its checksum is cached.
-          ARCH: aarch64_generic-25.12.2
+          ARCH: aarch64_generic-openwrt-25.12
           PACKAGES: sing-box-smart luci-app-sing-box-smart
           V: s
+      - name: Retry Snapshot SDK build
+        if: steps.sdk-build.outcome == 'failure'
+        id: sdk-build-retry
+        continue-on-error: true
+        uses: openwrt/gh-action-sdk@main
+        env:
+          ARCH: aarch64_generic-openwrt-25.12
+          PACKAGES: sing-box-smart luci-app-sing-box-smart
+          V: s
+      - name: Verify built packages
+        if: always()
+        run: |
+          if [ "${{ steps.sdk-build.outcome }}" = failure ] && [ "${{ steps.sdk-build-retry.outcome }}" != success ]; then
+            echo 'OpenWrt Snapshot SDK build failed twice.' >&2
+            exit 1
+          fi
+          test -n "$(find bin/packages -type f -name 'sing-box-smart-*.apk' -print -quit 2>/dev/null)"
+          test -n "$(find bin/packages -type f -name 'luci-app-sing-box-smart-*.apk' -print -quit 2>/dev/null)"
       - name: Restore OpenWrt SDK cache
         id: sdk-cache
         uses: actions/cache@v5
