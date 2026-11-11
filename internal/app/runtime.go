@@ -165,6 +165,14 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 		a.evaluate(ctx)
 	}
 	for _, n := range a.store.Nodes {
+		// Manual rounds are an explicit batch and must bypass the normal tier
+		// schedule. Plan.Due intentionally returns generic schedule reasons, so
+		// the batch membership is checked before calling it and the manual reason
+		// is preserved through result handling.
+		if a.manualCheckPending[n.Info.ID] {
+			a.startProbe(ctx, n, "manual")
+			continue
+		}
 		if reason := n.Plan.Due(now, a.phase, n.Info.ID == a.current); reason != "" {
 			a.startProbe(ctx, n, reason)
 		}

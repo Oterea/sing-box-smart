@@ -54,7 +54,7 @@ func (a *App) control(ctx context.Context, action, target string) error {
 	if action == "auto" || action == "manual" {
 		return a.controlSelectionMode(ctx, action)
 	}
-	if a.paused {
+	if a.paused || a.sleeping {
 		return fmt.Errorf("检测已暂停，请先继续检测")
 	}
 	if action == "recheck" {

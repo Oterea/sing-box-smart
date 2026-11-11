@@ -136,3 +136,25 @@ func TestManualRecheckRunsConfiguredRoundsAndScoresEveryResult(t *testing.T) {
 		t.Fatalf("manual check did not finish: active=%v round=%d total=%d", a.manualCheckActive(), a.manualCheckRound, a.manualCheckTotal)
 	}
 }
+
+func TestManualRecheckTickPreservesManualReason(t *testing.T) {
+	cfg := config.Default()
+	cfg.ManualCheckCount = 2
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	a, err := New(ctx, cfg, demo.New(), log.New(io.Discard, "", 0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.phase = "normal"
+	if err := a.control(ctx, "recheck", ""); err != nil {
+		t.Fatal(err)
+	}
+	a.tick(ctx, time.Now())
+	for _, n := range a.store.Nodes {
+		if n.Plan.Reason != "manual" {
+			t.Fatalf("node %q reason=%q, want manual", n.Info.ID, n.Plan.Reason)
+		}
+	}
+	a.probeCancel()
+}
