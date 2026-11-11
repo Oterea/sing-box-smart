@@ -55,6 +55,8 @@ func (a *App) wakeFromSleepWithReason(event activity.Event, reason string) {
 	a.sleepRecords.EndWithSource(now, reason, source)
 	a.sleepController.WakeAt(now)
 	a.sleeping = false
+	a.generation++
+	a.probeCancel()
 	a.resetBackgroundSchedule()
 	a.probeCtx, a.probeCancel = context.WithCancel(a.rootCtx)
 	a.revision++

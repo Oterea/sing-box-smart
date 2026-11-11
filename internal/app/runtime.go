@@ -109,14 +109,7 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 		a.lastSelectionSync = now
 		a.startSelectionSync(ctx)
 	}
-	if a.paused || a.sleeping {
-		if a.sleeping && !a.paused {
-			for _, n := range a.store.Nodes {
-				if reason := n.Plan.Due(now, a.phase, n.Info.ID == a.current); reason != "" {
-					a.startProbe(ctx, n, "sleep")
-				}
-			}
-		}
+	if a.paused {
 		return
 	}
 	if !a.healthy {
@@ -139,6 +132,16 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 				case <-ctx.Done():
 				}
 			}()
+		}
+		return
+	}
+	if a.sleeping {
+		if a.sleeping && !a.paused {
+			for _, n := range a.store.Nodes {
+				if reason := n.Plan.Due(now, a.phase, n.Info.ID == a.current); reason != "" {
+					a.startProbe(ctx, n, "sleep")
+				}
+			}
 		}
 		return
 	}
@@ -231,6 +234,11 @@ func (a *App) observeBackground(o observation) {
 	}
 	group.Complete(o.id, now, interval)
 	if o.err != nil {
+		if a.healthy {
+			a.events.Record("api", "后台检查发现管理接口异常，等待 sing-box 恢复")
+		}
+		a.healthy = false
+		a.lastHealth = now
 		a.revision++
 		return
 	}
