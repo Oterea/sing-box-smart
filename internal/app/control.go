@@ -51,6 +51,9 @@ func (a *App) control(ctx context.Context, action, target string) error {
 		a.resumeDetection()
 		return nil
 	}
+	if a.manualCheckActive() {
+		return fmt.Errorf("立即检查正在进行，请稍后重试")
+	}
 	if action == "auto" || action == "manual" {
 		return a.controlSelectionMode(ctx, action)
 	}
@@ -58,8 +61,11 @@ func (a *App) control(ctx context.Context, action, target string) error {
 		return fmt.Errorf("检测已暂停，请先继续检测")
 	}
 	if action == "recheck" {
-		if a.manualCheckActive() {
-			return fmt.Errorf("立即检查正在进行，请稍后重试")
+		if !a.healthy {
+			return fmt.Errorf("管理接口暂不可用")
+		}
+		if a.pending != "" || a.switchBusy || a.healthBusy {
+			return fmt.Errorf("已有操作正在处理中，请稍后重试")
 		}
 		a.revision++
 		a.manualCheckRound = 1

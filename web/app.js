@@ -58,14 +58,14 @@ function nodeKey(n,best,s,selected=false) {
  // A changing best score matters only when it changes a visible color.
  // Including the raw best value would redraw every node's SVG on each update.
  const colors=(n.history??[]).slice(-20).map(sample=>tone(sample.score,best)).join(',');
- return JSON.stringify({id:n.id,name:n.name,tier:nodeTier(n,s),checks:n.checks,score:n.score,delay:n.delay_ms,overflow:n.score_overflow,last:n.last_success,current:selected||n.id===s.current_id,history:n.history,delayColors:[s.settings?.delay_green_ms,s.settings?.delay_yellow_ms],colors,rowColor:tone(n.score,best),busy,pending:s.pending_id,phase:s.phase,paused:s.paused,sleeping:s.sleeping,api:s.api_healthy,selection_mode:s.selection_mode,control_active:s.control_active});
+ return JSON.stringify({id:n.id,name:n.name,tier:nodeTier(n,s),checks:n.checks,score:n.score,delay:n.delay_ms,overflow:n.score_overflow,last:n.last_success,current:selected||n.id===s.current_id,history:n.history,delayColors:[s.settings?.delay_green_ms,s.settings?.delay_yellow_ms],colors,rowColor:tone(n.score,best),busy,pending:s.pending_id,manual:s.manual_check_active,phase:s.phase,paused:s.paused,sleeping:s.sleeping,api:s.api_healthy,selection_mode:s.selection_mode,control_active:s.control_active});
 }
 function historyKey(n) {
  return JSON.stringify((n.history??[]).slice(-20).map(sample=>[sample.at,sample.success,sample.score,sample.delay_ms,sample.error]));
 }
 function nodeRow(n,best,s) {
  const current=Boolean(n.id)&&n.id===s.current_id;
- const disabled=busy||Boolean(s.pending_id)||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
+ const disabled=busy||Boolean(s.pending_id)||s.manual_check_active||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
  const delayColor=n.checks&&!n.last_success?'bad':delayTone(n.delay_ms);
  const buttonText=n.id?n.name:'等待首次选择';
  return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}">${esc(buttonText)}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${scoreNum(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td><td><button class="detail-button" data-detail-node="${esc(n.id)}" ${!n.id?'disabled':''}>详情</button></td></tr>`;
@@ -80,7 +80,7 @@ function patchRow(row,n,best,s,selected=false) {
  const current=Boolean(n.id)&&n.id===s.current_id;
  row.className=current?'current-row':'';
  const button=row.querySelector('button.node-choice');
- const disabled=busy||Boolean(s.pending_id)||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
+ const disabled=busy||Boolean(s.pending_id)||s.manual_check_active||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
  button.textContent=n.id?n.name:'等待首次选择';
  button.title=n.name;
  button.disabled=disabled;
@@ -161,9 +161,9 @@ function render(s){
  $('detection-toggle').disabled=busy;
  $('recheck').textContent=s.manual_check_active?`立即检查 ${s.manual_check_round}/${s.manual_check_total}`:'↻ 立即检查';
  $('recheck').disabled=busy||s.paused||s.sleeping||s.manual_check_active;
- $('selection-auto').disabled=busy||Boolean(s.pending_id)||s.selection_mode!=='manual';
+ $('selection-auto').disabled=busy||Boolean(s.pending_id)||s.manual_check_active||s.selection_mode!=='manual';
  $('selection-auto').setAttribute?.('aria-pressed',s.selection_mode!=='manual');
- $('selection-manual').disabled=busy||s.selection_mode==='manual';
+ $('selection-manual').disabled=busy||s.manual_check_active||s.selection_mode==='manual';
  $('selection-manual').setAttribute?.('aria-pressed',s.selection_mode==='manual');
  $('selection-auto').classList.toggle('active',s.selection_mode!=='manual');
  $('selection-manual').classList.toggle('active',s.selection_mode==='manual');
@@ -174,9 +174,9 @@ function render(s){
  $('connection').textContent=s.api_healthy?'后端已连接':'管理接口异常';
  $('mode-note-text').textContent=s.mode==='real'?'真实模式 · 已连接 sing-box API':'模拟模式 · 切换仅作用于模拟接口';
  $('mode-note').classList.toggle('real-mode',s.mode==='real');
- const nextAirportKey=JSON.stringify({airports:s.airports,selected:s.airport_id,busy,pending:s.pending_id,paused:s.paused,sleeping:s.sleeping,active:s.control_active});
+ const nextAirportKey=JSON.stringify({airports:s.airports,selected:s.airport_id,busy,pending:s.pending_id,manual:s.manual_check_active,paused:s.paused,sleeping:s.sleeping,active:s.control_active});
  if(nextAirportKey!==airportKey){
- $('airport-options').innerHTML=s.airports.map(a=>`<button class="airport-option ${a.id===s.airport_id&&s.control_active!==false?'selected':''}" data-airport="${esc(a.id)}" title="${esc(a.selector)}" ${busy||s.paused||s.sleeping||s.pending_id||(a.id===s.airport_id&&s.control_active!==false)?'disabled':''} aria-pressed="${a.id===s.airport_id&&s.control_active!==false}"><strong>${esc(a.selector)}</strong></button>`).join('');
+  $('airport-options').innerHTML=s.airports.map(a=>`<button class="airport-option ${a.id===s.airport_id&&s.control_active!==false?'selected':''}" data-airport="${esc(a.id)}" title="${esc(a.selector)}" ${busy||s.manual_check_active||s.paused||s.sleeping||s.pending_id||(a.id===s.airport_id&&s.control_active!==false)?'disabled':''} aria-pressed="${a.id===s.airport_id&&s.control_active!==false}"><strong>${esc(a.selector)}</strong></button>`).join('');
   airportKey=nextAirportKey;
  }
  const available=displayState.nodes.filter(n=>n.checks>0&&n.last_success).length;

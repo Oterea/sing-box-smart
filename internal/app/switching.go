@@ -20,7 +20,7 @@ func (a *App) choose() string {
 }
 
 func (a *App) evaluate(ctx context.Context) {
-	if a.paused || a.selectionMode == domain.SelectionManual || !a.controlActive || !a.selectionInitialized || a.phase == "startup" || !a.healthy || a.pending != "" || a.switchBusy {
+	if a.paused || a.manualCheckActive() || a.selectionMode == domain.SelectionManual || !a.controlActive || !a.selectionInitialized || a.phase == "startup" || !a.healthy || a.pending != "" || a.switchBusy {
 		return
 	}
 	target := a.choose()

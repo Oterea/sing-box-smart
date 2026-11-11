@@ -158,3 +158,43 @@ func TestManualRecheckTickPreservesManualReason(t *testing.T) {
 	}
 	a.probeCancel()
 }
+
+func TestManualRecheckRejectsUnavailableOrBusyState(t *testing.T) {
+	a, err := New(context.Background(), config.Default(), demo.New(), log.New(io.Discard, "", 0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.healthy = false
+	if err := a.control(context.Background(), "recheck", ""); err == nil {
+		t.Fatal("recheck accepted while API was unhealthy")
+	}
+	a.healthy = true
+	a.pending = "node"
+	if err := a.control(context.Background(), "recheck", ""); err == nil {
+		t.Fatal("recheck accepted while a switch was pending")
+	}
+}
+
+func TestManualRecheckSuppressesAutomaticSelectionUntilComplete(t *testing.T) {
+	cfg := config.Default()
+	a, err := New(context.Background(), cfg, demo.New(), log.New(io.Discard, "", 0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.phase = "normal"
+	a.selectionMode = domain.SelectionAuto
+	a.controlActive = true
+	a.selectionInitialized = true
+	a.current = a.store.Nodes[0].Info.ID
+	for _, n := range a.store.Nodes {
+		a.store.Record(n.Info.ID, domain.Probe{Success: true, DelayMS: 500, At: time.Now()})
+	}
+	if err := a.control(context.Background(), "recheck", ""); err != nil {
+		t.Fatal(err)
+	}
+	id := a.store.Nodes[0].Info.ID
+	a.observe(context.Background(), observation{id: id, generation: a.generation, probe: domain.Probe{Success: true, DelayMS: 50, At: time.Now()}})
+	if a.pending != "" || a.switchBusy {
+		t.Fatalf("manual result started automatic selection: pending=%q busy=%v", a.pending, a.switchBusy)
+	}
+}

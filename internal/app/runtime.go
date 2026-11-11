@@ -82,6 +82,7 @@ func (a *App) Run(ctx context.Context) {
 				a.controlActive = false
 				a.reset(airport)
 			} else {
+				a.cancelManualCheck("立即检查因管理接口异常中止")
 				a.lastHealth = time.Now()
 			}
 		case selection := <-a.selection:
@@ -100,7 +101,7 @@ func (a *App) tick(ctx context.Context, now time.Time) {
 	if a.confirmation.Expired(now) {
 		a.cancelNodeConfirmation("确认超时，取消本次切换")
 	}
-	if a.sleepController.Tick(now, a.paused || a.pending != "" || a.switchBusy) {
+	if a.sleepController.Tick(now, a.paused || a.pending != "" || a.switchBusy || a.manualCheckActive()) {
 		a.enterSleep()
 	}
 	if !a.selectionSyncBusy && (a.lastSelectionSync.IsZero() || now.Sub(a.lastSelectionSync) >= selectionSyncInterval) {
@@ -285,8 +286,7 @@ func (a *App) observe(ctx context.Context, o observation) {
 	n.Plan.InFlight = false
 	if o.err != nil {
 		if a.manualCheckActive() {
-			a.manualCheckPending = map[string]bool{}
-			a.manualCheckRound, a.manualCheckTotal = 0, 0
+			a.cancelManualCheck("立即检查因管理接口异常中止")
 		}
 		if a.healthy {
 			a.events.Record("api", "检查接口异常，暂停切换；不计入节点失败")

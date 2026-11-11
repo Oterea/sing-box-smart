@@ -50,6 +50,9 @@ func (a *App) applySelectionObservation(o selectionObservation) {
 	}
 	if o.err != nil || o.root == "" {
 		if o.err != nil {
+			if a.manualCheckActive() {
+				a.cancelManualCheck("立即检查因管理接口异常中止")
+			}
 			if a.healthy {
 				a.events.Record("api", "管理接口异常，等待 sing-box 恢复")
 				a.lastHealth = time.Now()
