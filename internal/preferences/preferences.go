@@ -16,6 +16,7 @@ type Settings struct {
 	LongTermDisplayLimit int     `json:"long_term_display_limit"`
 	TestURL              string  `json:"test_url"`
 	Current              int     `json:"current_seconds"`
+	ManualCheckCount     int     `json:"manual_check_count"`
 	Candidate            int     `json:"candidate_seconds"`
 	Ordinary             int     `json:"ordinary_seconds"`
 	Timeout              int     `json:"timeout_seconds"`
@@ -47,7 +48,7 @@ func (s Settings) Validate() error {
 		name      string
 		v, lo, hi int
 	}{
-		{"当前节点间隔", s.Current, 1, 86400}, {"候选节点间隔", s.Candidate, 1, 86400}, {"普通节点间隔", s.Ordinary, 1, 86400},
+		{"当前节点间隔", s.Current, 1, 86400}, {"立即检查次数", s.ManualCheckCount, 1, 20}, {"候选节点间隔", s.Candidate, 1, 86400}, {"普通节点间隔", s.Ordinary, 1, 86400},
 		{"探测超时", s.Timeout, 1, 120}, {"启动观察", s.Startup, 1, 300}, {"恢复观察", s.Resume, 1, 300}, {"故障重试", s.Recovery, 1, 3600},
 		{"睡眠时长", s.SleepIdle, 60, 86400}, {"唤醒窗口", s.WakeWindow, 1, 60}, {"历史数量", s.HistoryLimit, 1, 200},
 		{"默认显示节点数", s.NodeDisplayLimit, 1, 1000}, {"每组长期表现显示数", s.LongTermDisplayLimit, 1, 1000}, {"绿色延迟上限", s.DelayGreen, 1, 59999}, {"黄色延迟上限", s.DelayYellow, 2, 60000},

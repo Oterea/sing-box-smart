@@ -117,6 +117,8 @@ type App struct {
 	probeCancel                            context.CancelFunc
 	stabilityHub                           *stability.Hub
 	longTerm                               longTermRecorder
+	manualCheckPending                     map[string]bool
+	manualCheckRound, manualCheckTotal     int
 }
 
 func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.Logger) (*App, error) {
@@ -140,7 +142,7 @@ func New(ctx context.Context, cfg config.Config, c gateway.Client, logger *log.L
 		return nil, err
 	}
 	probeCtx, probeCancel := context.WithCancel(ctx)
-	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger, MinLevel: minLevel}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan healthResult, 1), selection: make(chan selectionObservation, 1), activityEvents: make(chan activity.Event, 256), sleepController: sleep.New(sleep.Config{Enabled: cfg.SleepEnabled, IdleAfter: cfg.SleepIdleAfter, QuietBytes: cfg.SleepQuietBytes, WakeWindow: cfg.SleepWakeWindow, WakeBytes: cfg.SleepWakeBytes}, time.Now()), sleepRecords: sleep.NewRecorder(3), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel, longTerm: longTerm}
+	a := &App{cfg: cfg, client: c, runner: probe.Runner{Client: c, Timeout: cfg.Timeout}, airports: airports, events: events.Recorder{Logger: logger, MinLevel: minLevel}, healthy: true, selectionMode: domain.SelectionAuto, requests: make(chan request), results: make(chan observation, 128), changes: make(chan changed, 1), health: make(chan healthResult, 1), selection: make(chan selectionObservation, 1), activityEvents: make(chan activity.Event, 256), sleepController: sleep.New(sleep.Config{Enabled: cfg.SleepEnabled, IdleAfter: cfg.SleepIdleAfter, QuietBytes: cfg.SleepQuietBytes, WakeWindow: cfg.SleepWakeWindow, WakeBytes: cfg.SleepWakeBytes}, time.Now()), sleepRecords: sleep.NewRecorder(3), rootCtx: ctx, probeCtx: probeCtx, probeCancel: probeCancel, longTerm: longTerm, manualCheckPending: map[string]bool{}}
 	a.stabilityHub = stability.NewHub()
 	a.apiAddress, a.groupRoot, a.groupPattern = cfg.API, cfg.Root, cfg.Pattern
 	a.reset(airports[0])
@@ -187,6 +189,8 @@ func (a *App) reset(airport domain.Airport) {
 	a.selectionInitialized = false
 	a.selectionEpoch++
 	a.pendingManual = false
+	a.manualCheckPending = map[string]bool{}
+	a.manualCheckRound, a.manualCheckTotal = 0, 0
 	a.confirmation.Clear()
 	a.events.Record("startup", fmt.Sprintf("%s：开始约 %.0f 秒启动检查，期间不选择节点", airport.Name, a.cfg.Startup.Seconds()))
 }
@@ -253,8 +257,10 @@ func (a *App) snapshot() domain.Snapshot {
 			n.Frequency = a.cfg.Ordinary.String()
 		}
 	}
-	return domain.Snapshot{Settings: a.cfg.Preferences(), Revision: a.revision, Paused: a.paused, Sleeping: a.sleeping, SleepEnabled: a.sleepController.Enabled(), LastActivity: lastActivity, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: now, StartupSeconds: a.cfg.Startup.Seconds(), ObservationSeconds: a.observeWindow.Duration().Seconds(), Nodes: nodes, Events: a.events.RecentSnapshot(), SleepRecords: a.sleepRecords.Snapshot(now)}
+	return domain.Snapshot{Settings: a.cfg.Preferences(), Revision: a.revision, Paused: a.paused, Sleeping: a.sleeping, SleepEnabled: a.sleepController.Enabled(), LastActivity: lastActivity, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: now, StartupSeconds: a.cfg.Startup.Seconds(), ObservationSeconds: a.observeWindow.Duration().Seconds(), ManualCheckActive: a.manualCheckActive(), ManualCheckRound: a.manualCheckRound, ManualCheckTotal: a.manualCheckTotal, Nodes: nodes, Events: a.events.RecentSnapshot(), SleepRecords: a.sleepRecords.Snapshot(now)}
 }
+
+func (a *App) manualCheckActive() bool { return len(a.manualCheckPending) > 0 }
 
 func recoveryLabel(kind recovery.Kind) string {
 	if kind == recovery.FailureToGood {

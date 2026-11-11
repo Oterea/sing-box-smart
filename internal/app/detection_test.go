@@ -103,3 +103,36 @@ func TestResumeDoesNotCreateDuplicateWindow(t *testing.T) {
 		t.Fatal("repeated resume created a duplicate observation window")
 	}
 }
+
+func TestManualRecheckRunsConfiguredRoundsAndScoresEveryResult(t *testing.T) {
+	cfg := config.Default()
+	cfg.ManualCheckCount = 2
+	a, err := New(context.Background(), cfg, demo.New(), log.New(io.Discard, "", 0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.phase = "normal"
+	before := make(map[string]int, len(a.store.Nodes))
+	for _, n := range a.store.Nodes {
+		before[n.Info.ID] = n.Checks
+	}
+	if err := a.control(context.Background(), "recheck", ""); err != nil {
+		t.Fatal(err)
+	}
+	for round := 0; round < cfg.ManualCheckCount; round++ {
+		ids := make([]string, 0, len(a.store.Nodes))
+		for id := range a.manualCheckPending {
+			ids = append(ids, id)
+		}
+		for _, id := range ids {
+			n := a.store.ByID[id]
+			a.observe(context.Background(), observation{id: id, generation: a.generation, probe: domain.Probe{Success: true, DelayMS: 120, At: time.Now()}})
+			if n.Checks != before[id]+round+1 {
+				t.Fatalf("node %q checks=%d after round %d", id, n.Checks, round+1)
+			}
+		}
+	}
+	if a.manualCheckActive() || a.manualCheckRound != 0 || a.manualCheckTotal != 0 {
+		t.Fatalf("manual check did not finish: active=%v round=%d total=%d", a.manualCheckActive(), a.manualCheckRound, a.manualCheckTotal)
+	}
+}

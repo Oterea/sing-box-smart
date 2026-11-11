@@ -180,6 +180,9 @@ type Snapshot struct {
 	Now                time.Time            `json:"now"`
 	StartupSeconds     float64              `json:"startup_seconds"`
 	ObservationSeconds float64              `json:"observation_seconds"`
+	ManualCheckActive  bool                 `json:"manual_check_active"`
+	ManualCheckRound   int                  `json:"manual_check_round"`
+	ManualCheckTotal   int                  `json:"manual_check_total"`
 	Nodes              []NodeView           `json:"nodes"`
 	Events             []Event              `json:"events"`
 	SleepRecords       []SleepRecord        `json:"sleep_records"`

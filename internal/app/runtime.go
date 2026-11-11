@@ -200,6 +200,10 @@ func (a *App) observe(ctx context.Context, o observation) {
 	}
 	n.Plan.InFlight = false
 	if o.err != nil {
+		if a.manualCheckActive() {
+			a.manualCheckPending = map[string]bool{}
+			a.manualCheckRound, a.manualCheckTotal = 0, 0
+		}
 		if a.healthy {
 			a.events.Record("api", "检查接口异常，暂停切换；不计入节点失败")
 		}
@@ -242,7 +246,14 @@ func (a *App) observe(ctx context.Context, o observation) {
 	if signal.Kind == recovery.None && a.phase != "startup" && reason == "normal" && !wasCurrent && wasOrdinary && o.probe.Success && a.store.NearCandidate(o.id, 0.15) {
 		signal = recovery.Signal{Kind: recovery.CandidateNear}
 	}
-	if reason == "recovery" {
+	if reason == "manual" {
+		n.Plan.ClearRecovery()
+		if a.manualCheckActive() {
+			n.Plan.NormalDue = now.Add(24 * time.Hour)
+		} else {
+			a.store.RescheduleNode(now, n, a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
+		}
+	} else if reason == "recovery" {
 		next := a.cfg.Ordinary
 		if n.Tier == domain.TierCandidate {
 			next = a.cfg.Candidate
@@ -269,12 +280,21 @@ func (a *App) observe(ctx context.Context, o observation) {
 		a.store.RescheduleNode(now, n, a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
 	}
 	for _, id := range changedTiers {
+		if a.manualCheckActive() {
+			continue
+		}
 		if id == o.id {
 			continue
 		}
 		other := a.store.ByID[id]
 		if other != nil && !other.Plan.InFlight && other.Plan.RecoveryStep == 0 {
 			a.store.RescheduleNode(now, other, a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
+		}
+	}
+	if reason == "manual" && a.manualCheckActive() {
+		delete(a.manualCheckPending, o.id)
+		if len(a.manualCheckPending) == 0 {
+			a.finishManualCheckRound(now)
 		}
 	}
 	value, overflow := score.Display(n.Metrics)
@@ -340,4 +360,25 @@ func (a *App) observe(ctx context.Context, o observation) {
 		return
 	}
 	a.evaluate(ctx)
+}
+
+func (a *App) finishManualCheckRound(now time.Time) {
+	if a.manualCheckRound < a.manualCheckTotal {
+		a.manualCheckRound++
+		a.manualCheckPending = make(map[string]bool, len(a.store.Nodes))
+		for _, n := range a.store.Nodes {
+			a.manualCheckPending[n.Info.ID] = true
+			n.Plan.ClearRecovery()
+			n.Plan.Reason = "manual"
+			n.Plan.NormalDue = now
+		}
+		a.revision++
+		a.events.Record("manual", fmt.Sprintf("立即检查进入第 %d/%d 轮", a.manualCheckRound, a.manualCheckTotal))
+		return
+	}
+	a.manualCheckPending = map[string]bool{}
+	a.manualCheckRound, a.manualCheckTotal = 0, 0
+	a.store.Reschedule(now, a.current, a.cfg.Current, a.cfg.Candidate, a.cfg.Ordinary)
+	a.revision++
+	a.events.Record("manual", "立即检查完成，已恢复正常检查计划")
 }

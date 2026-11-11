@@ -58,12 +58,21 @@ func (a *App) control(ctx context.Context, action, target string) error {
 		return fmt.Errorf("检测已暂停，请先继续检测")
 	}
 	if action == "recheck" {
-		a.revision++
-		for _, n := range a.store.Nodes {
-			n.Plan.ClearRecovery()
-			n.Plan.NormalDue = time.Now()
+		if a.manualCheckActive() {
+			return fmt.Errorf("立即检查正在进行，请稍后重试")
 		}
-		a.events.Record("manual", "已安排当前机场全部节点重新检查")
+		a.revision++
+		a.manualCheckRound = 1
+		a.manualCheckTotal = a.cfg.ManualCheckCount
+		a.manualCheckPending = make(map[string]bool, len(a.store.Nodes))
+		now := time.Now()
+		for _, n := range a.store.Nodes {
+			a.manualCheckPending[n.Info.ID] = true
+			n.Plan.ClearRecovery()
+			n.Plan.Reason = "manual"
+			n.Plan.NormalDue = now
+		}
+		a.events.Record("manual", fmt.Sprintf("已安排当前机场全部节点立即检查，共 %d 轮", a.manualCheckTotal))
 		return nil
 	}
 	if !a.healthy {

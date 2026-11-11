@@ -20,6 +20,8 @@ func (a *App) pauseDetection() {
 		a.sleepController.Wake()
 	}
 	a.revision++
+	a.manualCheckPending = map[string]bool{}
+	a.manualCheckRound, a.manualCheckTotal = 0, 0
 	a.generation++
 	a.probeCancel()
 	for _, n := range a.store.Nodes {

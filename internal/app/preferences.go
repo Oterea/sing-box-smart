@@ -37,6 +37,9 @@ func (a *App) applySettings(ctx context.Context, s preferences.Settings) error {
 	if reflect.DeepEqual(old, s) {
 		return nil
 	}
+	if old.ManualCheckCount != s.ManualCheckCount && a.manualCheckActive() {
+		return fmt.Errorf("立即检查进行中，暂时不能修改检查次数")
+	}
 	if err := preferences.Save(a.cfg.PreferencesPath(), s); err != nil {
 		return fmt.Errorf("保存运行设置: %w", err)
 	}
@@ -64,6 +67,10 @@ func (a *App) applySettings(ctx context.Context, s preferences.Settings) error {
 		for _, n := range a.store.Nodes {
 			n.Plan.InFlight = false
 		}
+	}
+	if old.ManualCheckCount != s.ManualCheckCount {
+		a.manualCheckPending = map[string]bool{}
+		a.manualCheckRound, a.manualCheckTotal = 0, 0
 	}
 	if old.SleepEnabled != s.SleepEnabled || old.TestURL != s.TestURL {
 		a.restartActivity(ctx)
