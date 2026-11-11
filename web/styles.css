@@ -343,6 +343,28 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .detail-button:disabled{opacity:.55;cursor:default}
 .node-table .check-count,
 .node-table .metric-cell{display:flex;align-items:center;justify-content:center;padding:0 8px;background:#edf3f5;box-shadow:none}
+
+/* Node performance keeps its title, summary and legend on one header row;
+   the display-only group choices use the same full-width visual language as
+   the top strategy-group card. */
+.node-performance-panel>.panel-heading{display:grid;grid-template-columns:minmax(150px,.9fr) minmax(170px,1fr) minmax(0,3fr);align-items:center;gap:18px}
+.node-performance-panel .node-summary{justify-content:center}
+.node-performance-panel .legend{justify-content:flex-end;min-width:0;gap:12px}
+.node-performance-panel>.display-group-tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:0 24px 18px}
+.node-performance-panel .display-group-tab{display:flex;align-items:center;justify-content:center;min-width:0;min-height:48px;padding:9px 12px;border:0;background:#e6ebef;color:#536a7b;font:inherit;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;box-shadow:none}
+.node-performance-panel .display-group-tab:hover{background:#dbe4e9;color:#2b4052}
+.node-performance-panel .display-group-tab.active{background:var(--blue);color:var(--blue-text);box-shadow:0 0 14px rgba(81,162,255,.35)}
+@media(max-width:1100px){
+ .node-performance-panel>.panel-heading{grid-template-columns:minmax(150px,1fr) minmax(170px,1fr)}
+ .node-performance-panel .legend{grid-column:1/-1;justify-content:flex-start}
+}
+@media(max-width:700px){
+ .node-performance-panel>.panel-heading{grid-template-columns:1fr;gap:12px}
+ .node-performance-panel .node-summary{justify-content:flex-start}
+ .node-performance-panel .legend{grid-column:auto;justify-content:flex-start}
+ .node-performance-panel>.display-group-tabs{grid-template-columns:repeat(2,minmax(0,1fr));margin:0 18px 16px}
+ .node-performance-panel .display-group-tab{min-height:38px;padding:8px;font-size:12px}
+}
 .node-table .check-count{color:#536a7b}
 .node-table .metric-cell.tone-good{background:#e1f4eb}
 .node-table .metric-cell.tone-medium{background:#fff3d1}
