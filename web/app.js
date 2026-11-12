@@ -1,3 +1,4 @@
+const appVersion = 'dev';
 const $ = id => document.getElementById(id);
 let nodeList;
 let state, busy = false, toastTimer, airportKey = '', eventsKey = '', sleepRecordsKey = '', stateEtag = '', streamOpen = false, stream, streamReconnectTimer = 0, lastStreamEvent = 0, lastStateRefresh = 0, stateRevision = -1, stateInstance = '', detailNodeId = '', detailGroupID = '', detailData = null, detailTimer = 0, detailStream = null, detailRequestController = null, detailLongTermController = null, detailRequestToken = 0, detailUpdateChain = Promise.resolve(), detailNodeSequence = 0, detailSummaryKey = '', detailSamplesKey = '', detailView = 'realtime', detailFollowLatest = true, serviceStatusInitialized = false, previousPendingID = '', previousCurrentID = '', previousAirportID = '', displayGroupID = '';
@@ -227,6 +228,7 @@ function render(s){
   sleepRecordsKey=nextSleepRecordsKey;
  }
  $('updated').textContent='更新于 '+time(s.now);
+ const version=$('app-version');if(version)version.textContent='v'+appVersion;
 }
 function toast(message){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4500);}
 let aiConfirmResolve=null;

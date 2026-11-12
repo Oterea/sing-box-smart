@@ -174,3 +174,27 @@ footer {font-size:var(--ui-note);padding:var(--ui-space) 0}
     margin:0 16px 16px;
   }
 }
+
+/* Each theme choice is an independent control rather than one segmented
+   control with a shared background. */
+.theme-switch {
+  gap:6px;
+  padding:0;
+  background:transparent;
+}
+.theme-switch button {
+  border:1px solid #d6dfe5;
+  border-radius:4px;
+  background:#e9eff2;
+  color:#536a7b;
+}
+.theme-switch button:hover {background:#dbe4e9}
+html[data-theme="dark"] .theme-switch {background:transparent}
+html[data-theme="dark"] .theme-switch button {background:#293640;color:#c7d3dc;border-color:#3a4b58}
+html[data-theme="dark"] .theme-switch button:hover {background:#354754}
+@media(prefers-color-scheme:dark) {
+  html:not([data-theme="light"]) .theme-switch {background:transparent}
+  html:not([data-theme="light"]) .theme-switch button {background:#293640;color:#c7d3dc;border-color:#3a4b58}
+  html:not([data-theme="light"]) .theme-switch button:hover {background:#354754}
+}
+.app-version {margin-left:8px;color:var(--muted);font-variant-numeric:tabular-nums}

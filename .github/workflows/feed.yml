@@ -29,6 +29,7 @@ jobs:
           version="$((version_index / 100)).$(((version_index / 10) % 10)).$((version_index % 10))"
           sed -i "s/^PKG_VERSION?=.*/PKG_VERSION?=$version/" \
             package/sing-box-smart/Makefile package/luci-app-sing-box-smart/Makefile
+          sed -i "s/^const appVersion = .*/const appVersion = '$version';/" web/app.js
           python3 scripts/luci_assets.py stage package/luci-app-sing-box-smart "$version"
           release="v${version//[^0-9A-Za-z_]/_}"
           test -f "package/luci-app-sing-box-smart/htdocs/luci-static/resources/view/sing-box-smart/$release/app.js"
