@@ -150,3 +150,14 @@ footer {font-size:var(--ui-note);padding:var(--ui-space) 0}
     padding:7px 9px;
   }
 }
+
+/* The long-term row uses the same name wrapper as the live node row. Keep
+   the badge inside the button's content box on narrow tables as well. */
+.node-table .node-choice .ai-badge {
+  margin-inline-end:4px;
+}
+@media(max-width:700px) {
+  .node-table .node-choice {
+    padding-inline:16px;
+  }
+}
