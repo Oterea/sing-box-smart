@@ -45,6 +45,7 @@ header > .service-status {min-width:clamp(76px, 7vw, 92px);font-size:var(--ui-sm
 .table-footer {font-size:var(--ui-note);padding:12px var(--ui-pad-x)}
 .airport-options {grid-template-columns:repeat(auto-fit,minmax(min(100%,clamp(100px,9vw,130px)),1fr));gap:clamp(6px,.56vw,8px)}
 .airport-option {min-height:var(--ui-row);padding:8px 10px;font-size:var(--ui-small)}
+.node-performance-panel .display-group-tab {min-height:var(--ui-row);padding:8px 10px;font-size:var(--ui-small)}
 .selection-controls {gap:clamp(5px,.56vw,8px);flex-wrap:wrap}
 .selection-controls .button {font-size:var(--ui-small);min-width:80px;padding:7px 10px}
 

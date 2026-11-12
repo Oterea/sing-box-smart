@@ -650,5 +650,8 @@ html[data-theme="dark"] .settings-dialog::backdrop,html[data-theme="dark"] .node
 .brand-area{gap:20px}.theme-switch{gap:3px;padding:4px;font-size:13px}.theme-switch button{min-width:42px;padding:7px 10px}
 @media(max-width:700px){.brand-area{gap:12px}.theme-switch{font-size:12px}.theme-switch button{min-width:36px;padding:6px 7px}}
 @media(max-width:700px){.ai-button{font-size:12px}}
+html[data-theme="dark"] .ai-button{background:#26343e;color:#c5d2db}
+html[data-theme="dark"] .ai-button:hover:not(:disabled){background:#354754;color:#eef4f8}
+@media(prefers-color-scheme:dark){html:not([data-theme="light"]) .ai-button{background:#26343e;color:#c5d2db}html:not([data-theme="light"]) .ai-button:hover:not(:disabled){background:#354754;color:#eef4f8}}
 .ai-confirm-dialog{width:min(420px,calc(100% - 32px));margin:auto;padding:24px;border:0;background:var(--surface);color:var(--ink);box-shadow:0 12px 40px #172c3d26}.ai-confirm-dialog::backdrop{background:rgba(27,44,60,.42)}.ai-confirm-dialog h2{margin:0;font-size:18px;font-weight:600}.ai-confirm-dialog p{margin:12px 0 20px;font-size:13px;color:var(--muted)}.ai-confirm-actions{display:flex;justify-content:flex-end;gap:8px}.ai-confirm-actions .button{min-width:76px}.ai-confirm-actions #ai-confirm-ok{background:var(--blue);color:#fff}.ai-confirm-actions #ai-confirm-cancel{background:#e9eff2;color:#314b5d}
 html[data-theme="dark"] .ai-confirm-dialog{background:#1a222a;color:#e7edf2}html[data-theme="dark"] .ai-confirm-actions #ai-confirm-cancel{background:#293640;color:#c7d3dc}
