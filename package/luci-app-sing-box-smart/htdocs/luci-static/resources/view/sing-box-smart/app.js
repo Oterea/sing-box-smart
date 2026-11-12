@@ -27,6 +27,24 @@ return view.extend({
   const monitorLink = E('a',{class:'sbs-button sbs-open',href:window.location.protocol+'//'+window.location.hostname+':9797/',target:'_blank',rel:'noopener'},['监控面板']);
   function setMonitorAddress(settings){const port=(settings.listen||'').match(/:(\d+)$/);if(port)monitorLink.href=window.location.protocol+'//'+window.location.hostname+':'+port[1]+'/';}
   setMonitorAddress(savedConfig.service||{});
+  const themeChoice = localStorage.getItem('sing-box-smart-luci-theme') || 'system';
+  const themeButtons = [];
+  let themeBlock;
+  function applyTheme(value) {
+   const selected = ['light','dark','system'].includes(value) ? value : 'system';
+   const page = document.querySelector('.sbs-page');
+   if(page) { if(selected === 'system') page.removeAttribute('data-theme'); else page.dataset.theme = selected; }
+   localStorage.setItem('sing-box-smart-luci-theme',selected);
+   themeButtons.forEach(function(button){const active=button.dataset.themeChoice===selected;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});
+  }
+  ['浅色','深色','系统'].forEach(function(label,index){
+   const value=['light','dark','system'][index];
+   themeButtons.push(E('button',{type:'button',class:'cbi-button sbs-button sbs-theme-choice','data-theme-choice':value,'aria-pressed':'false',click:function(){applyTheme(value);}},[label]));
+  });
+  themeBlock = E('section',{class:'sbs-control-block sbs-theme-block','aria-labelledby':'sbs-theme-title'},[
+   E('div',{class:'sbs-card-title'},[E('span',{id:'sbs-theme-title'},['主题'])]),
+   E('div',{class:'sbs-theme-actions'},themeButtons)
+  ]);
   const actions = [];
   const update = function(result) {
    const service = result && result[serviceName];
@@ -63,6 +81,7 @@ return view.extend({
    }).catch(function(e){auto.checked=!auto.checked;ui.addNotification(null,E('p',{},[e.message]));}).finally(function(){setBusy(false);});
   });
   update(data[0]);
+  setTimeout(function(){applyTheme(themeChoice);},0);
   poll.add(function(){return list(serviceName).then(update);},3);
   return E('div',{class:'sbs-page'},[
    E('div',{class:'sbs-heading'},[E('h2',{},['sing-box-smart']),statusLine]),
@@ -73,6 +92,7 @@ return view.extend({
       E('div',{class:'sbs-actions'},[...actions,monitorLink]),
       E('div',{class:'sbs-auto-row'},[autoLabel])
      ]),
+     themeBlock,
      coreConfig.render(savedConfig,function(settings){
       if(busy)throw Error('服务正忙，请稍后重试');
       setMonitorAddress(settings.service||{});

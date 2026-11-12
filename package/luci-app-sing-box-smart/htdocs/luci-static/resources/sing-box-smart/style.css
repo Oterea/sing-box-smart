@@ -57,6 +57,10 @@
 .sbs-actions .sbs-button {min-width:0}
 .sbs-page .sbs-open {width:88px;flex:0 0 88px}
 .sbs-auto-row {display:flex;align-items:center;gap:12px;margin-top:var(--sbs-space)}
+.sbs-theme-block {padding-top:var(--sbs-space);border-top:1px solid var(--sbs-line)}
+.sbs-theme-actions {display:flex;flex-wrap:wrap;gap:8px;margin-top:var(--sbs-space)}
+.sbs-page .sbs-theme-choice {width:var(--sbs-button-width);flex:0 0 var(--sbs-button-width)}
+.sbs-page .sbs-theme-choice.active {background:var(--sbs-blue)!important;color:var(--sbs-blue-text)!important}
 .sbs-autostart {display:inline-flex;align-items:center;gap:10px;min-height:24px;margin:0;color:var(--sbs-control-text);font-size:var(--sbs-font);font-weight:400;cursor:pointer}
 .sbs-autostart input[type=checkbox] {appearance:auto!important;position:static;opacity:1;width:16px;height:16px;margin:0;flex:0 0 16px;accent-color:var(--sbs-blue);cursor:pointer}
 .sbs-autostart input:disabled {cursor:default}
@@ -83,3 +87,10 @@
   .sbs-page {padding-top:0;--sbs-pad-x:14px;--sbs-pad-y:14px;--sbs-button-width:104px}
   .sbs-service-field input {font-size:16px;min-height:36px}
 }
+
+/* LuCI theme overrides are scoped to this page so the surrounding LuCI theme
+   remains untouched. */
+.sbs-page[data-theme="dark"] {--sbs-ink:#e7edf2;--sbs-muted:#9aaab8;--sbs-line:#2b3945;--sbs-panel:#1a222a;--sbs-control:#293640;--sbs-control-text:#c7d3dc;--sbs-hover-text:#eef4f8;--sbs-field:#202b34}
+@media(prefers-color-scheme:dark) {.sbs-page:not([data-theme="light"]) {--sbs-ink:#e7edf2;--sbs-muted:#9aaab8;--sbs-line:#2b3945;--sbs-panel:#1a222a;--sbs-control:#293640;--sbs-control-text:#c7d3dc;--sbs-hover-text:#eef4f8;--sbs-field:#202b34}}
+.sbs-page[data-theme="dark"] .sbs-card,.sbs-page[data-theme="dark"] .sbs-heading,.sbs-page[data-theme="dark"] .sbs-service-field input {background:var(--sbs-panel)!important;color:var(--sbs-ink)!important}
+@media(prefers-color-scheme:dark) {.sbs-page:not([data-theme="light"]) .sbs-card,.sbs-page:not([data-theme="light"]) .sbs-heading,.sbs-page:not([data-theme="light"]) .sbs-service-field input {background:var(--sbs-panel)!important;color:var(--sbs-ink)!important}}
