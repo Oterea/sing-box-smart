@@ -562,3 +562,53 @@ body.settings-open {overflow:hidden}
  .node-table .detail-button{height:34px;min-height:34px;padding:0 4px;font-size:12px}
 }
 .node-detail-dialog:focus,.settings-dialog:focus{outline:none}
+
+/* System dark theme. Keep the layout and status colors unchanged while
+   remapping surfaces, borders and text through one isolated theme layer. */
+@media (prefers-color-scheme: dark) {
+ :root {
+  color-scheme: dark;
+  --bg:#11171d;--surface:#1a222a;--ink:#e7edf2;--muted:#9aaab8;--line:#2b3945;
+  --green-text:#6fe0a3;--amber-text:#f2c95e;--red-text:#ff858b;
+ }
+ body{background:var(--bg);color:var(--ink)}
+ .card,.nodes-panel,.events-panel,.selected-card,.api-settings,.node-detail-dialog,.settings-dialog{background:var(--surface);color:var(--ink)}
+ .demo-note{background:#202b34;color:#aab9c5}
+ .demo-note.real-mode{background:#18352b;color:#8fe0b5;border-color:#245641}
+ .button.secondary,.pick,.airport-option,.node-table .node-choice,.selection-controls .button,.settings-tab,.setting-choice span,.longterm-control,.display-group-tab{background:#293640;color:#c7d3dc}
+ .button.secondary:hover:not(:disabled),.pick:hover:not(:disabled),.airport-option:hover:not(:disabled),.node-table .node-choice:hover:not(:disabled),.settings-tab:hover:not(:disabled),.setting-choice input:not(:disabled):not(:checked)+span:hover,.longterm-control:hover,.display-group-tab:hover{background:#354754;color:#eef4f8}
+ select{color:var(--ink);box-shadow:0 1px 0 #3b4b58;background:transparent}
+ .airport-option.selected,.airport-option:disabled.selected,.node-table .node-choice.selected,.node-table .node-choice:disabled.selected,.display-group-tab.active,.longterm-control.active{color:#fff}
+ .airport-option small,.node-table .node-meta,.subtle,.detail-empty,.detail-note{color:#91a2af}
+ .node-table th{background:#202b34;color:#b8c6d0}
+ .node-table tbody tr:nth-child(even){background:#1d272f}
+ .node-table tbody tr.current-row{background:#183342}
+ .node-table .node-name{color:#dce6ec}
+ .node-table .check-count,.node-table .metric-cell,.detail-button,.detail-metric,.stability-result,.longterm-metric{background:#26343e;color:#c5d2db}
+ .detail-button:hover:not(:disabled),.detail-view-tab:hover{background:#354754;color:#eef4f8}
+ .node-table .node-choice.tier-candidate{background:#194532;color:#8fe0b5}
+ .node-table .node-choice.tier-ordinary{background:#293640;color:#c7d3dc}
+ .node-table .node-choice.tier-recovery{background:#4b3d1b;color:#f2c95e}
+ .node-table .metric-cell.tone-good,.stability-result.tone-good{background:#194532}
+ .node-table .metric-cell.tone-medium,.stability-result.tone-medium{background:#4b3d1b}
+ .node-table .metric-cell.tone-bad,.stability-result.tone-bad{background:#4a252b}
+ .node-table .metric-cell.tone-none{background:#26343e}
+ .detail-view-tab{background:#293640;color:#c7d3dc}
+ .stability-chart-scroll,.longterm-chart-panel{background:#182129;border-color:#354754}
+ .longterm-grid{stroke:#31414d}
+ .longterm-axis,.longterm-p90{fill:#9aabb7;stroke:#9aabb7}
+ .longterm-group-row th{background:#202b34;color:#c5d2db}
+ .table-footer{background:#182129;color:#9aabb7}
+ .event{color:#b5c4ce;border-color:#2b3945}
+ .event-level{background:#293640;color:#bdcbd4}
+ .level-warn{background:#4b3d1b;color:#f2c95e}
+ .level-error{background:#4a252b;color:#ff858b}
+ .sleep-history{border-color:#2b3945;color:#a9b8c2}
+ .sleep-record{border-color:#2b3945;color:#a9b8c2}
+ .connection-state{background:#202b34;color:#a9b8c2}
+ .api-settings input,.runtime-field input:not([type=checkbox]):not([type=radio]),.runtime-field select{background:#202b34;color:var(--ink);border-color:#3a4b58}
+ .api-settings label,.runtime-field>label,.longterm-control-group{color:#a9b8c2}
+ .settings-dialog::backdrop,.node-detail-dialog::backdrop{background:rgba(0,0,0,.62)}
+ progress,progress::-webkit-progress-bar{background:#254033}
+ #toast{background:#d7efe7;color:#15251e}
+}
