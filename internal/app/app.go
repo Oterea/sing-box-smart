@@ -30,6 +30,7 @@ type request struct {
 	action        requestAction
 	control       string
 	target        string
+	groupID       string
 	root, pattern string
 	since         time.Time
 	client        gateway.Client
@@ -249,6 +250,14 @@ func (a *App) NodeLongTerm(ctx context.Context, id string) (domain.LongTermStabi
 }
 func (a *App) LongTermOverview(ctx context.Context) (domain.LongTermOverview, error) {
 	r, e := a.request(ctx, request{action: requestLongTermOverview})
+	return r.longTermOverview, e
+}
+
+// LongTermOverviewForGroup returns the same overview for a background airport
+// strategy group. The group owns its node membership, while the recorder
+// keeps histories keyed by the airport and node IDs.
+func (a *App) LongTermOverviewForGroup(ctx context.Context, groupID string) (domain.LongTermOverview, error) {
+	r, e := a.request(ctx, request{action: requestLongTermOverview, groupID: groupID})
 	return r.longTermOverview, e
 }
 func (a *App) SubscribeStability(id string) (<-chan domain.StabilityUpdate, func()) {

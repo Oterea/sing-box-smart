@@ -34,6 +34,7 @@ type stabilityService interface {
 type groupedStabilityService interface {
 	NodeStabilityForGroup(context.Context, string, string, time.Time) (domain.NodeStability, error)
 	NodeLongTermForGroup(context.Context, string, string) (domain.LongTermStability, error)
+	LongTermOverviewForGroup(context.Context, string) (domain.LongTermOverview, error)
 }
 
 func Handler(service Service) http.Handler {
@@ -164,7 +165,13 @@ func Handler(service Service) http.Handler {
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 		defer cancel()
-		data, err := service.LongTermOverview(ctx)
+		var data domain.LongTermOverview
+		var err error
+		if grouped, ok := service.(groupedStabilityService); ok && r.URL.Query().Get("group") != "" {
+			data, err = grouped.LongTermOverviewForGroup(ctx, r.URL.Query().Get("group"))
+		} else {
+			data, err = service.LongTermOverview(ctx)
+		}
 		if err != nil {
 			write(w, http.StatusServiceUnavailable, map[string]string{"error": err.Error()})
 			return

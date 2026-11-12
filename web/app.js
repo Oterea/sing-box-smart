@@ -147,7 +147,7 @@ function render(s){
    displayTabs.dataset.key=nextTabs;
   } else for(const button of displayTabs.querySelectorAll('[data-display-group]')){const active=button.dataset.displayGroup===displayGroupID;button.classList.toggle('active',active);button.setAttribute('aria-selected',String(active));}
  }
- if(typeof syncLongTermOverview==='function')syncLongTermOverview(s);
+ if(typeof syncLongTermOverview==='function')syncLongTermOverview(s,displayGroupID);
  if(typeof SmartSettings!=='undefined')SmartSettings.update(s.settings);
  const prefs=s.settings;
  if(prefs?.delay_green_ms){

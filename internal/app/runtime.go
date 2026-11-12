@@ -42,7 +42,24 @@ func (a *App) Run(ctx context.Context) {
 					r.reply <- response{longTerm: a.longTerm.Query(a.airport.ID, r.target, time.Now(), float64(a.cfg.DelayYellow))}
 				}
 			} else if r.action == requestLongTermOverview {
-				r.reply <- response{longTermOverview: a.longTerm.Overview(a.airport.ID, a.airport.Nodes, time.Now(), float64(a.cfg.DelayYellow))}
+				groupID := r.groupID
+				if groupID == "" {
+					groupID = a.airport.ID
+				}
+				if groupID == a.airport.ID {
+					r.reply <- response{longTermOverview: a.longTerm.Overview(groupID, a.airport.Nodes, time.Now(), float64(a.cfg.DelayYellow))}
+					continue
+				}
+				group := a.backgroundGroups[groupID]
+				if group == nil {
+					r.reply <- response{err: fmt.Errorf("机场策略组不存在")}
+					continue
+				}
+				nodes := make([]domain.Node, 0, len(group.Store.Nodes))
+				for _, node := range group.Store.Nodes {
+					nodes = append(nodes, node.Info)
+				}
+				r.reply <- response{longTermOverview: a.longTerm.Overview(groupID, nodes, time.Now(), float64(a.cfg.DelayYellow))}
 			} else if r.action == requestRuntimeSettings {
 				r.reply <- response{err: a.applySettings(ctx, r.settings)}
 			} else if r.action == requestSnapshot {
