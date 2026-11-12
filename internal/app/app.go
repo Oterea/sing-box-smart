@@ -31,6 +31,7 @@ type request struct {
 	control       string
 	target        string
 	groupID       string
+	aiGroupSet    bool
 	root, pattern string
 	since         time.Time
 	client        gateway.Client
@@ -101,6 +102,7 @@ type App struct {
 	confirmation                           switching.Confirmation
 	switchBusy, healthy, healthBusy        bool
 	selectionSyncBusy                      bool
+	aiCurrent                              string
 	paused                                 bool
 	sleeping                               bool
 	activityEvents                         chan activity.Event
@@ -313,7 +315,7 @@ func (a *App) snapshot() domain.Snapshot {
 			n.Frequency = a.cfg.Ordinary.String()
 		}
 	}
-	return domain.Snapshot{Settings: a.cfg.Preferences(), Revision: a.revision, Paused: a.paused, Sleeping: a.sleeping, SleepEnabled: a.sleepController.Enabled(), LastActivity: lastActivity, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: now, StartupSeconds: a.cfg.Startup.Seconds(), ObservationSeconds: a.observeWindow.Duration().Seconds(), ManualCheckActive: a.manualCheckActive(), ManualCheckRound: a.manualCheckRound, ManualCheckTotal: a.manualCheckTotal, Nodes: nodes, Groups: groups, Events: a.events.RecentSnapshot(), SleepRecords: a.sleepRecords.Snapshot(now)}
+	return domain.Snapshot{Settings: a.cfg.Preferences(), Revision: a.revision, Paused: a.paused, Sleeping: a.sleeping, SleepEnabled: a.sleepController.Enabled(), LastActivity: lastActivity, APIAddress: a.apiAddress, GroupRoot: a.groupRoot, GroupPattern: a.groupPattern, AIGroup: a.cfg.AIGroup, AICurrentID: a.aiCurrent, Mode: a.cfg.Mode, SelectionMode: a.selectionMode, RootSelection: a.rootSelection, ControlActive: a.controlActive, Phase: a.phase, AirportID: a.airport.ID, Airports: a.airports, CurrentID: a.current, PendingID: a.pending, APIHealthy: a.healthy, StartedAt: a.started, Now: now, StartupSeconds: a.cfg.Startup.Seconds(), ObservationSeconds: a.observeWindow.Duration().Seconds(), ManualCheckActive: a.manualCheckActive(), ManualCheckRound: a.manualCheckRound, ManualCheckTotal: a.manualCheckTotal, Nodes: nodes, Groups: groups, Events: a.events.RecentSnapshot(), SleepRecords: a.sleepRecords.Snapshot(now)}
 }
 
 func (a *App) manualCheckActive() bool { return len(a.manualCheckPending) > 0 }

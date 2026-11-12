@@ -12,21 +12,21 @@ import (
 
 type Pin struct{ ID, Name, Selector string }
 type Config struct {
-	DelayGreen, DelayYellow, NodeDisplayLimit, LongTermDisplayLimit                     int
-	Mode, API, Root, Pattern, TestURL, Listen, LogDir, SettingsPath, LogLevel, Timezone string
-	GRPCAddress, GRPCSecret                                                             string
-	Pins                                                                                []Pin
-	Startup, Resume, Current, Candidate, Ordinary, Recovery, Timeout                    time.Duration
-	ManualCheckCount                                                                    int
-	BackgroundMinutes, SleepMinutes                                                     int
-	SleepEnabled                                                                        bool
-	SleepIdleAfter                                                                      time.Duration
-	SleepQuietBytes, SleepWakeBytes                                                     int64
-	SleepWakeWindow                                                                     time.Duration
-	RecoverySteps                                                                       []time.Duration
-	RecoveryDropRatio, RecoveryDropMinMS, RecoveryGoodMaxMS                             float64
-	SwitchRatio                                                                         float64
-	HistoryLimit                                                                        int
+	DelayGreen, DelayYellow, NodeDisplayLimit, LongTermDisplayLimit                              int
+	Mode, API, Root, Pattern, AIGroup, TestURL, Listen, LogDir, SettingsPath, LogLevel, Timezone string
+	GRPCAddress, GRPCSecret                                                                      string
+	Pins                                                                                         []Pin
+	Startup, Resume, Current, Candidate, Ordinary, Recovery, Timeout                             time.Duration
+	ManualCheckCount                                                                             int
+	BackgroundMinutes, SleepMinutes                                                              int
+	SleepEnabled                                                                                 bool
+	SleepIdleAfter                                                                               time.Duration
+	SleepQuietBytes, SleepWakeBytes                                                              int64
+	SleepWakeWindow                                                                              time.Duration
+	RecoverySteps                                                                                []time.Duration
+	RecoveryDropRatio, RecoveryDropMinMS, RecoveryGoodMaxMS                                      float64
+	SwitchRatio                                                                                  float64
+	HistoryLimit                                                                                 int
 }
 
 func Default() Config {

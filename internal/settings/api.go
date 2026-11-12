@@ -15,6 +15,7 @@ type Connection struct {
 	API     string `json:"api"`
 	Root    string `json:"root"`
 	Pattern string `json:"pattern"`
+	AIGroup string `json:"ai_group,omitempty"`
 }
 
 func NormalizePattern(raw string) (string, error) {

@@ -49,7 +49,7 @@ function updateServiceStatus(s, elapsed, observationSeconds) {
 const sampleKey = sample => JSON.stringify([sample.at,sample.success,sample.score,sample.delay_ms,sample.error]);
 // Both sections share the same header, column definitions and row renderer.
 function tableHeading() {
- return '<colgroup><col class="col-node"><col class="col-action"><col class="col-score"><col class="col-delay"><col class="col-history"><col class="col-history"><col class="col-detail"></colgroup><thead><tr><th scope="col">节点</th><th scope="col">检查次数</th><th scope="col">分数</th><th scope="col">延迟</th><th scope="col">分数历史</th><th scope="col">延迟历史</th><th scope="col">详情</th></tr></thead>';
+ return '<colgroup><col class="col-node"><col class="col-action"><col class="col-score"><col class="col-delay"><col class="col-history"><col class="col-history"><col class="col-detail"><col class="col-ai"></colgroup><thead><tr><th scope="col">节点</th><th scope="col">检查次数</th><th scope="col">分数</th><th scope="col">延迟</th><th scope="col">分数历史</th><th scope="col">延迟历史</th><th scope="col">详情</th><th scope="col">AI</th></tr></thead>';
 }
 function nodeTier(n,s) {
  return n.id&&n.id===s.current_id?'current':n.recovery_remaining>0?'recovery':n.tier==='candidate'?'candidate':'ordinary';
@@ -58,17 +58,20 @@ function nodeKey(n,best,s,selected=false) {
  // A changing best score matters only when it changes a visible color.
  // Including the raw best value would redraw every node's SVG on each update.
  const colors=(n.history??[]).slice(-20).map(sample=>tone(sample.score,best)).join(',');
- return JSON.stringify({id:n.id,name:n.name,tier:nodeTier(n,s),checks:n.checks,score:n.score,delay:n.delay_ms,overflow:n.score_overflow,last:n.last_success,current:selected||n.id===s.current_id,history:n.history,delayColors:[s.settings?.delay_green_ms,s.settings?.delay_yellow_ms],colors,rowColor:tone(n.score,best),busy,pending:s.pending_id,manual:s.manual_check_active,phase:s.phase,paused:s.paused,sleeping:s.sleeping,api:s.api_healthy,selection_mode:s.selection_mode,control_active:s.control_active});
+ return JSON.stringify({id:n.id,name:n.name,tier:nodeTier(n,s),checks:n.checks,score:n.score,delay:n.delay_ms,overflow:n.score_overflow,last:n.last_success,current:selected||n.id===s.current_id,ai:n.id===s.ai_current_id,history:n.history,delayColors:[s.settings?.delay_green_ms,s.settings?.delay_yellow_ms],colors,rowColor:tone(n.score,best),busy,pending:s.pending_id,manual:s.manual_check_active,phase:s.phase,paused:s.paused,sleeping:s.sleeping,api:s.api_healthy,selection_mode:s.selection_mode,control_active:s.control_active});
 }
 function historyKey(n) {
  return JSON.stringify((n.history??[]).slice(-20).map(sample=>[sample.at,sample.success,sample.score,sample.delay_ms,sample.error]));
 }
-function nodeRow(n,best,s) {
+function nodeRow(n,best,s,selected=false) {
  const current=Boolean(n.id)&&n.id===s.current_id;
  const disabled=busy||Boolean(s.pending_id)||s.manual_check_active||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
  const delayColor=n.checks&&!n.last_success?'bad':delayTone(n.delay_ms);
  const buttonText=n.id?n.name:'等待首次选择';
- return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}">${esc(buttonText)}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${scoreNum(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td><td><button class="detail-button" data-detail-node="${esc(n.id)}" ${!n.id?'disabled':''}>详情</button></td></tr>`;
+ const aiCurrent=Boolean(n.id)&&n.id===s.ai_current_id;
+ const aiDisabled=busy||!s.ai_group||!n.id||!s.api_healthy;
+ const aiCell=selected?'<td></td>':`<td><button class="ai-button${aiCurrent?' active':''}" data-ai-node="${esc(n.id)}" ${aiDisabled?'disabled':''}>${aiCurrent?'AI 当前使用':'设为 AI'}</button></td>`;
+ return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}"><span class="node-choice-name">${esc(buttonText)}</span>${aiCurrent?'<span class="ai-badge">AI</span>':''}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${scoreNum(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td><td><button class="detail-button" data-detail-node="${esc(n.id)}" ${!n.id?'disabled':''}>详情</button></td>${aiCell}</tr>`;
 }
 function detailPercent(value) {
  return Number.isFinite(Number(value)) ? (Number(value)*100).toFixed(1)+'%' : '—';
@@ -81,7 +84,7 @@ function patchRow(row,n,best,s,selected=false) {
  row.className=current?'current-row':'';
  const button=row.querySelector('button.node-choice');
  const disabled=busy||Boolean(s.pending_id)||s.manual_check_active||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
- button.textContent=n.id?n.name:'等待首次选择';
+ button.innerHTML=`<span class="node-choice-name">${esc(n.id?n.name:'等待首次选择')}</span>${n.id&&n.id===s.ai_current_id?'<span class="ai-badge">AI</span>':''}`;
  button.title=n.name;
  button.disabled=disabled;
  button.className=`node-choice tier-${nodeTier(n,s)}${current?' selected':''}`;
@@ -99,12 +102,14 @@ function patchRow(row,n,best,s,selected=false) {
   row.cells[4].innerHTML=history(n.history,'score',best,false);
   row.cells[5].innerHTML=history(n.history,'delay',best,false);
  }
+ const aiButton=row.querySelector('.ai-button');
+ if(aiButton){const aiCurrent=Boolean(n.id)&&n.id===s.ai_current_id;aiButton.textContent=aiCurrent?'AI 当前使用':'设为 AI';aiButton.classList.toggle('active',aiCurrent);aiButton.disabled=busy||!s.ai_group||!n.id||!s.api_healthy;}
  row.dataset.historyKey=nextHistoryKey;
  row.dataset.renderKey=nodeKey(n,best,s,selected);
 }
 function syncRows(body,nodes,best,s,selected=false) {
  if(typeof body.querySelectorAll!=='function') {
-  body.innerHTML=selected?nodeRow(nodes[0],best,s):nodes.map(n=>nodeRow(n,best,s)).join('');
+  body.innerHTML=selected?nodeRow(nodes[0],best,s,true):nodes.map(n=>nodeRow(n,best,s)).join('');
   return;
  }
  const rows=new Map([...body.querySelectorAll('tr[data-row-id]')].map(row=>[row.dataset.rowId,row]));
@@ -135,6 +140,7 @@ function render(s){
  if(s.instance_id)stateInstance=s.instance_id;
  if(Number.isFinite(Number(s.revision)))stateRevision=Number(s.revision);
  state=s;
+ if(typeof syncDetailAIButton==='function')syncDetailAIButton();
  const groups=s.groups||[];
  if(!displayGroupID||!groups.some(group=>group.id===displayGroupID))displayGroupID=s.airport_id;
  const displayGroup=groups.find(group=>group.id===displayGroupID)||{id:s.airport_id,current_id:s.current_id,nodes:s.nodes};
@@ -169,7 +175,7 @@ function render(s){
  $('selection-manual').classList.toggle('active',s.selection_mode==='manual');
  const apiInput=$('api-address');
  if(apiInput && apiInput.dataset && !apiInput.dataset.loaded){apiInput.value=s.api_address||'';apiInput.dataset.loaded='yes';}
- if($('group-root') && $('group-root').dataset && !$('group-root').dataset.loaded){$('group-root').value=s.group_root||'proxy';$('group-pattern').value=s.group_pattern||'SMART$';$('group-root').dataset.loaded='yes';}
+ if($('group-root') && $('group-root').dataset && !$('group-root').dataset.loaded){$('group-root').value=s.group_root||'proxy';$('group-pattern').value=s.group_pattern||'SMART$';$('ai-group').value=s.ai_group||'';$('group-root').dataset.loaded='yes';}
  $('connection').parentElement.dataset.health=s.api_healthy?'ok':'error';
  $('connection').textContent=s.api_healthy?'后端已连接':'管理接口异常';
  $('mode-note-text').textContent=s.mode==='real'?'真实模式 · 已连接 sing-box API':'模拟模式 · 切换仅作用于模拟接口';
@@ -226,7 +232,7 @@ function toast(message){$('toast').textContent=message;$('toast').hidden=false;c
 async function refresh(){try{const headers=stateEtag?{'If-None-Match':stateEtag}:{};const r=await fetch('/api/state',{headers});lastStateRefresh=Date.now();if(r.status===304)return;if(!r.ok)throw new Error('状态读取失败');stateEtag=r.headers.get('ETag')||'';render(await r.json());}catch(e){$('connection').parentElement.dataset.health='error';$('connection').textContent='连接中断';const status=$('service-status'),text=$('service-status-text');if(status&&text){status.dataset.tone='error';status.title='暂时无法连接后端，当前显示的是上次数据。';status.setAttribute('aria-label',status.title);text.textContent='连接中断';}}}
 async function control(action,id=''){
  if(busy)return;busy=true;if(state)render(state);
- try{const r=await fetch('/api/control/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});const data=await r.json();if(!r.ok)throw new Error(data.error||'操作失败');toast(action==='recheck'?'已安排当前策略组节点检查':action==='pause'?'检测已暂停':action==='resume'?'已继续检测':action==='auto'?'已开启自动选择':action==='manual'?'已开启手动选择':'请求已受理，等待后端确认。');}
+ try{const r=await fetch('/api/control/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});const data=await r.json();if(!r.ok)throw new Error(data.error||'操作失败');toast(action==='recheck'?'已安排当前策略组节点检查':action==='ai'?'AI 节点已切换':action==='pause'?'检测已暂停':action==='resume'?'已继续检测':action==='auto'?'已开启自动选择':action==='manual'?'已开启手动选择':'请求已受理，等待后端确认。');}
  catch(e){toast(e.message);}finally{busy=false;await refresh();}
 }
 $('airport-options').addEventListener('click',e=>{const button=e.target.closest('[data-airport]');if(button)control('airport',button.dataset.airport);});
@@ -235,11 +241,13 @@ $('recheck').addEventListener('click',()=>control('recheck'));
 $('detection-toggle').addEventListener('click',()=>{if(state)control((state.paused||state.sleeping)?'resume':'pause');});
 $('selection-auto').addEventListener('click',()=>control('auto'));
 $('selection-manual').addEventListener('click',()=>control('manual'));
-if($('api-form'))$('api-form').addEventListener('submit',async e=>{e.preventDefault();const api=$('api-address').value.trim();if(!api)return toast('请输入 API 地址');try{const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api,root:$('group-root').value.trim(),pattern:$('group-pattern').value.trim()})});const data=await r.json();if(!r.ok)throw new Error(data.error||'设置应用失败');toast('设置已应用，正在重新读取节点');await refresh();}catch(err){toast(err.message);}});
+if($('api-form'))$('api-form').addEventListener('submit',async e=>{e.preventDefault();const api=$('api-address').value.trim();if(!api)return toast('请输入 API 地址');try{const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api,root:$('group-root').value.trim(),pattern:$('group-pattern').value.trim(),ai_group:$('ai-group').value.trim()})});const data=await r.json();if(!r.ok)throw new Error(data.error||'设置应用失败');toast('设置已应用，正在重新读取节点');await refresh();}catch(err){toast(err.message);}});
 for (const id of ['nodes','selected-node']) {
  const body=$(id);
  body.closest('table').insertAdjacentHTML('afterbegin',tableHeading());
  body.addEventListener('click',e=>{
+  const ai=e.target.closest('button[data-ai-node]');
+  if(ai&&!ai.disabled){e.stopPropagation();control('ai',ai.dataset.aiNode);return;}
   const detail=e.target.closest('button[data-detail-node]');
   if(detail&&!detail.disabled){e.stopPropagation();openNodeDetail(detail.dataset.detailNode,id==='nodes'?displayGroupID:s.airport_id);return;}
   const button=e.target.closest('button[data-node]');
@@ -275,6 +283,7 @@ $('api-test').addEventListener('click',async()=>{const button=$('api-test');butt
 
 $('nodes-toggle').addEventListener('click',()=>{if(!state||!nodeList)return;nodeList.toggle();render(state);});
 $('node-detail-close')?.addEventListener('click',closeNodeDetail);
+$('detail-ai')?.addEventListener('click',e=>{if(!e.currentTarget.disabled)control('ai',e.currentTarget.dataset.aiNode);});
 $('node-detail-dialog')?.addEventListener('close',()=>{if(detailNodeId)closeNodeDetail();else resetDetailView();});
 $('detail-view-realtime')?.addEventListener('click',()=>setDetailView('realtime'));
 $('detail-view-longterm')?.addEventListener('click',()=>setDetailView('longterm'));

@@ -109,6 +109,8 @@ function renderDetail(data) {
  const group=state?.groups?.find(group=>group.id===detailGroupID), node=(group?.nodes||state?.nodes||[]).find(n=>n.id===detailNodeId);
  const name=node?.name||detailNodeId;
  $('node-detail-title').textContent=name+' · 详情';
+ const aiButton=$('detail-ai');
+ if(aiButton){const active=detailNodeId===state?.ai_current_id;aiButton.textContent=active?'AI 当前使用':'设为 AI';aiButton.disabled=active||!state?.ai_group||!state?.api_healthy;aiButton.dataset.aiNode=detailNodeId;aiButton.classList.toggle('active',active);}
  const existingChart=content.querySelector('.stability-chart-scroll');
  if(existingChart){
   if(summaryChanged)updateDetailSummary(summary);
@@ -121,6 +123,15 @@ function renderDetail(data) {
  }
  detailSummaryKey=summaryKey;
  detailSamplesKey=samplesKey;
+}
+function syncDetailAIButton() {
+ const button=$('detail-ai');
+ if(!button)return;
+ const active=Boolean(detailNodeId)&&detailNodeId===state?.ai_current_id;
+ button.textContent=active?'AI 当前使用':'设为 AI';
+ button.disabled=active||!detailNodeId||!state?.ai_group||!state?.api_healthy;
+ button.dataset.aiNode=detailNodeId||'';
+ button.classList.toggle('active',active);
 }
 async function loadNodeDetail() {
  if(!detailNodeId)return;

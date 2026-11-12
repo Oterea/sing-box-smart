@@ -33,7 +33,7 @@ type Bundle struct {
 func defaults() Bundle {
 	c := config.Default()
 	return Bundle{
-		Connection: settings.Connection{API: c.API, Root: c.Root, Pattern: c.Pattern},
+		Connection: settings.Connection{API: c.API, Root: c.Root, Pattern: c.Pattern, AIGroup: c.AIGroup},
 		Runtime:    c.Preferences(),
 		Service:    serviceconfig.Defaults(),
 	}

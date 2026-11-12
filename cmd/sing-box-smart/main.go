@@ -65,7 +65,7 @@ func run() error {
 	if saved, err := settings.Load(cfg.SettingsPath); err != nil {
 		return err
 	} else if saved.API != "" {
-		cfg.API, cfg.Root, cfg.Pattern = saved.API, saved.Root, saved.Pattern
+		cfg.API, cfg.Root, cfg.Pattern, cfg.AIGroup = saved.API, saved.Root, saved.Pattern, saved.AIGroup
 	}
 	if cfg.SettingsPath != "" {
 		serviceSettings, err := serviceconfig.Load(filepath.Join(filepath.Dir(cfg.SettingsPath), "service.json"), serviceconfig.Defaults())

@@ -26,7 +26,7 @@ func (a *App) prepareAPI(ctx context.Context, api string) (gateway.Client, []dom
 	if err != nil {
 		return nil, nil, "", err
 	}
-	cfg.API, cfg.Root, cfg.Pattern = api, snapshot.GroupRoot, snapshot.GroupPattern
+	cfg.API, cfg.Root, cfg.Pattern, cfg.AIGroup = api, snapshot.GroupRoot, snapshot.GroupPattern, snapshot.AIGroup
 	client := real.New(cfg)
 	airports, err := discovery.Load(ctx, client)
 	if err != nil {
@@ -37,7 +37,7 @@ func (a *App) prepareAPI(ctx context.Context, api string) (gateway.Client, []dom
 
 // ConfigureConnection validates and discovers the complete connection in one
 // step, so an API/root/pattern change cannot leave a half-applied configuration.
-func (a *App) ConfigureConnection(ctx context.Context, api, root, pattern string) error {
+func (a *App) ConfigureConnection(ctx context.Context, api, root, pattern, aiGroup string) error {
 	if a.cfg.Mode != "real" {
 		return fmt.Errorf("模拟模式不支持修改真实 API")
 	}
@@ -56,13 +56,13 @@ func (a *App) ConfigureConnection(ctx context.Context, api, root, pattern string
 	if err != nil {
 		return err
 	}
-	cfg.API, cfg.Root, cfg.Pattern = api, root, pattern
+	cfg.API, cfg.Root, cfg.Pattern, cfg.AIGroup = api, root, pattern, aiGroup
 	client := real.New(cfg)
 	airports, err := discovery.Load(ctx, client)
 	if err != nil {
 		return err
 	}
-	_, err = a.request(ctx, request{action: requestAPI, target: api, root: root, pattern: pattern, client: client, airports: airports})
+	_, err = a.request(ctx, request{action: requestAPI, target: api, root: root, pattern: pattern, groupID: aiGroup, aiGroupSet: true, client: client, airports: airports})
 	return err
 }
 

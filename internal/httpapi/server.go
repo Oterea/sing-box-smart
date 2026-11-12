@@ -20,7 +20,7 @@ type Service interface {
 	Control(context.Context, string, string) error
 	ConfigureAPI(context.Context, string) error
 	ConfigureFilters(context.Context, string, string) error
-	ConfigureConnection(context.Context, string, string, string) error
+	ConfigureConnection(context.Context, string, string, string, string) error
 	TestAPI(context.Context, string) error
 }
 
@@ -233,6 +233,7 @@ func Handler(service Service) http.Handler {
 			API     string `json:"api"`
 			Root    string `json:"root"`
 			Pattern string `json:"pattern"`
+			AIGroup string `json:"ai_group"`
 		}
 		if err := decodeJSON(w, r, &body, 4096); err != nil || body.API == "" || body.Pattern == "" {
 			write(w, 400, map[string]string{"error": "需要 api、root 和 pattern"})
@@ -240,13 +241,13 @@ func Handler(service Service) http.Handler {
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), 8*time.Second)
 		defer cancel()
-		if err := service.ConfigureConnection(ctx, body.API, body.Root, body.Pattern); err != nil {
+		if err := service.ConfigureConnection(ctx, body.API, body.Root, body.Pattern, body.AIGroup); err != nil {
 			write(w, 409, map[string]string{"error": err.Error()})
 			return
 		}
 		write(w, 202, map[string]string{"status": "reloaded"})
 	})
-	for _, action := range []string{"airport", "node", "recheck", "pause", "resume", "auto", "manual"} {
+	for _, action := range []string{"airport", "node", "ai", "recheck", "pause", "resume", "auto", "manual"} {
 		action := action
 		mux.HandleFunc("POST /api/control/"+action, func(w http.ResponseWriter, r *http.Request) {
 			var body struct {

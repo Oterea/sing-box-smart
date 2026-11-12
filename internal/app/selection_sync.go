@@ -11,6 +11,8 @@ const selectionSyncInterval = 2 * time.Second
 
 type selectionObservation struct {
 	root, node string
+	aiCurrent  string
+	aiRead     bool
 	generation int
 	epoch      uint64
 	err        error
@@ -37,8 +39,15 @@ func (a *App) startSelectionSync(ctx context.Context) {
 				}
 			}
 		}
+		aiCurrent := ""
+		aiRead := false
+		if err == nil && a.cfg.AIGroup != "" {
+			if current, aiErr := client.Current(c, a.cfg.AIGroup); aiErr == nil {
+				aiCurrent, aiRead = current, true
+			}
+		}
 		select {
-		case a.selection <- selectionObservation{root: rootNow, node: nodeNow, generation: generation, epoch: epoch, err: err}:
+		case a.selection <- selectionObservation{root: rootNow, node: nodeNow, aiCurrent: aiCurrent, aiRead: aiRead, generation: generation, epoch: epoch, err: err}:
 		case <-ctx.Done():
 		}
 	}()
@@ -66,6 +75,10 @@ func (a *App) applySelectionObservation(o selectionObservation) {
 			a.revision++
 		}
 		return
+	}
+	if o.aiRead && a.aiCurrent != o.aiCurrent {
+		a.aiCurrent = o.aiCurrent
+		a.revision++
 	}
 	initial := a.rootSelection == ""
 	rootChanged := a.rootSelection != o.root

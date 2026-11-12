@@ -12,15 +12,22 @@ func (a *App) configureAPI(r request) error {
 	if a.switchBusy || a.pending != "" || a.healthBusy {
 		return fmt.Errorf("切换正在进行，请稍后重试")
 	}
-	root, pattern := a.groupRoot, a.groupPattern
+	root, pattern, aiGroup := a.groupRoot, a.groupPattern, a.cfg.AIGroup
 	if r.root != "" {
 		root, pattern = r.root, r.pattern
 	}
-	if err := settings.Save(a.cfg.SettingsPath, settings.Connection{API: r.target, Root: root, Pattern: pattern}); err != nil {
+	if r.aiGroupSet {
+		aiGroup = r.groupID
+	}
+	if err := settings.Save(a.cfg.SettingsPath, settings.Connection{API: r.target, Root: root, Pattern: pattern, AIGroup: aiGroup}); err != nil {
 		return fmt.Errorf("保存配置失败: %w", err)
 	}
 	a.apiAddress = r.target
 	a.groupRoot, a.groupPattern = root, pattern
+	if aiGroup != a.cfg.AIGroup {
+		a.aiCurrent = ""
+	}
+	a.cfg.AIGroup = aiGroup
 	selected := a.airport.ID
 	if setter, ok := r.client.(interface{ SetTestURL(string) }); ok {
 		setter.SetTestURL(a.cfg.TestURL)
@@ -57,6 +64,24 @@ func (a *App) control(ctx context.Context, action, target string) error {
 	}
 	if action == "auto" || action == "manual" {
 		return a.controlSelectionMode(ctx, action)
+	}
+	if action == "ai" {
+		if a.cfg.AIGroup == "" {
+			return fmt.Errorf("尚未配置 AI 策略组")
+		}
+		if !a.healthy || a.switchBusy || a.healthBusy {
+			return fmt.Errorf("管理接口暂不可用，请稍后重试")
+		}
+		if target == "" {
+			return fmt.Errorf("未指定 AI 节点")
+		}
+		if err := a.client.Select(ctx, a.cfg.AIGroup, target); err != nil {
+			return fmt.Errorf("切换 AI 节点失败: %w", err)
+		}
+		a.aiCurrent = target
+		a.revision++
+		a.events.Record("manual", "AI 策略组已切换到："+target)
+		return nil
 	}
 	if a.paused || a.sleeping {
 		return fmt.Errorf("检测已暂停，请先继续检测")

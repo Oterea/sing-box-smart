@@ -46,7 +46,7 @@ func (s *sequenceService) ConfigureAPI(context.Context, string) error    { retur
 func (s *sequenceService) ConfigureFilters(context.Context, string, string) error {
 	return nil
 }
-func (s *sequenceService) ConfigureConnection(context.Context, string, string, string) error {
+func (s *sequenceService) ConfigureConnection(context.Context, string, string, string, string) error {
 	return nil
 }
 func (s *sequenceService) TestAPI(context.Context, string) error { return nil }
