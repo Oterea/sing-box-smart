@@ -110,7 +110,7 @@ function renderDetail(data) {
  const name=node?.name||detailNodeId;
  $('node-detail-title').textContent=name+' · 详情';
  const aiButton=$('detail-ai');
- if(aiButton){const active=detailNodeId===state?.ai_current_id;aiButton.textContent=active?'AI 当前使用':'设为 AI';aiButton.disabled=active||!state?.ai_group||!state?.api_healthy;aiButton.dataset.aiNode=detailNodeId;aiButton.classList.toggle('active',active);}
+ if(aiButton){aiButton.textContent='设为 AI';aiButton.disabled=detailNodeId===state?.ai_current_id||!state?.ai_group||!state?.api_healthy;aiButton.dataset.aiNode=detailNodeId;aiButton.classList.remove('active');}
  const existingChart=content.querySelector('.stability-chart-scroll');
  if(existingChart){
   if(summaryChanged)updateDetailSummary(summary);
@@ -123,15 +123,18 @@ function renderDetail(data) {
  }
  detailSummaryKey=summaryKey;
  detailSamplesKey=samplesKey;
+ syncDetailAIButton();
 }
 function syncDetailAIButton() {
  const button=$('detail-ai');
  if(!button)return;
  const active=Boolean(detailNodeId)&&detailNodeId===state?.ai_current_id;
- button.textContent=active?'AI 当前使用':'设为 AI';
+ button.textContent='设为 AI';
  button.disabled=active||!detailNodeId||!state?.ai_group||!state?.api_healthy;
  button.dataset.aiNode=detailNodeId||'';
  button.classList.toggle('active',active);
+ const title=$('node-detail-title');
+ if(title){title.querySelector('.detail-ai-badge')?.remove();if(active){const badge=document.createElement('span');badge.className='ai-badge detail-ai-badge';badge.textContent='AI';title.append(badge);}}
 }
 async function loadNodeDetail() {
  if(!detailNodeId)return;

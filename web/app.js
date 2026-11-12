@@ -70,7 +70,7 @@ function nodeRow(n,best,s,selected=false) {
  const buttonText=n.id?n.name:'等待首次选择';
  const aiCurrent=Boolean(n.id)&&n.id===s.ai_current_id;
  const aiDisabled=busy||!s.ai_group||!n.id||!s.api_healthy;
- const aiCell=selected?'<td></td>':`<td><button class="ai-button${aiCurrent?' active':''}" data-ai-node="${esc(n.id)}" ${aiDisabled?'disabled':''}>${aiCurrent?'AI 当前使用':'设为 AI'}</button></td>`;
+ const aiCell=selected?'<td></td>':`<td><button class="ai-button" data-ai-node="${esc(n.id)}" ${aiDisabled?'disabled':''}>设为 AI</button></td>`;
  return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}"><span class="node-choice-name">${esc(buttonText)}</span>${aiCurrent?'<span class="ai-badge">AI</span>':''}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${scoreNum(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td><td><button class="detail-button" data-detail-node="${esc(n.id)}" ${!n.id?'disabled':''}>详情</button></td>${aiCell}</tr>`;
 }
 function detailPercent(value) {
@@ -103,7 +103,7 @@ function patchRow(row,n,best,s,selected=false) {
   row.cells[5].innerHTML=history(n.history,'delay',best,false);
  }
  const aiButton=row.querySelector('.ai-button');
- if(aiButton){const aiCurrent=Boolean(n.id)&&n.id===s.ai_current_id;aiButton.textContent=aiCurrent?'AI 当前使用':'设为 AI';aiButton.classList.toggle('active',aiCurrent);aiButton.disabled=busy||!s.ai_group||!n.id||!s.api_healthy;}
+ if(aiButton){aiButton.textContent='设为 AI';aiButton.classList.remove('active');aiButton.disabled=busy||!s.ai_group||!n.id||!s.api_healthy||n.id===s.ai_current_id;}
  row.dataset.historyKey=nextHistoryKey;
  row.dataset.renderKey=nodeKey(n,best,s,selected);
 }
@@ -229,6 +229,16 @@ function render(s){
  $('updated').textContent='更新于 '+time(s.now);
 }
 function toast(message){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4500);}
+let aiConfirmResolve=null;
+function confirmAI(nodeID){
+ if(!nodeID)return Promise.resolve(false);
+ const node=(state?.groups||[]).flatMap(group=>group.nodes||[]).find(item=>item.id===nodeID)||state?.nodes?.find(item=>item.id===nodeID);
+ const dialog=$('ai-confirm-dialog'), message=$('ai-confirm-message'), ok=$('ai-confirm-ok');
+ if(!dialog||!ok)return Promise.resolve(true);
+ message.textContent=`确定将“${node?.name||nodeID}”设为 AI 策略组当前节点吗？`;
+ if(aiConfirmResolve)aiConfirmResolve(false);
+ return new Promise(resolve=>{aiConfirmResolve=resolve;dialog.showModal();ok.focus();});
+}
 async function refresh(){try{const headers=stateEtag?{'If-None-Match':stateEtag}:{};const r=await fetch('/api/state',{headers});lastStateRefresh=Date.now();if(r.status===304)return;if(!r.ok)throw new Error('状态读取失败');stateEtag=r.headers.get('ETag')||'';render(await r.json());}catch(e){$('connection').parentElement.dataset.health='error';$('connection').textContent='连接中断';const status=$('service-status'),text=$('service-status-text');if(status&&text){status.dataset.tone='error';status.title='暂时无法连接后端，当前显示的是上次数据。';status.setAttribute('aria-label',status.title);text.textContent='连接中断';}}}
 async function control(action,id=''){
  if(busy)return;busy=true;if(state)render(state);
@@ -247,7 +257,7 @@ for (const id of ['nodes','selected-node']) {
  body.closest('table').insertAdjacentHTML('afterbegin',tableHeading());
  body.addEventListener('click',e=>{
   const ai=e.target.closest('button[data-ai-node]');
-  if(ai&&!ai.disabled){e.stopPropagation();control('ai',ai.dataset.aiNode);return;}
+  if(ai&&!ai.disabled){e.stopPropagation();confirmAI(ai.dataset.aiNode).then(confirmed=>{if(confirmed)control('ai',ai.dataset.aiNode);});return;}
   const detail=e.target.closest('button[data-detail-node]');
   if(detail&&!detail.disabled){e.stopPropagation();openNodeDetail(detail.dataset.detailNode,id==='nodes'?displayGroupID:s.airport_id);return;}
   const button=e.target.closest('button[data-node]');
@@ -283,7 +293,10 @@ $('api-test').addEventListener('click',async()=>{const button=$('api-test');butt
 
 $('nodes-toggle').addEventListener('click',()=>{if(!state||!nodeList)return;nodeList.toggle();render(state);});
 $('node-detail-close')?.addEventListener('click',closeNodeDetail);
-$('detail-ai')?.addEventListener('click',e=>{if(!e.currentTarget.disabled)control('ai',e.currentTarget.dataset.aiNode);});
+$('detail-ai')?.addEventListener('click',e=>{if(!e.currentTarget.disabled)confirmAI(e.currentTarget.dataset.aiNode).then(confirmed=>{if(confirmed)control('ai',e.currentTarget.dataset.aiNode);});});
+$('ai-confirm-ok')?.addEventListener('click',()=>{if(aiConfirmResolve){const resolve=aiConfirmResolve;aiConfirmResolve=null;$('ai-confirm-dialog').close();resolve(true);}});
+$('ai-confirm-cancel')?.addEventListener('click',()=>{if(aiConfirmResolve){const resolve=aiConfirmResolve;aiConfirmResolve=null;$('ai-confirm-dialog').close();resolve(false);}});
+$('ai-confirm-dialog')?.addEventListener('cancel',e=>{e.preventDefault();$('ai-confirm-cancel').click();});
 $('node-detail-dialog')?.addEventListener('close',()=>{if(detailNodeId)closeNodeDetail();else resetDetailView();});
 $('detail-view-realtime')?.addEventListener('click',()=>setDetailView('realtime'));
 $('detail-view-longterm')?.addEventListener('click',()=>setDetailView('longterm'));
