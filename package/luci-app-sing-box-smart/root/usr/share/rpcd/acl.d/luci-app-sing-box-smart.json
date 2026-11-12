@@ -16,6 +16,12 @@
         ],
         "/usr/bin/sing-box-smart config-settings check": [
           "exec"
+        ],
+        "/usr/libexec/sing-box-smart-update version": [
+          "exec"
+        ],
+        "/usr/libexec/sing-box-smart-update check": [
+          "exec"
         ]
       }
     },
@@ -41,6 +47,9 @@
         ],
         "/etc/sing-box-smart/config.pending.json": [
           "write"
+        ],
+        "/usr/libexec/sing-box-smart-update update": [
+          "exec"
         ]
       }
     }

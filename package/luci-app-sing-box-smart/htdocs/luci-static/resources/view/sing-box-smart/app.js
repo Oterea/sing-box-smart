@@ -7,9 +7,10 @@
 'require sing-box-smart.coreconfig as coreConfig';
 const serviceName = 'sing-box-smart';
 const initPath = '/etc/init.d/' + serviceName;
+const updatePath = '/usr/libexec/sing-box-smart-update';
 const list = rpc.declare({object:'service',method:'list',params:['name'],expect:{'':{}}});
 return view.extend({
- load: function() { return Promise.all([list(serviceName), fs.exec(initPath,['enabled']), fs.exec('/usr/bin/sing-box-smart',['config-settings','read'])]); },
+ load: function() { return Promise.all([list(serviceName), fs.exec(initPath,['enabled']), fs.exec('/usr/bin/sing-box-smart',['config-settings','read']), fs.exec(updatePath,['version'])]); },
  render: function(data) {
   // Packaging versions the view, settings module and CSS together.
   const styleURL = L.resource('sing-box-smart/style.css');
@@ -25,6 +26,8 @@ return view.extend({
   try {if(data[2].code!==0)throw Error(data[2].stderr||'读取核心配置失败');savedConfig=JSON.parse(data[2].stdout||'{}');}
   catch(error){ui.addNotification(null,E('p',{},[error.message]));}
   const monitorLink = E('a',{class:'sbs-button sbs-open',href:window.location.protocol+'//'+window.location.hostname+':9797/',target:'_blank',rel:'noopener'},['监控面板']);
+  const versionInfo = {};
+  (data[3]?.stdout||'').split('\n').forEach(function(line){const pair=line.split('=');if(pair.length>1)versionInfo[pair[0]]=pair.slice(1).join('=').trim();});
   function setMonitorAddress(settings){const port=(settings.listen||'').match(/:(\d+)$/);if(port)monitorLink.href=window.location.protocol+'//'+window.location.hostname+':'+port[1]+'/';}
   setMonitorAddress(savedConfig.service||{});
   const themeChoice = localStorage.getItem('sing-box-smart-luci-theme') || 'system';
@@ -46,6 +49,7 @@ return view.extend({
    E('div',{class:'sbs-theme-actions'},themeButtons)
   ]);
   const actions = [];
+  const updateActions = [];
   const update = function(result) {
    const service = result && result[serviceName];
    const instances = service && service.instances && typeof service.instances === 'object' ? service.instances : {};
@@ -58,7 +62,7 @@ return view.extend({
   let busy = false;
   const setBusy = function(value) {
    busy = value;
-   actions.forEach(b => b.disabled = value);
+   actions.concat(updateActions).forEach(b => b.disabled = value);
    auto.disabled = value;
   };
   const run = function(action) {
@@ -73,6 +77,32 @@ return view.extend({
   ['启动','停止','重启'].forEach(function(label,i) {
    actions.push(E('button',{type:'button',class:'cbi-button sbs-button sbs-action '+(['start','stop','restart'][i]),click:function(){return run(['start','stop','restart'][i]);}},[label]));
   });
+  const versionText = E('span',{class:'sbs-version-text'},[
+   (versionInfo.LUCI||'LuCI 未知')+' · '+(versionInfo.CORE||'核心未知')
+  ]);
+  const checkButton = E('button',{type:'button',class:'cbi-button sbs-button',click:function(){
+   if(busy)return;
+   setBusy(true);versionText.textContent='正在检查更新…';
+   fs.exec(updatePath,['check']).then(function(r){
+    if(r.code!==0)throw new Error(r.stderr||'检查更新失败');
+    const match=(r.stdout||'').split('\n').find(line=>line.indexOf('UPDATES=')===0);
+    versionText.textContent=match&&match.slice(8)!=='none'?'有可用更新：'+match.slice(8):'当前已是最新版本';
+   }).catch(function(e){versionText.textContent='检查失败';ui.addNotification(null,E('p',{},[e.message]));}).finally(function(){setBusy(false);});
+  }},['检查更新']);
+  const updateButton = E('button',{type:'button',class:'cbi-button sbs-button start',click:function(){
+   if(busy||!confirm('确定升级 sing-box-smart 和 LuCI 软件包吗？'))return;
+   setBusy(true);versionText.textContent='正在更新…';
+   fs.exec(updatePath,['update']).then(function(r){
+    if(r.code!==0)throw new Error(r.stderr||'更新失败');
+    versionText.textContent='更新完成，页面即将刷新…';
+    setTimeout(function(){window.location.reload();},1200);
+   }).catch(function(e){versionText.textContent='更新失败';ui.addNotification(null,E('p',{},[e.message]));setBusy(false);});
+  }},['立即更新']);
+  updateActions.push(checkButton,updateButton);
+  const versionBlock = E('section',{class:'sbs-control-block sbs-version-block','aria-labelledby':'sbs-version-title'},[
+   E('div',{class:'sbs-card-title'},[E('span',{id:'sbs-version-title'},['版本与更新'])]),
+   E('div',{class:'sbs-version-row'},[versionText,E('div',{class:'sbs-version-actions'},[checkButton,updateButton])])
+  ]);
   auto.addEventListener('change', function() {
    if (busy) return;
    setBusy(true);
@@ -93,6 +123,7 @@ return view.extend({
       E('div',{class:'sbs-auto-row'},[autoLabel])
      ]),
      themeBlock,
+     versionBlock,
      coreConfig.render(savedConfig,function(settings){
       if(busy)throw Error('服务正忙，请稍后重试');
       setMonitorAddress(settings.service||{});

@@ -1,0 +1,29 @@
+#!/bin/sh
+set -eu
+
+core='sing-box-smart'
+luci='luci-app-sing-box-smart'
+
+installed_version() {
+    apk info -e -v "$1" 2>/dev/null | head -n 1 || true
+}
+
+case "${1:-version}" in
+version)
+    printf 'CORE=%s\n' "$(installed_version "$core")"
+    printf 'LUCI=%s\n' "$(installed_version "$luci")"
+    ;;
+check)
+    apk update >/dev/null
+    updates=$(apk list --upgradable 2>/dev/null | awk -v core="$core" -v luci="$luci" '$1 ~ ("^" core "-") || $1 ~ ("^" luci "-") {print $1}')
+    printf 'UPDATES=%s\n' "${updates:-none}"
+    ;;
+update)
+    apk update >/dev/null
+    apk upgrade "$core" "$luci"
+    ;;
+*)
+    echo "需要 version、check 或 update" >&2
+    exit 2
+    ;;
+esac
