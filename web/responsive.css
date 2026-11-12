@@ -63,7 +63,12 @@ header > .service-status {min-width:clamp(76px, 7vw, 92px);font-size:var(--ui-sm
 .node-table .node-choice,.node-table .check-count,.node-table .metric-cell {font-size:var(--ui-small)}
 .node-table .node-choice,.node-table .check-count,.node-table .metric-cell,.node-table .history-chart {height:var(--ui-row);min-height:var(--ui-row)}
 .node-table .node-choice {padding:7px 9px}
-@media(max-width:700px){.node-table .col-node{width:200px}}
+@media(max-width:700px){
+  .node-table{min-width:900px}
+  .node-table .col-node{width:200px}
+  .node-table .col-history{width:150px}
+  .node-performance-panel>.display-group-tabs{grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}
+}
 
 .settings-tab,.api-settings label,.runtime-field>label {font-size:var(--ui-body)}
 .api-settings form {gap:var(--ui-space)}
