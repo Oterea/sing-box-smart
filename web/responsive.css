@@ -198,3 +198,15 @@ html[data-theme="dark"] .theme-switch button:hover {background:#354754}
   html:not([data-theme="light"]) .theme-switch button:hover {background:#354754}
 }
 .app-version {margin-left:8px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* Keep the selected display group blue in every dark-theme mode. */
+html[data-theme="dark"] .node-performance-panel .display-group-tab.active {
+  background:var(--blue)!important;
+  color:var(--blue-text)!important;
+}
+@media(prefers-color-scheme:dark) {
+  html:not([data-theme="light"]) .node-performance-panel .display-group-tab.active {
+    background:var(--blue)!important;
+    color:var(--blue-text)!important;
+  }
+}
