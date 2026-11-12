@@ -127,3 +127,26 @@ footer {font-size:var(--ui-note);padding:var(--ui-space) 0}
 .api-settings input:not([type=checkbox]):not([type=radio]):focus,.api-settings select:focus {
   border-color:var(--blue)!important;
 }
+
+/* Keep long-term node buttons on the exact same responsive geometry as the
+   live node-performance buttons.  The explicit selector prevents the
+   long-term table's legacy width rule from changing its mobile box model. */
+.node-table .node-choice,
+.longterm-overview-table .longterm-node-choice {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  width:100%;
+  max-width:none;
+  padding:7px 9px;
+}
+
+@media(max-width:700px) {
+  .node-table .node-choice,
+  .longterm-overview-table .longterm-node-choice {
+    min-height:var(--ui-row);
+    height:var(--ui-row);
+    padding:7px 9px;
+  }
+}
