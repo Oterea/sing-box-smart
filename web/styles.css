@@ -402,8 +402,8 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .stability-result-dot{width:10px;height:10px;background:currentColor;border-radius:50%}
 .detail-grid{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:10px;margin-top:14px}
 .detail-metric{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:46px;padding:9px 13px;background:#edf3f5}
-.detail-metric span{color:#718494;font-size:12px}
-.detail-metric strong{color:#2b4052;font-size:16px;font-weight:550;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.detail-metric span{color:var(--muted);font-size:12px}
+.detail-metric strong{color:var(--ink);font-size:16px;font-weight:550;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
 .stability-chart-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:24px 0 8px;color:#536a7b;font-size:14px}
 .stability-chart-scroll{height:78px;overflow-x:auto;overflow-y:hidden;padding-inline:16px;background:#fff;border:1px solid #e1e8ec;box-sizing:border-box;overscroll-behavior:contain;scroll-padding-inline:16px;scrollbar-gutter:stable}
 .stability-chart-track{position:relative;width:max-content;min-width:100%;height:76px}
@@ -622,7 +622,7 @@ body.settings-open {overflow:hidden}
 .theme-switch button{border:0;background:transparent;color:inherit;padding:5px 8px;line-height:1;cursor:pointer}
 .theme-switch button:hover{background:#dbe4e9}
 .theme-switch button.active{background:var(--blue);color:#fff}
-html[data-theme="dark"]{color-scheme:dark}
+html[data-theme="dark"]{color-scheme:dark;--bg:#11171d;--surface:#1a222a;--ink:#e7edf2;--muted:#9aaab8;--line:#2b3945;--green-text:#6fe0a3;--amber-text:#f2c95e;--red-text:#ff858b}
 html[data-theme="light"]{color-scheme:light}
 html[data-theme="dark"] body{background:#11171d;color:#e7edf2}
 html[data-theme="dark"] .card,html[data-theme="dark"] .nodes-panel,html[data-theme="dark"] .events-panel,html[data-theme="dark"] .selected-card,html[data-theme="dark"] .api-settings,html[data-theme="dark"] .node-detail-dialog,html[data-theme="dark"] .settings-dialog{background:#1a222a;color:#e7edf2}
