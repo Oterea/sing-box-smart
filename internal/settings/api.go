@@ -58,6 +58,9 @@ func Load(path string) (Connection, error) {
 	if c.Pattern == "" {
 		c.Pattern = "PIN$"
 	}
+	if c.AIGroup == "" {
+		c.AIGroup = "AI"
+	}
 	c.Pattern, err = NormalizePattern(c.Pattern)
 	return c, err
 }
