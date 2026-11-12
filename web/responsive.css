@@ -161,3 +161,16 @@ footer {font-size:var(--ui-note);padding:var(--ui-space) 0}
     padding-inline:16px;
   }
 }
+
+/* Match the embedded strategy-group tabs to the top strategy-group card. */
+.node-performance-panel>.display-group-tabs {
+  font-weight:600;
+}
+.node-performance-panel .display-group-tab {
+  font-weight:600;
+}
+@media(max-width:700px) {
+  .node-performance-panel>.display-group-tabs {
+    margin:0 16px 16px;
+  }
+}
