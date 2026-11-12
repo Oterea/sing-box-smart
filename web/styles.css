@@ -288,7 +288,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
  .airport-options{grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px}
  .airport-option{min-height:38px;padding:8px;font-size:12px}
  .node-table{min-width:660px}
- .node-table .col-node{width:150px}
+ .node-table .col-node{width:200px}
  .node-table .col-action{width:74px}
  .node-table .col-score{width:64px}
  .node-table .col-delay{width:80px}
