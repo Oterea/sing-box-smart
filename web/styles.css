@@ -351,7 +351,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .node-performance-panel>.panel-heading{display:grid;grid-template-columns:minmax(150px,.9fr) minmax(170px,1fr) minmax(0,3fr);align-items:center;gap:18px}
 .node-performance-panel .node-summary{justify-content:center}
 .node-performance-panel .legend{justify-content:flex-end;min-width:0;gap:12px}
-.node-performance-panel>.display-group-tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:0 24px 18px}
+.node-performance-panel>.display-group-tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:0 var(--ui-pad-x) 18px}
 .node-performance-panel .display-group-tab{display:flex;align-items:center;justify-content:center;min-width:0;min-height:48px;padding:9px 12px;border:0;background:#e6ebef;color:#536a7b;font:inherit;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;box-shadow:none}
 .node-performance-panel .display-group-tab:hover{background:#dbe4e9;color:#2b4052}
 .node-performance-panel .display-group-tab.active{background:var(--blue);color:var(--blue-text);box-shadow:0 0 14px rgba(81,162,255,.35)}
@@ -642,7 +642,7 @@ html[data-theme="dark"] .settings-dialog::backdrop,html[data-theme="dark"] .node
 @media(max-width:700px){.brand-area{gap:10px}.theme-switch button{padding:5px 6px}}
 
 /* Keep the display-only strategy tabs identical to the top strategy buttons. */
-.node-performance-panel>.display-group-tabs{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:0 24px 18px}
+.node-performance-panel>.display-group-tabs{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:0 var(--ui-pad-x) 18px}
 .node-performance-panel .display-group-tab{min-height:48px;padding:9px 12px;background:#e6ebef;color:#536a7b;font-size:13px;font-weight:400;line-height:1.35}
 .node-performance-panel .display-group-tab:hover{background:#dbe4e9;color:#2b4052}
 .node-performance-panel .display-group-tab.active{background:var(--blue);color:var(--blue-text)}
