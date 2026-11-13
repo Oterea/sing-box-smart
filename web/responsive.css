@@ -312,3 +312,163 @@ html[data-theme="dark"] .node-table tbody tr.current-row .node-choice:disabled.s
     padding:8px 12px;
   }
 }
+
+/* Keep manual dark mode in parity with the system-dark palette.  These
+   selectors cover fixed light-theme colors that cannot follow the CSS vars. */
+html[data-theme="dark"] .count,
+html[data-theme="dark"] .node-table .node-choice.tier-ordinary,
+html[data-theme="dark"] .node-table .metric-cell.tone-none,
+html[data-theme="dark"] .detail-view-tab,
+html[data-theme="dark"] .pick,
+html[data-theme="dark"] .chart-failure,
+html[data-theme="dark"] .stability-bar.bar-failure,
+html[data-theme="dark"] .stability-bar.bar-none {
+  background:#26343e;
+  color:#c5d2db;
+}
+html[data-theme="dark"] .node-table .node-choice.tier-candidate,
+html[data-theme="dark"] .node-table .metric-cell.tone-good,
+html[data-theme="dark"] .stability-result.tone-good {background:#194532;color:#8fe0b5}
+html[data-theme="dark"] .node-table .node-choice.tier-recovery,
+html[data-theme="dark"] .node-table .metric-cell.tone-medium,
+html[data-theme="dark"] .stability-result.tone-medium {background:#4b3d1b;color:#f2c95e}
+html[data-theme="dark"] .node-table .metric-cell.tone-bad,
+html[data-theme="dark"] .stability-result.tone-bad {background:#4a252b;color:#ff858b}
+html[data-theme="dark"] .chart-missing,
+html[data-theme="dark"] .longterm-line-none {stroke:#6f818e}
+html[data-theme="dark"] .chart-failure,
+html[data-theme="dark"] .stability-bar.bar-failure,
+html[data-theme="dark"] .stability-bar.bar-none {fill:#6f818e}
+html[data-theme="dark"] .longterm-grid {stroke:#31414d}
+html[data-theme="dark"] .longterm-axis,
+html[data-theme="dark"] .longterm-p90 {fill:#9aabb7;stroke:#9aabb7}
+html[data-theme="dark"] .stability-chart-scroll,
+html[data-theme="dark"] .longterm-chart-panel {background:#182129;border-color:#354754}
+html[data-theme="dark"] .legend i.tier-candidate {background:#194532}
+html[data-theme="dark"] .legend i.tier-ordinary {background:#293640}
+html[data-theme="dark"] .legend i.tier-recovery {background:#4b3d1b}
+html[data-theme="dark"] .sleep-history-heading,
+html[data-theme="dark"] .sleep-record-state,
+html[data-theme="dark"] .stability-chart-heading,
+html[data-theme="dark"] .longterm-day-heading {color:#c5d2db}
+html[data-theme="dark"] .sleep-history-limit,
+html[data-theme="dark"] .sleep-record-time,
+html[data-theme="dark"] .sleep-record-empty,
+html[data-theme="dark"] .event time,
+html[data-theme="dark"] .event-event,
+html[data-theme="dark"] .subtle,
+html[data-theme="dark"] .detail-empty,
+html[data-theme="dark"] .detail-note,
+html[data-theme="dark"] .history-direction {color:#9aabb7}
+html[data-theme="dark"] .event-kind {color:#86b59e}
+html[data-theme="dark"] .level-warn {color:#f2c95e}
+html[data-theme="dark"] .level-error {color:#ff858b}
+html[data-theme="dark"] .sleep-event {background:#18352b}
+html[data-theme="dark"] .service-status {color:#8fb5a3}
+html[data-theme="dark"] .service-status[data-tone="warning"] {color:#f2c95e}
+html[data-theme="dark"] .service-status[data-tone="muted"] {color:#a9b8c2}
+html[data-theme="dark"] .version {border-color:#3a4b58;color:#9aabb7}
+html[data-theme="dark"] .health-number span,
+html[data-theme="dark"] .node-summary,
+html[data-theme="dark"] .switch-rule,
+html[data-theme="dark"] .mode-inline {color:#a9b8c2}
+html[data-theme="dark"] .airport-option small,
+html[data-theme="dark"] .node-table .node-meta {color:#91a2af}
+html[data-theme="dark"] .event {color:#b5c4ce;border-color:#2b3945}
+html[data-theme="dark"] .event-level {color:#bdcbd4}
+html[data-theme="dark"] .longterm-control.active,
+html[data-theme="dark"] .display-group-tab.active {color:#fff}
+html[data-theme="dark"] .longterm-control-group,
+html[data-theme="dark"] .api-settings label,
+html[data-theme="dark"] .runtime-field>label,
+html[data-theme="dark"] .api-settings p.setting-help {color:#a9b8c2}
+html[data-theme="dark"] .active-card {border-color:#355247}
+html[data-theme="dark"] .badge,
+html[data-theme="dark"] .compact {background:#18352b;color:#8fe0b5}
+html[data-theme="dark"] .selector-note,
+html[data-theme="dark"] .selector-note-inline,
+html[data-theme="dark"] .empty,
+html[data-theme="dark"] footer {color:#9aabb7}
+html[data-theme="dark"] .longterm-group-dot {background:#6f818e}
+html[data-theme="dark"] progress,
+html[data-theme="dark"] progress::-webkit-progress-bar {background:#254033}
+
+@media(prefers-color-scheme:dark) {
+  html:not([data-theme="light"]) .count,
+  html:not([data-theme="light"]) .node-table .node-choice.tier-ordinary,
+  html:not([data-theme="light"]) .node-table .metric-cell.tone-none,
+  html:not([data-theme="light"]) .detail-view-tab,
+  html:not([data-theme="light"]) .pick,
+  html:not([data-theme="light"]) .chart-failure,
+  html:not([data-theme="light"]) .stability-bar.bar-failure,
+  html:not([data-theme="light"]) .stability-bar.bar-none {
+    background:#26343e;
+    color:#c5d2db;
+  }
+  html:not([data-theme="light"]) .node-table .node-choice.tier-candidate,
+  html:not([data-theme="light"]) .node-table .metric-cell.tone-good,
+  html:not([data-theme="light"]) .stability-result.tone-good {background:#194532;color:#8fe0b5}
+  html:not([data-theme="light"]) .node-table .node-choice.tier-recovery,
+  html:not([data-theme="light"]) .node-table .metric-cell.tone-medium,
+  html:not([data-theme="light"]) .stability-result.tone-medium {background:#4b3d1b;color:#f2c95e}
+  html:not([data-theme="light"]) .node-table .metric-cell.tone-bad,
+  html:not([data-theme="light"]) .stability-result.tone-bad {background:#4a252b;color:#ff858b}
+  html:not([data-theme="light"]) .chart-missing,
+  html:not([data-theme="light"]) .longterm-line-none {stroke:#6f818e}
+  html:not([data-theme="light"]) .chart-failure,
+  html:not([data-theme="light"]) .stability-bar.bar-failure,
+  html:not([data-theme="light"]) .stability-bar.bar-none {fill:#6f818e}
+  html:not([data-theme="light"]) .longterm-grid {stroke:#31414d}
+  html:not([data-theme="light"]) .longterm-axis,
+  html:not([data-theme="light"]) .longterm-p90 {fill:#9aabb7;stroke:#9aabb7}
+  html:not([data-theme="light"]) .stability-chart-scroll,
+  html:not([data-theme="light"]) .longterm-chart-panel {background:#182129;border-color:#354754}
+  html:not([data-theme="light"]) .legend i.tier-candidate {background:#194532}
+  html:not([data-theme="light"]) .legend i.tier-ordinary {background:#293640}
+  html:not([data-theme="light"]) .legend i.tier-recovery {background:#4b3d1b}
+  html:not([data-theme="light"]) .sleep-history-heading,
+  html:not([data-theme="light"]) .sleep-record-state,
+  html:not([data-theme="light"]) .stability-chart-heading,
+  html:not([data-theme="light"]) .longterm-day-heading {color:#c5d2db}
+  html:not([data-theme="light"]) .sleep-history-limit,
+  html:not([data-theme="light"]) .sleep-record-time,
+  html:not([data-theme="light"]) .sleep-record-empty,
+  html:not([data-theme="light"]) .event time,
+  html:not([data-theme="light"]) .event-event,
+  html:not([data-theme="light"]) .subtle,
+  html:not([data-theme="light"]) .detail-empty,
+  html:not([data-theme="light"]) .detail-note,
+  html:not([data-theme="light"]) .history-direction {color:#9aabb7}
+  html:not([data-theme="light"]) .event-kind {color:#86b59e}
+  html:not([data-theme="light"]) .level-warn {color:#f2c95e}
+  html:not([data-theme="light"]) .level-error {color:#ff858b}
+  html:not([data-theme="light"]) .sleep-event {background:#18352b}
+  html:not([data-theme="light"]) .service-status {color:#8fb5a3}
+  html:not([data-theme="light"]) .service-status[data-tone="warning"] {color:#f2c95e}
+  html:not([data-theme="light"]) .service-status[data-tone="muted"] {color:#a9b8c2}
+  html:not([data-theme="light"]) .version {border-color:#3a4b58;color:#9aabb7}
+  html:not([data-theme="light"]) .health-number span,
+  html:not([data-theme="light"]) .node-summary,
+  html:not([data-theme="light"]) .switch-rule,
+  html:not([data-theme="light"]) .mode-inline {color:#a9b8c2}
+  html:not([data-theme="light"]) .airport-option small,
+  html:not([data-theme="light"]) .node-table .node-meta {color:#91a2af}
+  html:not([data-theme="light"]) .event {color:#b5c4ce;border-color:#2b3945}
+  html:not([data-theme="light"]) .event-level {color:#bdcbd4}
+  html:not([data-theme="light"]) .longterm-control.active,
+  html:not([data-theme="light"]) .display-group-tab.active {color:#fff}
+  html:not([data-theme="light"]) .longterm-control-group,
+  html:not([data-theme="light"]) .api-settings label,
+  html:not([data-theme="light"]) .runtime-field>label,
+  html:not([data-theme="light"]) .api-settings p.setting-help {color:#a9b8c2}
+  html:not([data-theme="light"]) .active-card {border-color:#355247}
+  html:not([data-theme="light"]) .badge,
+  html:not([data-theme="light"]) .compact {background:#18352b;color:#8fe0b5}
+  html:not([data-theme="light"]) .selector-note,
+  html:not([data-theme="light"]) .selector-note-inline,
+  html:not([data-theme="light"]) .empty,
+  html:not([data-theme="light"]) footer {color:#9aabb7}
+  html:not([data-theme="light"]) .longterm-group-dot {background:#6f818e}
+  html:not([data-theme="light"]) progress,
+  html:not([data-theme="light"]) progress::-webkit-progress-bar {background:#254033}
+}
