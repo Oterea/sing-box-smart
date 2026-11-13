@@ -572,3 +572,6 @@ header {
   .longterm-control-group::-webkit-scrollbar-thumb {background:#c7d1d8}
   .longterm-control-group::-webkit-scrollbar-track {background:transparent}
 }
+
+/* Leave comfortable space below the final version/update row. */
+footer {padding-bottom:clamp(32px,3.5vw,52px)}
