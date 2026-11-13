@@ -71,8 +71,9 @@ function nodeRow(n,best,s,selected=false,locked=false) {
  const buttonText=n.id?n.name:'等待首次选择';
  const aiCurrent=Boolean(n.id)&&n.id===s.ai_current_id;
  const aiDisabled=busy||!s.ai_group||!n.id||!s.api_healthy||n.id===s.ai_current_id;
- const aiCell=selected?'<td></td>':`<td><button class="ai-button" data-ai-node="${esc(n.id)}" ${aiDisabled?'disabled':''}>设为 AI</button></td>`;
- return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row ':''}${aiCurrent?'ai-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}"><span class="node-choice-name">${esc(buttonText)}</span>${aiCurrent?'<span class="ai-badge">AI</span>':''}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${scoreNum(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td><td><button class="detail-button" data-detail-node="${esc(n.id)}" ${!n.id?'disabled':''}>详情</button></td>${aiCell}</tr>`;
+ const aiCell=`<td><button class="ai-button" data-ai-node="${esc(n.id)}" ${aiDisabled?'disabled':''}>设为 AI</button></td>`;
+ const detailGroup=n.__group_id||s.airport_id;
+ return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row ':''}${aiCurrent?'ai-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}"><span class="node-choice-name">${esc(buttonText)}</span>${aiCurrent?'<span class="ai-badge">AI</span>':''}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${scoreNum(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td><td><button class="detail-button" data-detail-node="${esc(n.id)}" data-detail-group="${esc(detailGroup)}" ${!n.id?'disabled':''}>详情</button></td>${aiCell}</tr>`;
 }
 function detailPercent(value) {
  return Number.isFinite(Number(value)) ? (Number(value)*100).toFixed(1)+'%' : '—';
@@ -202,10 +203,10 @@ function render(s){
  const valid=displayState.nodes.filter(n=>n.score!=null), best=valid.length?Math.min(...valid.map(n=>n.score)):Infinity;
  const sorted=[...displayState.nodes].sort((a,b)=>(a.score??Infinity)-(b.score??Infinity)||a.id.localeCompare(b.id));
  const selectedNode=s.nodes.find(n=>n.id===s.current_id)??{id:'',name:'等待首次选择',checks:0,history:[],score:null,delay_ms:null,last_success:false};
- const allGroupNodes=groups.flatMap(group=>group.nodes||[]);
- const aiNode=allGroupNodes.find(n=>n.id===s.ai_current_id)||s.nodes.find(n=>n.id===s.ai_current_id);
+ const aiGroup=groups.find(group=>(group.nodes||[]).some(n=>n.id===s.ai_current_id));
+ const aiNode=(aiGroup?.nodes||[]).find(n=>n.id===s.ai_current_id)||s.nodes.find(n=>n.id===s.ai_current_id);
  const selectedRows=[selectedNode];
- if(aiNode?.id&&aiNode.id!==selectedNode.id)selectedRows.push(aiNode);
+ if(aiNode?.id&&aiNode.id!==selectedNode.id)selectedRows.push({...aiNode,__group_id:aiGroup?.id||s.airport_id});
  syncRows($('selected-node'),selectedRows,best,s,true);
  nodeList??=SmartNodeList.create(30);
  const list=nodeList.view(sorted,displayState.airport_id,prefs?.node_display_limit??30);
@@ -267,7 +268,7 @@ for (const id of ['nodes','selected-node']) {
   const ai=e.target.closest('button[data-ai-node]');
   if(ai&&!ai.disabled){e.stopPropagation();confirmAI(ai.dataset.aiNode).then(confirmed=>{if(confirmed)control('ai',ai.dataset.aiNode);});return;}
   const detail=e.target.closest('button[data-detail-node]');
-  if(detail&&!detail.disabled){e.stopPropagation();openNodeDetail(detail.dataset.detailNode,id==='nodes'?displayGroupID:s.airport_id);return;}
+  if(detail&&!detail.disabled){e.stopPropagation();openNodeDetail(detail.dataset.detailNode,detail.dataset.detailGroup||(id==='nodes'?displayGroupID:s.airport_id));return;}
   const button=e.target.closest('button[data-node]');
   if(button&&!button.disabled)control('node',button.dataset.node);
  });

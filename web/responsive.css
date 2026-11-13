@@ -257,7 +257,7 @@ html[data-theme="dark"] .node-performance-panel .display-group-tab.active {
 .node-table tbody tr.current-row .node-choice.selected,
 .node-table tbody tr.current-row .node-choice:disabled.selected {
   background:#4a9bf0;
-  box-shadow:0 0 0 1px #8bc5ff,0 0 10px rgba(81,162,255,.28)!important;
+  box-shadow:0 0 10px rgba(81,162,255,.28)!important;
 }
 html[data-theme="dark"] .node-table tbody tr.current-row {
   background:#142b36;
@@ -265,7 +265,7 @@ html[data-theme="dark"] .node-table tbody tr.current-row {
 html[data-theme="dark"] .node-table tbody tr.current-row .node-choice.selected,
 html[data-theme="dark"] .node-table tbody tr.current-row .node-choice:disabled.selected {
   background:#51a2ff;
-  box-shadow:0 0 0 1px #9bd0ff,0 0 12px rgba(81,162,255,.42)!important;
+  box-shadow:0 0 12px rgba(81,162,255,.42)!important;
 }
 @media(prefers-color-scheme:dark) {
   html:not([data-theme="light"]) .node-table tbody tr.current-row {
@@ -274,7 +274,7 @@ html[data-theme="dark"] .node-table tbody tr.current-row .node-choice:disabled.s
   html:not([data-theme="light"]) .node-table tbody tr.current-row .node-choice.selected,
   html:not([data-theme="light"]) .node-table tbody tr.current-row .node-choice:disabled.selected {
     background:#51a2ff;
-    box-shadow:0 0 0 1px #9bd0ff,0 0 12px rgba(81,162,255,.42)!important;
+    box-shadow:0 0 12px rgba(81,162,255,.42)!important;
   }
 }
 
