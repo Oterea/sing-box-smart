@@ -555,3 +555,8 @@ header {
     justify-content:flex-start;
   }
 }
+
+@media(max-width:700px) {
+  .header-controls .theme-switch,
+  .header-controls .header-actions {gap:10px}
+}
