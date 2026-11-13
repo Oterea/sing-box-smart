@@ -5,21 +5,28 @@ core='sing-box-smart'
 luci='luci-app-sing-box-smart'
 
 installed_version() {
-    apk info -e -v "$1" 2>/dev/null | head -n 1 || true
+    local value
+    value="$(apk info -e -v "$1" 2>/dev/null | head -n 1 || true)"
+    [ -n "$value" ] && printf '%s\n' "${value#"$1-"}"
 }
 
 case "${1:-version}" in
 version)
-    printf 'CORE=%s\n' "$(installed_version "$core")"
-    printf 'LUCI=%s\n' "$(installed_version "$luci")"
+    core_version="$(installed_version "$core")"
+    luci_version="$(installed_version "$luci")"
+    printf 'VERSION=%s\n' "${core_version:-$luci_version}"
     ;;
 check)
-    apk update >/dev/null
+    printf '%s\n' '正在执行 apk update…'
+    apk update
+    printf '%s\n' '正在检查 sing-box-smart 软件包更新…'
     updates=$(apk list --upgradable 2>/dev/null | awk -v core="$core" -v luci="$luci" '$1 ~ ("^" core "-") || $1 ~ ("^" luci "-") {print $1}')
     printf 'UPDATES=%s\n' "${updates:-none}"
     ;;
 update)
-    apk update >/dev/null
+    printf '%s\n' '正在执行 apk update…'
+    apk update
+    printf '%s\n' '正在升级 sing-box-smart 软件包…'
     apk upgrade "$core" "$luci"
     ;;
 *)

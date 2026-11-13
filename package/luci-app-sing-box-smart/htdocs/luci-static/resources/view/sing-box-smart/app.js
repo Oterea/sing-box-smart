@@ -28,6 +28,7 @@ return view.extend({
   const monitorLink = E('a',{class:'sbs-button sbs-open',href:window.location.protocol+'//'+window.location.hostname+':9797/',target:'_blank',rel:'noopener'},['监控面板']);
   const versionInfo = {};
   (data[3]?.stdout||'').split('\n').forEach(function(line){const pair=line.split('=');if(pair.length>1)versionInfo[pair[0]]=pair.slice(1).join('=').trim();});
+  const currentVersion = versionInfo.VERSION || versionInfo.CORE || versionInfo.LUCI || '未知';
   function setMonitorAddress(settings){const port=(settings.listen||'').match(/:(\d+)$/);if(port)monitorLink.href=window.location.protocol+'//'+window.location.hostname+':'+port[1]+'/';}
   setMonitorAddress(savedConfig.service||{});
   const themeChoice = localStorage.getItem('sing-box-smart-luci-theme') || 'system';
@@ -77,31 +78,46 @@ return view.extend({
   ['启动','停止','重启'].forEach(function(label,i) {
    actions.push(E('button',{type:'button',class:'cbi-button sbs-button sbs-action '+(['start','stop','restart'][i]),click:function(){return run(['start','stop','restart'][i]);}},[label]));
   });
-  const versionText = E('span',{class:'sbs-version-text'},[
-   (versionInfo.LUCI||'LuCI 未知')+' · '+(versionInfo.CORE||'核心未知')
-  ]);
-  const checkButton = E('button',{type:'button',class:'cbi-button sbs-button',click:function(){
+  let updateState='idle';
+  let availableVersion='';
+  const versionText = E('span',{class:'sbs-version-text'},['当前版本 · '+currentVersion]);
+  const updateOutput = E('pre',{class:'sbs-update-output',hidden:true,'aria-live':'polite'});
+  const outputText = function(result){return [result?.stdout,result?.stderr].filter(Boolean).join('\n').trim();};
+  const showOutput = function(result){
+   const text=outputText(result).split('\n').filter(function(line){return !/^(VERSION|CORE|LUCI|UPDATES)=/.test(line);}).join('\n').trim();
+   updateOutput.textContent=text;
+   updateOutput.hidden=!text;
+  };
+  const updateButton = E('button',{type:'button',class:'cbi-button sbs-button',click:function(){
    if(busy)return;
-   setBusy(true);versionText.textContent='正在检查更新…';
+   if(updateState==='available'){
+    if(!confirm('确定升级 sing-box-smart 和 LuCI 软件包吗？'))return;
+    updateState='updating';setBusy(true);updateButton.classList.add('start');versionText.textContent='正在更新…';updateButton.textContent='更新中…';
+    fs.exec(updatePath,['update']).then(function(r){
+     showOutput(r);
+     if(r.code!==0)throw new Error(r.stderr||'更新失败');
+     versionText.textContent='更新完成，页面即将刷新…';
+     setTimeout(function(){window.location.reload();},2200);
+    }).catch(function(e){updateState='error';updateButton.classList.remove('start');updateButton.textContent='重新检查';versionText.textContent='更新失败';ui.addNotification(null,E('p',{},[e.message]));setBusy(false);});
+    return;
+   }
+   updateState='checking';setBusy(true);versionText.textContent='正在检查更新…';updateButton.textContent='检查中…';updateOutput.hidden=true;updateOutput.textContent='';
    fs.exec(updatePath,['check']).then(function(r){
+    showOutput(r);
     if(r.code!==0)throw new Error(r.stderr||'检查更新失败');
     const match=(r.stdout||'').split('\n').find(line=>line.indexOf('UPDATES=')===0);
-    versionText.textContent=match&&match.slice(8)!=='none'?'有可用更新：'+match.slice(8):'当前已是最新版本';
-   }).catch(function(e){versionText.textContent='检查失败';ui.addNotification(null,E('p',{},[e.message]));}).finally(function(){setBusy(false);});
+    const updates=match?match.slice(8).trim():'';
+    if(updates&&updates!=='none'){
+     availableVersion=updates.split(/[\s,]+/)[0].replace(/^sing-box-smart-/,'').replace(/^luci-app-sing-box-smart-/,'');
+     updateState='available';updateButton.classList.add('start');versionText.textContent='当前版本 · '+currentVersion+' · 可更新至 '+availableVersion;updateButton.textContent='立即更新';
+    } else {updateState='current';updateButton.classList.remove('start');versionText.textContent='当前版本 · '+currentVersion+' · 已是最新';updateButton.textContent='重新检查';}
+   }).catch(function(e){updateState='error';updateButton.classList.remove('start');updateButton.textContent='重新检查';versionText.textContent='检查失败';ui.addNotification(null,E('p',{},[e.message]));}).finally(function(){setBusy(false);});
   }},['检查更新']);
-  const updateButton = E('button',{type:'button',class:'cbi-button sbs-button start',click:function(){
-   if(busy||!confirm('确定升级 sing-box-smart 和 LuCI 软件包吗？'))return;
-   setBusy(true);versionText.textContent='正在更新…';
-   fs.exec(updatePath,['update']).then(function(r){
-    if(r.code!==0)throw new Error(r.stderr||'更新失败');
-    versionText.textContent='更新完成，页面即将刷新…';
-    setTimeout(function(){window.location.reload();},1200);
-   }).catch(function(e){versionText.textContent='更新失败';ui.addNotification(null,E('p',{},[e.message]));setBusy(false);});
-  }},['立即更新']);
-  updateActions.push(checkButton,updateButton);
+  updateActions.push(updateButton);
   const versionBlock = E('section',{class:'sbs-control-block sbs-version-block','aria-labelledby':'sbs-version-title'},[
    E('div',{class:'sbs-card-title'},[E('span',{id:'sbs-version-title'},['版本与更新'])]),
-   E('div',{class:'sbs-version-row'},[versionText,E('div',{class:'sbs-version-actions'},[checkButton,updateButton])])
+   E('div',{class:'sbs-version-row'},[versionText,E('div',{class:'sbs-version-actions'},[updateButton])]),
+   updateOutput
   ]);
   auto.addEventListener('change', function() {
    if (busy) return;
