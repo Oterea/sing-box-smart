@@ -291,3 +291,24 @@ html[data-theme="dark"] .node-table tbody tr.current-row .node-choice:disabled.s
   color:#fff!important;
   border-color:var(--blue)!important;
 }
+
+/* Give the independent theme controls a comfortable tap target. */
+.theme-switch {
+  gap:8px;
+  font-size:14px;
+}
+.theme-switch button {
+  min-width:64px;
+  padding:9px 14px;
+  line-height:1.2;
+}
+@media(max-width:700px) {
+  .theme-switch {
+    gap:7px;
+    font-size:14px;
+  }
+  .theme-switch button {
+    min-width:60px;
+    padding:8px 12px;
+  }
+}
