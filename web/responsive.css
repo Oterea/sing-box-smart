@@ -313,6 +313,13 @@ html[data-theme="dark"] .node-table tbody tr.current-row .node-choice:disabled.s
   }
 }
 
+/* Mark the node currently used by the AI strategy group with an orange row. */
+.node-table tbody tr.ai-row {background:#fff0e5}
+html[data-theme="dark"] .node-table tbody tr.ai-row {background:#3d291f}
+@media(prefers-color-scheme:dark) {
+  html:not([data-theme="light"]) .node-table tbody tr.ai-row {background:#3d291f}
+}
+
 /* Keep manual dark mode in parity with the system-dark palette.  These
    selectors cover fixed light-theme colors that cannot follow the CSS vars. */
 html[data-theme="dark"] .count,

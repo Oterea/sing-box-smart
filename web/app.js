@@ -70,9 +70,9 @@ function nodeRow(n,best,s,selected=false) {
  const delayColor=n.checks&&!n.last_success?'bad':delayTone(n.delay_ms);
  const buttonText=n.id?n.name:'等待首次选择';
  const aiCurrent=Boolean(n.id)&&n.id===s.ai_current_id;
- const aiDisabled=busy||!s.ai_group||!n.id||!s.api_healthy;
+ const aiDisabled=busy||!s.ai_group||!n.id||!s.api_healthy||n.id===s.ai_current_id;
  const aiCell=selected?'<td></td>':`<td><button class="ai-button" data-ai-node="${esc(n.id)}" ${aiDisabled?'disabled':''}>设为 AI</button></td>`;
- return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}"><span class="node-choice-name">${esc(buttonText)}</span>${aiCurrent?'<span class="ai-badge">AI</span>':''}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${scoreNum(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td><td><button class="detail-button" data-detail-node="${esc(n.id)}" ${!n.id?'disabled':''}>详情</button></td>${aiCell}</tr>`;
+ return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row ':''}${aiCurrent?'ai-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}"><span class="node-choice-name">${esc(buttonText)}</span>${aiCurrent?'<span class="ai-badge">AI</span>':''}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${scoreNum(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td><td><button class="detail-button" data-detail-node="${esc(n.id)}" ${!n.id?'disabled':''}>详情</button></td>${aiCell}</tr>`;
 }
 function detailPercent(value) {
  return Number.isFinite(Number(value)) ? (Number(value)*100).toFixed(1)+'%' : '—';
@@ -82,7 +82,7 @@ function detailMs(value) {
 }
 function patchRow(row,n,best,s,selected=false) {
  const current=Boolean(n.id)&&n.id===s.current_id;
- row.className=current?'current-row':'';
+ row.className=`${current?'current-row ':''}${n.id&&n.id===s.ai_current_id?'ai-row':''}`;
  const button=row.querySelector('button.node-choice');
  const disabled=busy||Boolean(s.pending_id)||s.manual_check_active||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
  button.innerHTML=`<span class="node-choice-name">${esc(n.id?n.name:'等待首次选择')}</span>${n.id&&n.id===s.ai_current_id?'<span class="ai-badge">AI</span>':''}`;
