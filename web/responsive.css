@@ -316,6 +316,7 @@ html[data-theme="dark"] .node-table tbody tr.current-row .node-choice:disabled.s
 
 /* Mark the node currently used by the AI strategy group with an orange row. */
 .node-table tbody tr.ai-row {background:#fff0e5}
+.selected-card .node-choice[aria-disabled="true"] {cursor:default}
 .node-table tbody tr.ai-row .node-choice {background:#ffe0d0;color:#7a3b20}
 html[data-theme="dark"] .node-table tbody tr.ai-row {background:#3d291f}
 html[data-theme="dark"] .node-table tbody tr.ai-row .node-choice {background:#543022;color:#ffd0b8}

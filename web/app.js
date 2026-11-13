@@ -67,13 +67,14 @@ function historyKey(n) {
 function nodeRow(n,best,s,selected=false,locked=false) {
  const current=Boolean(n.id)&&n.id===s.current_id;
  const disabled=locked||busy||Boolean(s.pending_id)||s.manual_check_active||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
+ const nodeReadonly=locked;
  const delayColor=n.checks&&!n.last_success?'bad':delayTone(n.delay_ms);
  const buttonText=n.id?n.name:'等待首次选择';
  const aiCurrent=Boolean(n.id)&&n.id===s.ai_current_id;
  const aiDisabled=busy||!s.ai_group||!n.id||!s.api_healthy||n.id===s.ai_current_id;
  const aiCell=`<td><button class="ai-button" data-ai-node="${esc(n.id)}" ${aiDisabled?'disabled':''}>设为 AI</button></td>`;
  const detailGroup=n.__group_id||s.airport_id;
- return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row ':''}${aiCurrent?'ai-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled?'disabled':''} title="${esc(n.name)}"><span class="node-choice-name">${esc(buttonText)}</span>${aiCurrent?'<span class="ai-badge">AI</span>':''}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${scoreNum(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td><td><button class="detail-button" data-detail-node="${esc(n.id)}" data-detail-group="${esc(detailGroup)}" ${!n.id?'disabled':''}>详情</button></td>${aiCell}</tr>`;
+ return `<tr data-row-id="${esc(n.id||'selected')}" class="${current?'current-row ':''}${aiCurrent?'ai-row':''}"><td><button class="node-choice tier-${nodeTier(n,s)}${current?' selected':''}" data-node="${esc(n.id)}" ${disabled&&!nodeReadonly?'disabled':''} ${nodeReadonly?'aria-disabled="true" tabindex="-1" data-readonly="true"':''} title="${esc(n.name)}"><span class="node-choice-name">${esc(buttonText)}</span>${aiCurrent?'<span class="ai-badge">AI</span>':''}</button></td><td><span class="check-count">${n.checks}</span></td><td><span class="metric-cell tone-${tone(n.score,best)}">${scoreNum(n.score)}</span></td><td><span class="metric-cell tone-${delayColor}">${n.delay_ms!=null?num(n.delay_ms):n.checks?'失败':'—'}</span></td><td>${history(n.history,'score',best)}</td><td>${history(n.history,'delay',best)}</td><td><button class="detail-button" data-detail-node="${esc(n.id)}" data-detail-group="${esc(detailGroup)}" ${!n.id?'disabled':''}>详情</button></td>${aiCell}</tr>`;
 }
 function detailPercent(value) {
  return Number.isFinite(Number(value)) ? (Number(value)*100).toFixed(1)+'%' : '—';
@@ -88,7 +89,9 @@ function patchRow(row,n,best,s,selected=false,locked=false) {
  const disabled=locked||busy||Boolean(s.pending_id)||s.manual_check_active||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
  button.innerHTML=`<span class="node-choice-name">${esc(n.id?n.name:'等待首次选择')}</span>${n.id&&n.id===s.ai_current_id?'<span class="ai-badge">AI</span>':''}`;
  button.title=n.name;
- button.disabled=disabled;
+ button.disabled=locked?false:disabled;
+ if(locked){button.setAttribute('aria-disabled','true');button.setAttribute('tabindex','-1');button.dataset.readonly='true';}
+ else {button.removeAttribute('aria-disabled');button.removeAttribute('tabindex');delete button.dataset.readonly;}
  button.className=`node-choice tier-${nodeTier(n,s)}${current?' selected':''}`;
  if(n.id)button.dataset.node=n.id;else delete button.dataset.node;
  animateNumber(row.cells[1].firstElementChild,n.checks);
@@ -270,7 +273,7 @@ for (const id of ['nodes','selected-node']) {
   const detail=e.target.closest('button[data-detail-node]');
   if(detail&&!detail.disabled){e.stopPropagation();openNodeDetail(detail.dataset.detailNode,detail.dataset.detailGroup||(id==='nodes'?displayGroupID:s.airport_id));return;}
   const button=e.target.closest('button[data-node]');
-  if(button&&!button.disabled)control('node',button.dataset.node);
+  if(button&&!button.disabled&&!button.dataset.readonly)control('node',button.dataset.node);
  });
 }
 // Background tabs do not need a full 78-node snapshot every second.
