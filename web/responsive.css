@@ -393,6 +393,29 @@ html[data-theme="dark"] .longterm-group-dot {background:#6f818e}
 html[data-theme="dark"] progress,
 html[data-theme="dark"] progress::-webkit-progress-bar {background:#254033}
 
+/* Give long-term filters a little more breathing room without increasing
+   their height. Each filter row gets its own scroll track on small screens. */
+.longterm-control-group {font-size:13px}
+.longterm-control {min-width:46px;padding-inline:11px;font-size:13px}
+@media(max-width:700px) {
+  .longterm-overview-controls {
+    flex-direction:column;
+    align-items:stretch;
+    gap:8px;
+    overflow-x:visible;
+    padding-bottom:0;
+  }
+  .longterm-control-group {
+    width:100%;
+    flex:0 0 auto;
+    margin-right:0;
+    overflow-x:auto;
+    padding-bottom:4px;
+  }
+  .longterm-control-group>span {flex:0 0 auto}
+  .longterm-control {min-width:48px}
+}
+
 @media(prefers-color-scheme:dark) {
   html:not([data-theme="light"]) .count,
   html:not([data-theme="light"]) .node-table .node-choice.tier-ordinary,
