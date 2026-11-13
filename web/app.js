@@ -55,18 +55,18 @@ function tableHeading() {
 function nodeTier(n,s) {
  return n.id&&n.id===s.current_id?'current':n.recovery_remaining>0?'recovery':n.tier==='candidate'?'candidate':'ordinary';
 }
-function nodeKey(n,best,s,selected=false) {
+function nodeKey(n,best,s,selected=false,locked=false) {
  // A changing best score matters only when it changes a visible color.
  // Including the raw best value would redraw every node's SVG on each update.
  const colors=(n.history??[]).slice(-20).map(sample=>tone(sample.score,best)).join(',');
- return JSON.stringify({id:n.id,name:n.name,tier:nodeTier(n,s),checks:n.checks,score:n.score,delay:n.delay_ms,overflow:n.score_overflow,last:n.last_success,current:selected||n.id===s.current_id,ai:n.id===s.ai_current_id,history:n.history,delayColors:[s.settings?.delay_green_ms,s.settings?.delay_yellow_ms],colors,rowColor:tone(n.score,best),busy,pending:s.pending_id,manual:s.manual_check_active,phase:s.phase,paused:s.paused,sleeping:s.sleeping,api:s.api_healthy,selection_mode:s.selection_mode,control_active:s.control_active});
+ return JSON.stringify({id:n.id,name:n.name,tier:nodeTier(n,s),checks:n.checks,score:n.score,delay:n.delay_ms,overflow:n.score_overflow,last:n.last_success,current:selected||n.id===s.current_id,ai:n.id===s.ai_current_id,locked,history:n.history,delayColors:[s.settings?.delay_green_ms,s.settings?.delay_yellow_ms],colors,rowColor:tone(n.score,best),busy,pending:s.pending_id,manual:s.manual_check_active,phase:s.phase,paused:s.paused,sleeping:s.sleeping,api:s.api_healthy,selection_mode:s.selection_mode,control_active:s.control_active});
 }
 function historyKey(n) {
  return JSON.stringify((n.history??[]).slice(-20).map(sample=>[sample.at,sample.success,sample.score,sample.delay_ms,sample.error]));
 }
-function nodeRow(n,best,s,selected=false) {
+function nodeRow(n,best,s,selected=false,locked=false) {
  const current=Boolean(n.id)&&n.id===s.current_id;
- const disabled=busy||Boolean(s.pending_id)||s.manual_check_active||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
+ const disabled=locked||busy||Boolean(s.pending_id)||s.manual_check_active||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
  const delayColor=n.checks&&!n.last_success?'bad':delayTone(n.delay_ms);
  const buttonText=n.id?n.name:'等待首次选择';
  const aiCurrent=Boolean(n.id)&&n.id===s.ai_current_id;
@@ -80,11 +80,11 @@ function detailPercent(value) {
 function detailMs(value) {
  return Number.isFinite(Number(value)) ? Math.round(Number(value))+' ms' : '—';
 }
-function patchRow(row,n,best,s,selected=false) {
+function patchRow(row,n,best,s,selected=false,locked=false) {
  const current=Boolean(n.id)&&n.id===s.current_id;
  row.className=`${current?'current-row ':''}${n.id&&n.id===s.ai_current_id?'ai-row':''}`;
  const button=row.querySelector('button.node-choice');
- const disabled=busy||Boolean(s.pending_id)||s.manual_check_active||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
+ const disabled=locked||busy||Boolean(s.pending_id)||s.manual_check_active||s.paused||s.sleeping||s.phase==='startup'||!s.api_healthy||current||s.control_active===false||!n.id;
  button.innerHTML=`<span class="node-choice-name">${esc(n.id?n.name:'等待首次选择')}</span>${n.id&&n.id===s.ai_current_id?'<span class="ai-badge">AI</span>':''}`;
  button.title=n.name;
  button.disabled=disabled;
@@ -106,29 +106,30 @@ function patchRow(row,n,best,s,selected=false) {
  const aiButton=row.querySelector('.ai-button');
  if(aiButton){aiButton.textContent='设为 AI';aiButton.classList.remove('active');aiButton.disabled=busy||!s.ai_group||!n.id||!s.api_healthy||n.id===s.ai_current_id;}
  row.dataset.historyKey=nextHistoryKey;
- row.dataset.renderKey=nodeKey(n,best,s,selected);
+ row.dataset.renderKey=nodeKey(n,best,s,selected,locked);
 }
 function syncRows(body,nodes,best,s,selected=false) {
  if(typeof body.querySelectorAll!=='function') {
-  body.innerHTML=selected?nodeRow(nodes[0],best,s,true):nodes.map(n=>nodeRow(n,best,s)).join('');
+  body.innerHTML=nodes.map(n=>nodeRow(n,best,s,selected,selected)).join('');
   return;
  }
  const rows=new Map([...body.querySelectorAll('tr[data-row-id]')].map(row=>[row.dataset.rowId,row]));
  const seen=new Set();
  let position=body.firstElementChild;
  for(const n of nodes) {
-  const id=n.id||'selected';
+  const id=selected?'selected-'+(n.id||'empty'):(n.id||'selected');
   let row=rows.get(id);
-  const key=nodeKey(n,best,s,selected);
+  const key=nodeKey(n,best,s,selected,selected);
   if(!row) {
    const holder=document.createElement('tbody');
-   holder.innerHTML=nodeRow(n,best,s);
+   holder.innerHTML=nodeRow(n,best,s,selected,selected);
    row=holder.firstElementChild;
+   row.dataset.rowId=id;
    row.dataset.renderKey=key;
    row.dataset.historyKey=historyKey(n);
    row._paintedHistory=n.history??[];
   }
-  if(row.dataset.renderKey!==key)patchRow(row,n,best,s,selected);
+  if(row.dataset.renderKey!==key)patchRow(row,n,best,s,selected,selected);
   if(row!==position)body.insertBefore(row,position);
   position=row.nextElementSibling;
   seen.add(id);
@@ -200,7 +201,12 @@ function render(s){
  previousPendingID=s.pending_id||'';previousCurrentID=s.current_id||'';previousAirportID=s.airport_id||'';serviceStatusInitialized=true;
  const valid=displayState.nodes.filter(n=>n.score!=null), best=valid.length?Math.min(...valid.map(n=>n.score)):Infinity;
  const sorted=[...displayState.nodes].sort((a,b)=>(a.score??Infinity)-(b.score??Infinity)||a.id.localeCompare(b.id));
- syncRows($('selected-node'),[s.nodes.find(n=>n.id===s.current_id)??{id:'',name:'等待首次选择',checks:0,history:[],score:null,delay_ms:null,last_success:false}],best,s,true);
+ const selectedNode=s.nodes.find(n=>n.id===s.current_id)??{id:'',name:'等待首次选择',checks:0,history:[],score:null,delay_ms:null,last_success:false};
+ const allGroupNodes=groups.flatMap(group=>group.nodes||[]);
+ const aiNode=allGroupNodes.find(n=>n.id===s.ai_current_id)||s.nodes.find(n=>n.id===s.ai_current_id);
+ const selectedRows=[selectedNode];
+ if(aiNode?.id&&aiNode.id!==selectedNode.id)selectedRows.push(aiNode);
+ syncRows($('selected-node'),selectedRows,best,s,true);
  nodeList??=SmartNodeList.create(30);
  const list=nodeList.view(sorted,displayState.airport_id,prefs?.node_display_limit??30);
  $('node-count').textContent=`${list.canToggle?list.visible:list.total}-${list.total}`;
