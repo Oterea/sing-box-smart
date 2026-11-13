@@ -539,7 +539,8 @@ header {
   flex-direction:column;
   align-items:stretch;
   justify-content:center;
-  gap:10px;
+  gap:18px;
+  padding-block:24px;
 }
 .brand-area {width:100%}
 .header-controls {
@@ -553,6 +554,10 @@ header {
     flex-direction:column;
     align-items:stretch;
     justify-content:flex-start;
+  }
+  header {
+    gap:16px;
+    padding-block:22px;
   }
 }
 
