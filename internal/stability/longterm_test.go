@@ -112,7 +112,7 @@ func TestLongTermOverviewAggregatesConfiguredWindows(t *testing.T) {
 		t.Fatal(err)
 	}
 	data := store.Overview("airport", []domain.Node{{ID: "node", Name: "Node"}}, now, 600)
-	if data.Timezone != "Asia/Shanghai" || len(data.Nodes) != 1 || len(data.Nodes[0].Windows) != 5 {
+	if data.Timezone != "Asia/Shanghai" || len(data.Nodes) != 1 || len(data.Nodes[0].Windows) != 6 {
 		t.Fatalf("unexpected overview: %+v", data)
 	}
 	for _, window := range data.Nodes[0].Windows {

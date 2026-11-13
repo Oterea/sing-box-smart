@@ -18,7 +18,7 @@ const (
 	longTermBuckets   = 24 * 60 / 15
 )
 
-var longTermOverviewWindows = [...]int{1, 2, 5, 9, 14}
+var longTermOverviewWindows = [...]int{1, 3, 5, 7, 9, 14}
 
 var histogramEdges = [...]float64{50, 100, 150, 200, 250, 300, 400, 500, 600, 800, 1000, 1500, 2000, 3000, 5000}
 
