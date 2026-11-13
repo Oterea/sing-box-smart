@@ -2,7 +2,7 @@
 // nodes; this module only groups, ranks and renders them.
 const overviewElement=id=>document.getElementById(id);
 let longTermOverviewData=null, longTermOverviewAirport='', longTermOverviewLoadedAt=0, longTermOverviewController=null, longTermOverviewLoadingAirport='', longTermOverviewThresholdKey='', longTermOverviewRetryAt=0, longTermOverviewError='', longTermOverviewState=null, longTermOverviewStateGroupID='';
-let longTermOverviewWindow=14, longTermOverviewSorts=['p50','p90','success','high'], longTermOverviewExpanded={};
+let longTermOverviewWindow=5, longTermOverviewSorts=['p50','p90','success','high'], longTermOverviewExpanded={};
 const longTermOverviewMetrics=[{key:'p50',label:'P50-排名',direction:'asc'},{key:'p90',label:'P90-排名',direction:'asc'},{key:'success',label:'成功率-排名',direction:'desc'},{key:'high',label:'高延迟-排名',direction:'asc'},{key:'fail',label:'连续失败-排名',direction:'asc'}];
 const longTermOverviewGroups=['稳定低延迟','稳定中延迟','稳定高延迟','不稳定','样本不足'];
 function overviewSummary(node,days){return (node.windows||[]).find(window=>Number(window.days)===days)?.summary||{};}
