@@ -560,3 +560,15 @@ header {
   .header-controls .theme-switch,
   .header-controls .header-actions {gap:10px}
 }
+
+@media(max-width:700px) {
+  .longterm-control-group {
+    padding-bottom:10px;
+    scrollbar-gutter:stable;
+    scrollbar-width:thin;
+    scrollbar-color:#c7d1d8 transparent;
+  }
+  .longterm-control-group::-webkit-scrollbar {height:6px}
+  .longterm-control-group::-webkit-scrollbar-thumb {background:#c7d1d8}
+  .longterm-control-group::-webkit-scrollbar-track {background:transparent}
+}
