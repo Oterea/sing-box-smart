@@ -213,7 +213,7 @@ function render(s){
  syncRows($('selected-node'),selectedRows,best,s,true);
  nodeList??=SmartNodeList.create(30);
  const list=nodeList.view(sorted,displayState.airport_id,prefs?.node_display_limit??30);
- $('node-count').textContent=`${list.canToggle?list.visible:list.total}-${list.total}`;
+ $('node-count').textContent=`显示 ${list.canToggle?list.visible:list.total}-${list.total}`;
  $('node-list-controls').hidden=!list.canToggle;
  $('nodes-toggle').textContent=list.expanded?`收起至前 ${list.limit} 个`:`显示全部（还有 ${list.remaining} 个）`;
  $('nodes-toggle').setAttribute('aria-expanded',String(list.expanded));

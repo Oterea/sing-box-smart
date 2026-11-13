@@ -238,6 +238,7 @@ html[data-theme="dark"] .node-performance-panel .display-group-tab.active {
   font-size:var(--ui-small);
   font-weight:550;
 }
+.node-performance-title .count {background:transparent!important;color:var(--muted)}
 @media(max-width:700px) {
   .node-performance-title h2 {gap:4px 8px}
   .node-inline-summary {gap:4px 10px}
