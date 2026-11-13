@@ -283,3 +283,11 @@ html[data-theme="dark"] .node-table tbody tr.current-row .node-choice:disabled.s
   padding:0;
   background:transparent;
 }
+
+/* The selected theme must remain visibly blue after dark-theme overrides. */
+.theme-switch button.active,
+.theme-switch button[aria-pressed="true"] {
+  background:var(--blue)!important;
+  color:#fff!important;
+  border-color:var(--blue)!important;
+}
