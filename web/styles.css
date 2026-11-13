@@ -447,7 +447,7 @@ progress,progress::-webkit-progress-bar{background:#E6FCF1}
 .longterm-rank{color:inherit;font-size:inherit;font-weight:600}
 .longterm-group-row th{padding:10px var(--ui-pad-x) 8px;background:#f1f5f7;color:#536a7b;text-align:left;font-size:13px;font-weight:650}
 .longterm-group-row .subtle{margin-left:8px;font-size:11px;font-weight:400}
-.longterm-group-dot{display:inline-block;width:8px;height:8px;margin-right:8px;background:#aeb9c1}
+.longterm-group-dot{display:inline-block;width:10px;height:10px;margin-right:8px;vertical-align:middle;background:#aeb9c1}
 .longterm-group-dot.tone-good{background:var(--green)}
 .longterm-group-dot.tone-medium{background:var(--amber)}
 .longterm-group-dot.tone-bad{background:var(--red)}
