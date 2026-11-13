@@ -575,3 +575,15 @@ header {
 
 /* Leave comfortable space below the final version/update row. */
 footer {padding-bottom:clamp(32px,3.5vw,52px)}
+
+/* Keep mobile notifications comfortably readable without letting them touch
+   the viewport edges. The base toast sizes itself to its message, so give it
+   a wider mobile track explicitly. */
+@media(max-width:700px) {
+  #toast {
+    width:78vw;
+    max-width:calc(100vw - 32px);
+    box-sizing:border-box;
+    text-align:center;
+  }
+}
