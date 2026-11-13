@@ -508,3 +508,28 @@ html[data-theme="dark"] progress::-webkit-progress-bar {background:#254033}
   html:not([data-theme="light"]) progress,
   html:not([data-theme="light"]) progress::-webkit-progress-bar {background:#254033}
 }
+
+/* The brand stands alone; theme and service controls occupy two rows. */
+header {align-items:center}
+.header-controls {display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex-shrink:0}
+.header-controls .theme-switch,
+.header-controls .header-actions {height:40px;min-height:40px;align-items:stretch}
+.header-controls .theme-switch button,
+.header-controls .header-actions button {
+  height:40px;
+  min-height:40px;
+  font-size:13px!important;
+  font-weight:550!important;
+}
+.header-controls .theme-switch button {padding:0 14px}
+.header-controls .header-actions {gap:10px}
+@media(max-width:700px) {
+  header {align-items:center;row-gap:14px}
+  .brand-area {width:100%;flex-basis:100%}
+  .header-controls {width:100%;flex-basis:100%;align-items:stretch;gap:10px}
+  .header-controls .theme-switch,
+  .header-controls .header-actions {width:100%;justify-content:stretch}
+  .header-controls .theme-switch button,
+  .header-controls .header-actions button {flex:1 1 0;min-width:0;width:auto}
+  .header-controls .header-actions {margin-left:0;order:initial}
+}

@@ -171,7 +171,7 @@ function render(s){
  }
  $('detection-toggle').textContent=(s.paused||s.sleeping)?'继续检测':'暂停检测';
  $('detection-toggle').disabled=busy;
- $('recheck').textContent=s.manual_check_active?`立即检查 ${s.manual_check_round}/${s.manual_check_total}`:'↻ 立即检查';
+ $('recheck').textContent=s.manual_check_active?`立即检测 ${s.manual_check_round}/${s.manual_check_total}`:'立即检测';
  $('recheck').disabled=busy||s.paused||s.sleeping||s.manual_check_active;
  $('selection-auto').disabled=busy||Boolean(s.pending_id)||s.manual_check_active||s.selection_mode!=='manual';
  $('selection-auto').setAttribute?.('aria-pressed',s.selection_mode!=='manual');
