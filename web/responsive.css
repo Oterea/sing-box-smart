@@ -258,7 +258,7 @@ html[data-theme="dark"] .node-performance-panel .display-group-tab.active {
 }
 .node-table tbody tr.current-row .node-choice.selected,
 .node-table tbody tr.current-row .node-choice:disabled.selected {
-  background:#4a9bf0;
+  background:var(--blue);
   box-shadow:0 0 10px rgba(81,162,255,.28)!important;
 }
 html[data-theme="dark"] .node-table tbody tr.current-row {
