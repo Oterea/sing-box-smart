@@ -110,14 +110,14 @@
 .sbs-page[data-theme="dark"] .sbs-service-field input,
 .sbs-page[data-theme="dark"] .sbs-update-output {
   background:var(--sbs-field)!important;
-  border-color:#3a4b58!important;
   color:var(--sbs-ink)!important;
 }
+.sbs-page[data-theme="dark"] .sbs-service-field input {border-color:transparent!important}
 @media(prefers-color-scheme:dark) {
   .sbs-page:not([data-theme="light"]) .sbs-service-field input,
   .sbs-page:not([data-theme="light"]) .sbs-update-output {
     background:var(--sbs-field)!important;
-    border-color:#3a4b58!important;
     color:var(--sbs-ink)!important;
   }
+  .sbs-page:not([data-theme="light"]) .sbs-service-field input {border-color:transparent!important}
 }
