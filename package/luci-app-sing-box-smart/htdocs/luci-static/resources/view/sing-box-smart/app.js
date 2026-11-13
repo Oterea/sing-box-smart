@@ -81,43 +81,44 @@ return view.extend({
   let updateState='idle';
   let availableVersion='';
   const versionText = E('span',{class:'sbs-version-text'},['当前版本 · '+currentVersion]);
-  const updateOutput = E('pre',{class:'sbs-update-output',hidden:true,'aria-live':'polite'});
-  const outputText = function(result){return [result?.stdout,result?.stderr].filter(Boolean).join('\n').trim();};
-  const showOutput = function(result){
-   const text=outputText(result).split('\n').filter(function(line){return !/^(VERSION|CORE|LUCI|UPDATES)=/.test(line);}).join('\n').trim();
-   updateOutput.textContent=text;
-   updateOutput.hidden=!text;
-  };
   const updateButton = E('button',{type:'button',class:'cbi-button sbs-button',click:function(){
    if(busy)return;
    if(updateState==='available'){
     if(!confirm('确定升级 sing-box-smart 和 LuCI 软件包吗？'))return;
-    updateState='updating';setBusy(true);updateButton.classList.add('start');versionText.textContent='正在更新…';updateButton.textContent='更新中…';
-    fs.exec(updatePath,['update']).then(function(r){
-     showOutput(r);
-     if(r.code!==0)throw new Error(r.stderr||'更新失败');
-     versionText.textContent='更新完成，页面即将刷新…';
-     setTimeout(function(){window.location.reload();},2200);
-    }).catch(function(e){updateState='error';updateButton.classList.remove('start');updateButton.textContent='重新检查';versionText.textContent='更新失败';ui.addNotification(null,E('p',{},[e.message]));setBusy(false);});
+    updateState='updating';setBusy(true);updateButton.classList.add('start');updateButton.textContent='更新中…';
+    let stage='apk update';
+    versionText.textContent='更新 · '+stage;
+    fs.exec(updatePath,['refresh']).then(function(r){
+     if(r.code!==0)throw new Error(r.stderr||'apk update 失败');
+     stage='安装包';versionText.textContent='更新 · '+stage;
+     return fs.exec(updatePath,['upgrade']);
+    }).then(function(r){
+     if(r.code!==0)throw new Error(r.stderr||'安装包升级失败');
+     versionText.textContent='完成 · 页面刷新';
+     setTimeout(function(){window.location.reload();},1800);
+    }).catch(function(e){updateState='error';updateButton.classList.remove('start');updateButton.textContent='重新检查';versionText.textContent='失败 · '+stage;ui.addNotification(null,E('p',{},[e.message]));setBusy(false);});
     return;
    }
-   updateState='checking';setBusy(true);versionText.textContent='正在检查更新…';updateButton.textContent='检查中…';updateOutput.hidden=true;updateOutput.textContent='';
-   fs.exec(updatePath,['check']).then(function(r){
-    showOutput(r);
-    if(r.code!==0)throw new Error(r.stderr||'检查更新失败');
+   updateState='checking';setBusy(true);versionText.textContent='检查 · apk update';updateButton.textContent='检查中…';
+   let stage='apk update';
+   fs.exec(updatePath,['refresh']).then(function(r){
+    if(r.code!==0)throw new Error(r.stderr||'apk update 失败');
+    stage='软件包';versionText.textContent='检查 · '+stage;
+    return fs.exec(updatePath,['check']);
+   }).then(function(r){
+    if(r.code!==0)throw new Error(r.stderr||'软件包检查失败');
     const match=(r.stdout||'').split('\n').find(line=>line.indexOf('UPDATES=')===0);
     const updates=match?match.slice(8).trim():'';
     if(updates&&updates!=='none'){
      availableVersion=updates.split(/[\s,]+/)[0].replace(/^sing-box-smart-/,'').replace(/^luci-app-sing-box-smart-/,'');
      updateState='available';updateButton.classList.add('start');versionText.textContent='当前版本 · '+currentVersion+' · 可更新至 '+availableVersion;updateButton.textContent='立即更新';
     } else {updateState='current';updateButton.classList.remove('start');versionText.textContent='当前版本 · '+currentVersion+' · 已是最新';updateButton.textContent='重新检查';}
-   }).catch(function(e){updateState='error';updateButton.classList.remove('start');updateButton.textContent='重新检查';versionText.textContent='检查失败';ui.addNotification(null,E('p',{},[e.message]));}).finally(function(){setBusy(false);});
+   }).catch(function(e){updateState='error';updateButton.classList.remove('start');updateButton.textContent='重新检查';versionText.textContent='失败 · '+stage;ui.addNotification(null,E('p',{},[e.message]));}).finally(function(){setBusy(false);});
   }},['检查更新']);
   updateActions.push(updateButton);
   const versionBlock = E('section',{class:'sbs-control-block sbs-version-block','aria-labelledby':'sbs-version-title'},[
    E('div',{class:'sbs-card-title'},[E('span',{id:'sbs-version-title'},['版本与更新'])]),
-   E('div',{class:'sbs-version-row'},[versionText,E('div',{class:'sbs-version-actions'},[updateButton])]),
-   updateOutput
+   E('div',{class:'sbs-version-row'},[versionText,E('div',{class:'sbs-version-actions'},[updateButton])])
   ]);
   auto.addEventListener('change', function() {
    if (busy) return;

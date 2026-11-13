@@ -16,21 +16,18 @@ version)
     luci_version="$(installed_version "$luci")"
     printf 'VERSION=%s\n' "${core_version:-$luci_version}"
     ;;
-check)
-    printf '%s\n' '正在执行 apk update…'
+ refresh)
     apk update
-    printf '%s\n' '正在检查 sing-box-smart 软件包更新…'
+    ;;
+ check)
     updates=$(apk list --upgradable 2>/dev/null | awk -v core="$core" -v luci="$luci" '$1 ~ ("^" core "-") || $1 ~ ("^" luci "-") {print $1}')
     printf 'UPDATES=%s\n' "${updates:-none}"
     ;;
-update)
-    printf '%s\n' '正在执行 apk update…'
-    apk update
-    printf '%s\n' '正在升级 sing-box-smart 软件包…'
+ upgrade)
     apk upgrade "$core" "$luci"
     ;;
 *)
-    echo "需要 version、check 或 update" >&2
+    echo "需要 version、refresh、check 或 upgrade" >&2
     exit 2
     ;;
 esac

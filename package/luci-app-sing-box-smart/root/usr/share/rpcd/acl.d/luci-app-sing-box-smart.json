@@ -48,7 +48,10 @@
         "/etc/sing-box-smart/config.pending.json": [
           "write"
         ],
-        "/usr/libexec/sing-box-smart-update update": [
+        "/usr/libexec/sing-box-smart-update refresh": [
+          "exec"
+        ],
+        "/usr/libexec/sing-box-smart-update upgrade": [
           "exec"
         ]
       }

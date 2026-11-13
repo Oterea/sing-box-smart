@@ -100,22 +100,19 @@
 .sbs-version-text {min-width:0;color:var(--sbs-muted);font-size:var(--sbs-small);overflow-wrap:anywhere}
 .sbs-version-actions {display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;flex-shrink:0}
 .sbs-version-actions .sbs-button {width:auto;min-width:104px}
-.sbs-update-output {display:block;max-height:220px;margin:12px 0 0;padding:10px 12px;overflow:auto;background:var(--sbs-field);border:1px solid var(--sbs-line);color:var(--sbs-muted);font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:560px) {
   .sbs-version-row {align-items:flex-start;flex-direction:column}
   .sbs-version-actions {width:100%;justify-content:flex-start}
 }
 
 /* Keep configuration fields visibly separate from dark panels. */
-.sbs-page[data-theme="dark"] .sbs-service-field input,
-.sbs-page[data-theme="dark"] .sbs-update-output {
+.sbs-page[data-theme="dark"] .sbs-service-field input {
   background:var(--sbs-field)!important;
   color:var(--sbs-ink)!important;
 }
 .sbs-page[data-theme="dark"] .sbs-service-field input {border-color:transparent!important}
 @media(prefers-color-scheme:dark) {
-  .sbs-page:not([data-theme="light"]) .sbs-service-field input,
-  .sbs-page:not([data-theme="light"]) .sbs-update-output {
+  .sbs-page:not([data-theme="light"]) .sbs-service-field input {
     background:var(--sbs-field)!important;
     color:var(--sbs-ink)!important;
   }
