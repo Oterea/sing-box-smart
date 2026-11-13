@@ -210,3 +210,34 @@ html[data-theme="dark"] .node-performance-panel .display-group-tab.active {
     color:var(--blue-text)!important;
   }
 }
+
+/* Keep the node-performance title and its three summary values together. */
+.node-performance-title h2 {
+  display:flex;
+  align-items:baseline;
+  flex-wrap:wrap;
+  gap:0 10px;
+}
+.node-performance-title .count {
+  margin-left:0;
+  padding:0;
+  border-radius:0;
+  background:transparent;
+  color:var(--muted);
+  font-size:var(--ui-small);
+  font-weight:550;
+  vertical-align:baseline;
+}
+.node-inline-summary {
+  display:inline-flex;
+  align-items:baseline;
+  flex-wrap:wrap;
+  gap:0 14px;
+  color:var(--muted);
+  font-size:var(--ui-small);
+  font-weight:550;
+}
+@media(max-width:700px) {
+  .node-performance-title h2 {gap:4px 8px}
+  .node-inline-summary {gap:4px 10px}
+}

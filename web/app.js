@@ -187,8 +187,8 @@ function render(s){
   airportKey=nextAirportKey;
  }
  const available=displayState.nodes.filter(n=>n.checks>0&&n.last_success).length;
- $('success-summary').textContent=available+' / '+displayState.nodes.length+' 节点成功';
- $('sample-count').textContent=displayState.nodes.reduce((v,n)=>v+n.checks,0)+' 次检查';
+ $('success-summary').textContent='成功 '+available+'-'+displayState.nodes.length;
+ $('sample-count').textContent='次数 '+displayState.nodes.reduce((v,n)=>v+n.checks,0);
  const current=displayState.nodes.find(n=>n.id===displayState.current_id);
  const elapsed=(new Date(s.now)-new Date(s.started_at))/1000;
  const observationSeconds=s.observation_seconds||s.startup_seconds;
@@ -203,7 +203,7 @@ function render(s){
  syncRows($('selected-node'),[s.nodes.find(n=>n.id===s.current_id)??{id:'',name:'等待首次选择',checks:0,history:[],score:null,delay_ms:null,last_success:false}],best,s,true);
  nodeList??=SmartNodeList.create(30);
  const list=nodeList.view(sorted,displayState.airport_id,prefs?.node_display_limit??30);
- $('node-count').textContent=list.canToggle?`${list.visible} / ${list.total}`:list.total;
+ $('node-count').textContent=`${list.canToggle?list.visible:list.total}-${list.total}`;
  $('node-list-controls').hidden=!list.canToggle;
  $('nodes-toggle').textContent=list.expanded?`收起至前 ${list.limit} 个`:`显示全部（还有 ${list.remaining} 个）`;
  $('nodes-toggle').setAttribute('aria-expanded',String(list.expanded));
