@@ -406,7 +406,7 @@ html[data-theme="dark"] progress::-webkit-progress-bar {background:#254033}
 /* Give long-term filters a little more breathing room without increasing
    their height. Each filter row gets its own scroll track on small screens. */
 .longterm-control-group {font-size:13px}
-.longterm-control {min-width:46px;padding-inline:11px;font-size:13px}
+.longterm-control {flex:0 0 auto;min-width:46px;padding-inline:12px;font-size:13px}
 @media(max-width:700px) {
   .longterm-overview-controls {
     flex-direction:column;
