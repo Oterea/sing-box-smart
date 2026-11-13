@@ -241,3 +241,10 @@ html[data-theme="dark"] .node-performance-panel .display-group-tab.active {
   .node-performance-title h2 {gap:4px 8px}
   .node-inline-summary {gap:4px 10px}
 }
+
+/* Log levels remain color-coded by text only; remove their label backgrounds. */
+.event-level,
+.event-level.level-warn,
+.event-level.level-error {
+  background:transparent!important;
+}
